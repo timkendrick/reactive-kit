@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "name": "@trigger/build-tools",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "Custom build tools",
+  "author": "Tim Kendrick <timkendrick@gmail.com>",
+  "scripts": {
+    "pkg": "./scripts/pkg",
+    "lint": "eslint --ext cjs ."
+  },
+  "devDependencies": {
+    "@trigger/build-config": "workspace:*"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "private": true,
+  "author": "Tim Kendrick <timkendrick@gmail.com>",
+  "scripts": {
+    "ci": "pnpm run verify && pnpm run build",
+    "build": "pnpm run build:lib && pnpm run build:docs && pnpm run coverage",
+    "build:lib": "pnpm run --recursive --parallel build",
+    "build:docs": "typedoc",
+    "verify": "pnpm run /^\\(lint\\|test\\)$/",
+    "lint": "pnpm run /^lint:.*/ && pnpm run --recursive --parallel lint",
+    "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
+    "lint:typescript": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "coverage": "vitest run --coverage",
+    "coverage:report": "vitest run --coverage --config ./report.vitest.config.ts"
+  },
+  "peerDependencies": {
+    "@vitest/coverage-v8": "^0.34",
+    "typedoc": "^0.25",
+    "typescript": "^5",
+    "vite": "^4",
+    "vitest": "^0.34"
+  }
+}
