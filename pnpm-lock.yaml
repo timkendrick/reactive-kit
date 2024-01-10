@@ -84,6 +84,56 @@ importers:
         specifier: workspace:*
         version: link:../build-config
 
+  packages/core:
+    dependencies:
+      '@trigger/types':
+        specifier: workspace:*
+        version: link:../types
+      '@trigger/utils':
+        specifier: workspace:*
+        version: link:../utils
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
+    devDependencies:
+      '@trigger/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+
+  packages/types:
+    dependencies:
+      '@trigger/utils':
+        specifier: workspace:*
+        version: link:../utils
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+    devDependencies:
+      '@trigger/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+
   packages/utils:
     dependencies:
       eslint:

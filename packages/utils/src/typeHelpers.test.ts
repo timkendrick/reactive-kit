@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { nonNull, unreachable } from './typeHelpers';
+import { nonNull, noop, unreachable } from './typeHelpers';
 
 describe(unreachable, () => {
   test('throws', () => {
@@ -25,5 +25,11 @@ describe(nonNull, () => {
     expect(nonNull(0)).toBe(true);
     expect(nonNull('')).toBe(true);
     expect(nonNull(false)).toBe(true);
+  });
+});
+
+describe(noop, () => {
+  test('returns undefined', () => {
+    expect(noop()).toBeUndefined();
   });
 });
