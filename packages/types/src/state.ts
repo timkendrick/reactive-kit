@@ -1,27 +1,32 @@
-import { Enum, instantiateEnum, VARIANT, type EnumVariant } from '@trigger/utils';
+import {
+  Enum,
+  instantiateEnum,
+  isGeneratorFunction,
+  VARIANT,
+  type EnumVariant,
+} from '@trigger/utils';
 import { type Reactive } from './core';
 import { type Signal } from './signal';
 
-export const STATEFUL = Symbol.for('@trigger::stateful');
+export type Stateful<T> = StatefulGeneratorFunction<T>;
 
-export interface Stateful<T> {
-  [STATEFUL]: true;
-  next(state: StateValues): StatefulResult<T>;
+type NonConstructorKeys<T> = { [P in keyof T]: T[P] extends new () => any ? never : P }[keyof T];
+type NonConstructor<T> = Pick<T, NonConstructorKeys<T>>;
+
+export interface StatefulGeneratorFunction<T>
+  extends Omit<NonConstructor<GeneratorFunction>, typeof Symbol.toStringTag> {
+  (): StatefulGenerator<T>;
+}
+export type StatefulGenerator<T> = Iterator<StatefulYieldValue, T, StatefulNextValue>;
+export type StatefulYieldValue = Signal<unknown>;
+export type StatefulNextValue = any;
+
+export function isStateful(value: unknown): value is Stateful<unknown> {
+  return isGeneratorFunction(value);
 }
 
-export function isStateful<T>(value: Reactive<T>): value is Stateful<T> {
-  return (
-    value != null && typeof value === 'object' && STATEFUL in value && value[STATEFUL] === true
-  );
-}
-
-export type StateValues = Map<StateToken, any>;
-export type StateToken = symbol | number;
-
-export interface StatefulResult<T> {
-  value: StatefulValue<T>;
-  dependencies: DependencyTree;
-}
+export type StateValues = Map<StateToken, Reactive<unknown>>;
+export type StateToken = bigint | symbol;
 
 export const enum StatefulValueType {
   Resolved = 'Resolved',
@@ -33,7 +38,7 @@ export type StatefulValue<T> = Enum<{
     value: Reactive<T>;
   };
   [StatefulValueType.Blocked]: {
-    conditions: ConditionTree;
+    condition: Signal | Array<Signal>;
   };
 }>;
 
@@ -55,9 +60,9 @@ export const StatefulValue = (() => {
     ),
     [StatefulValueType.Blocked]: Object.assign(
       function Blocked<T>(
-        conditions: ConditionTree,
+        condition: Signal,
       ): EnumVariant<StatefulValue<T>, StatefulValueType.Blocked> {
-        return instantiateEnum(StatefulValueType.Blocked, { conditions });
+        return instantiateEnum(StatefulValueType.Blocked, { condition });
       },
       {
         is: function is<T>(
@@ -70,34 +75,6 @@ export const StatefulValue = (() => {
   };
 })();
 
-export const enum DependencyTreeType {
-  Empty = 'Empty',
-  Unit = 'Unit',
-  Pair = 'Pair',
-  Multiple = 'Multiple',
-}
-
-export type DependencyTree = Enum<{
-  [DependencyTreeType.Empty]: void;
-  [DependencyTreeType.Unit]: {
-    value: StateToken;
-  };
-  [DependencyTreeType.Pair]: {
-    left: DependencyTree;
-    right: DependencyTree;
-  };
-  [DependencyTreeType.Multiple]: {
-    values: Array<DependencyTree>;
-  };
-}>;
-
-export const DependencyTree = Enum.create<DependencyTree>({
-  [DependencyTreeType.Empty]: true,
-  [DependencyTreeType.Unit]: true,
-  [DependencyTreeType.Pair]: true,
-  [DependencyTreeType.Multiple]: true,
-});
-
 export const enum ConditionTreeType {
   Unit = 'Unit',
   Pair = 'Pair',
@@ -106,7 +83,7 @@ export const enum ConditionTreeType {
 
 export type ConditionTree = Enum<{
   [ConditionTreeType.Unit]: {
-    condition: Signal<unknown>;
+    condition: Signal;
   };
   [ConditionTreeType.Pair]: {
     left: ConditionTree;

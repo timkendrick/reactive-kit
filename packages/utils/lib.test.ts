@@ -10,8 +10,11 @@ test('module exports', () => {
     enumVariantConstructor: lib.enumVariantConstructor,
     instantiateEnum: lib.instantiateEnum,
     isEnumVariant: lib.isEnumVariant,
+    isGenerator: lib.isGenerator,
+    isGeneratorFunction: lib.isGeneratorFunction,
     match: lib.match,
     nonNull: lib.nonNull,
+    noop: lib.noop,
     unreachable: lib.unreachable,
   });
 });

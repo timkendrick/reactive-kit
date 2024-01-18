@@ -1,18 +1,18 @@
 import { describe, expect, test } from 'vitest';
 import { ConditionTree, SIGNAL } from '@trigger/types';
-import { once } from './signal';
-import { flattenConditionTree } from './core';
+import { flattenConditionTree } from './condition';
+import { createSignal } from './signal';
 
 describe(flattenConditionTree, () => {
   test('unit', () => {
-    const foo = once('foo');
+    const foo = createSignal('effect:foo', null);
     const tree = ConditionTree.Unit({ condition: foo });
     expect(flattenConditionTree(tree)).toEqual(new Map([[foo[SIGNAL], foo]]));
   });
 
   test('pair', () => {
-    const foo = once('foo');
-    const bar = once('bar');
+    const foo = createSignal('effect:foo', null);
+    const bar = createSignal('effect:bar', null);
     const tree = ConditionTree.Pair({
       left: ConditionTree.Unit({ condition: foo }),
       right: ConditionTree.Unit({ condition: bar }),
@@ -26,9 +26,9 @@ describe(flattenConditionTree, () => {
   });
 
   test('multiple', () => {
-    const foo = once('foo');
-    const bar = once('bar');
-    const baz = once('baz');
+    const foo = createSignal('effect:foo', null);
+    const bar = createSignal('effect:bar', null);
+    const baz = createSignal('effect:baz', null);
     const tree = ConditionTree.Multiple({
       children: [
         ConditionTree.Unit({ condition: foo }),

@@ -1,24 +1,15 @@
 import {
   ConditionTree,
   ConditionTreeType,
-  DependencyTree,
   SIGNAL,
   type Signal,
   type StateToken,
 } from '@trigger/types';
-import { VARIANT } from '../../utils/lib';
+import { VARIANT } from '@trigger/utils';
 
-export const EMPTY_DEPENDENCIES = DependencyTree.Empty({});
-
-export function combineDependencies(left: DependencyTree, right: DependencyTree): DependencyTree {
-  if (right[VARIANT] === 'Empty') return left;
-  if (left[VARIANT] === 'Empty') return right;
-  return DependencyTree.Pair({ left, right });
-}
-
-export function flattenConditionTree(tree: ConditionTree): Map<StateToken, Signal<unknown>> {
+export function flattenConditionTree(tree: ConditionTree): Map<StateToken, Signal> {
   const queue = [tree];
-  const results = new Map<StateToken, Signal<unknown>>();
+  const results = new Map<StateToken, Signal>();
   let item: ConditionTree | undefined;
   while ((item = queue.pop())) {
     switch (item[VARIANT]) {
@@ -37,4 +28,17 @@ export function flattenConditionTree(tree: ConditionTree): Map<StateToken, Signa
     }
   }
   return results;
+}
+
+export function collectConditionTree(conditions: Array<Signal>): ConditionTree | null {
+  switch (conditions.length) {
+    case 0:
+      return null;
+    case 1:
+      return ConditionTree.Unit({ condition: conditions[0] });
+    default:
+      return ConditionTree.Multiple({
+        children: conditions.map((condition) => ConditionTree.Unit({ condition })),
+      });
+  }
 }
