@@ -12,6 +12,7 @@ import {
   StateToken,
   StateValues,
   Hash,
+  Hashable,
 } from '@trigger/types';
 import { nonNull } from '@trigger/utils';
 import {
@@ -28,6 +29,7 @@ import {
   createSubscribeEffectsMessage,
   createUnsubscribeEffectsMessage,
   EmitEffectValuesMessage,
+  MESSAGE_EMIT_EFFECT_VALUES,
   MESSAGE_SUBSCRIBE_EFFECTS,
   MESSAGE_UNSUBSCRIBE_EFFECTS,
   SubscribeEffectsMessage,
@@ -35,7 +37,10 @@ import {
 } from '../message';
 import { EFFECT_TYPE_EVALUATE, EvaluateEffect } from '../effect/evaluate';
 
-type EvaluateHandlerInputMessage = SubscribeEffectsMessage | UnsubscribeEffectsMessage;
+type EvaluateHandlerInputMessage =
+  | SubscribeEffectsMessage
+  | UnsubscribeEffectsMessage
+  | EmitEffectValuesMessage;
 type EvaluateHandlerOutputMessage =
   | SubscribeEffectsMessage
   | UnsubscribeEffectsMessage
@@ -47,6 +52,11 @@ type EvaluateHandlerOutput = HandlerResult<EvaluateHandlerOutputMessage>;
 interface QuerySubscription<T> {
   effect: EvaluateEffect;
   result: EvaluationResult<T>;
+}
+
+interface EvaluateEffectResult<T> {
+  value: T;
+  dependencies: DependencyTree;
 }
 
 export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHandlerOutput> {
@@ -68,6 +78,8 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
         return this.handleSubscribeEffects(message);
       case MESSAGE_UNSUBSCRIBE_EFFECTS:
         return this.handleUnsubscribeEffects(message);
+      case MESSAGE_EMIT_EFFECT_VALUES:
+        return this.handleEmitEffectValues(message);
     }
   }
 
@@ -93,12 +105,13 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
         return combinedResults;
       },
       {
-        results: new Map<Hash, { value: unknown; dependencies: DependencyTree }>(),
+        results: new Map<Hash, EvaluateEffectResult<unknown>>(),
         subscribedEffects: new Array<Effect>(),
         unsubscribedEffects: new Array<Effect>(),
       },
     );
-    return this.createSubscriptionActions({
+    // FIXME: Purge any state values that are no longer needed
+    return this.createHandlerActions({
       results,
       subscribedEffects,
       unsubscribedEffects,
@@ -106,6 +119,7 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
   }
 
   private handleUnsubscribeEffects(message: UnsubscribeEffectsMessage): EvaluateHandlerOutput {
+    // FIXME: Ensure top-level evaluations are not unsubscribed due to a different query unsubscribing a sub-query for the same evaluation
     const { effects } = message;
     const typedEffects = getTypedEffects<EvaluateEffect>(EFFECT_TYPE_EVALUATE, effects);
     if (!typedEffects || typedEffects.length === 0) return [];
@@ -123,15 +137,57 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
         unsubscribedEffects: new Array<Effect>(),
       },
     );
-    return this.createSubscriptionActions({
+    // FIXME: Purge any state values that are no longer needed
+    return this.createHandlerActions({
       results: null,
       subscribedEffects,
       unsubscribedEffects,
     });
   }
 
-  private createSubscriptionActions(options: {
-    results: Map<Hash, { value: unknown; dependencies: DependencyTree }> | null;
+  private handleEmitEffectValues(message: EmitEffectValuesMessage): EvaluateHandlerOutput {
+    const { values } = message;
+    // Determine the set of subscriptions that could potentially be affected by the provided effect updates
+    const updatedSubscriptions = getAffectedSubscriptions(this.subscriptions, values);
+    // Update the state with the incoming effect values
+    for (const [stateToken, value] of values) {
+      this.state.set(stateToken, value);
+    }
+    // Re-evaluate all potentially-affected subscriptions and emit any updated results
+    const { results, subscribedEffects, unsubscribedEffects } = updatedSubscriptions.reduce(
+      (combinedResults, subscription) => {
+        const previousResult = subscription.result;
+        const { effect } = subscription;
+        const result = (subscription.result = evaluate(effect.payload.expression, this.state));
+        // If the result is fully resolved, ensure it is re-emitted in this result set
+        if (
+          EvaluationResult.Ready.is(result) &&
+          (!EvaluationResult.Ready.is(previousResult) ||
+            !isEqual(result.value, previousResult.value))
+        ) {
+          results.set(hash(effect), { value: result.value, dependencies: result.dependencies });
+        }
+        // Keep track of any effect subscriptions that were added or removed as a result of this evaluation
+        combinedResults.subscribedEffects.push(...subscribedEffects);
+        combinedResults.unsubscribedEffects.push(...unsubscribedEffects);
+        return combinedResults;
+      },
+      {
+        results: new Map<Hash, EvaluateEffectResult<unknown>>(),
+        subscribedEffects: new Array<Effect>(),
+        unsubscribedEffects: new Array<Effect>(),
+      },
+    );
+    // FIXME: Purge any state values that are no longer needed
+    return this.createHandlerActions({
+      results,
+      subscribedEffects,
+      unsubscribedEffects,
+    });
+  }
+
+  private createHandlerActions(options: {
+    results: Map<Hash, EvaluateEffectResult<unknown>> | null;
     subscribedEffects: Array<Effect>;
     unsubscribedEffects: Array<Effect>;
   }): EvaluateHandlerOutput {
@@ -311,4 +367,26 @@ function getUpdatedDependencies(
       (dependency) => !otherSubscriptionDependencies.has(dependency),
     ),
   };
+}
+
+function getAffectedSubscriptions(
+  subscriptions: Map<bigint, QuerySubscription<any>>,
+  updates: Map<bigint, any>,
+): Array<QuerySubscription<any>> {
+  // FIXME: Optimize expensive dependency operations
+  const affectedSubscriptions = new Array<QuerySubscription<any>>();
+  for (const subscription of subscriptions.values()) {
+    for (const dependency of flattenDependencyTree(subscription.result.dependencies)) {
+      if (updates.has(dependency)) {
+        affectedSubscriptions.push(subscription);
+        break;
+      }
+    }
+  }
+  return Array.from(affectedSubscriptions);
+}
+
+function isEqual(left: Hashable, right: Hashable): boolean {
+  // FIXME: Allow checking non-hashable values for equality
+  return left === right || hash(left) === hash(right);
 }
