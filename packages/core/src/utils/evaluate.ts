@@ -1,20 +1,20 @@
 import {
   Reactive,
-  isSignal,
+  isEffect,
   isStateful,
   StateValues,
   SIGNAL,
   isStatic,
   ConditionTreeType,
   ConditionTree,
-  Signal,
+  Effect,
   Stateful,
   StatefulGenerator,
 } from '@trigger/types';
 import { Enum, EnumVariant, VARIANT, instantiateEnum, nonNull } from '@trigger/utils';
 import { collectConditionTree, flattenConditionTree } from './condition';
 import { combineDependencies, DependencyTree, EMPTY_DEPENDENCIES } from './dependency';
-import { createSignal } from './signal';
+import { createEffect } from './effect';
 
 export const enum EvaluationResultType {
   Pending = 'Pending',
@@ -96,7 +96,7 @@ type StackFrame = Enum<{
   };
   // Handle a condition
   Handle: {
-    condition: Signal;
+    condition: Effect;
   };
   // Record the fully-resolved evaluation result for the current thread
   Result: {
@@ -140,7 +140,7 @@ const StackFrame = Enum.create<StackFrame>({
 type ThreadResultStackFrame = EnumVariant<StackFrame, 'Result'> | EnumVariant<StackFrame, 'Halt'>;
 const THREAD_RESULT_PLACEHOLDER = StackFrame.Halt({
   conditions: ConditionTree.Unit({
-    condition: createSignal('@trigger:unreachable', null),
+    condition: createEffect('@trigger:unreachable', null),
   }),
 });
 
@@ -190,11 +190,11 @@ export function evaluate<T>(expression: Reactive<T>, state: StateValues): Evalua
           );
           const stateValue = state.get(stateToken);
           // If the state value is unresolved, push it onto the stack for evaluation
-          if (isStateful(stateValue) || isSignal(stateValue)) {
+          if (isStateful(stateValue) || isEffect(stateValue)) {
             // Queue up the current stack frame again to be resolved again once the condition has been handled
             stack.push(stackFrame);
             if (isStateful(stateValue)) stack.push(StackFrame.Evaluate({ expression: stateValue }));
-            if (isSignal(stateValue)) stack.push(StackFrame.Handle({ condition: stateValue }));
+            if (isEffect(stateValue)) stack.push(StackFrame.Handle({ condition: stateValue }));
             continue loop;
           } else {
             // Otherwise if the state value is fully resolved, provide the value to continue the expression evaluation
@@ -226,7 +226,7 @@ export function evaluate<T>(expression: Reactive<T>, state: StateValues): Evalua
           stack.push(
             isStateful(value)
               ? StackFrame.Evaluate({ expression: value })
-              : isSignal(value)
+              : isEffect(value)
               ? StackFrame.Handle({ condition: value })
               : StackFrame.Result({ value }),
           );
@@ -358,24 +358,24 @@ function collectThreadResults(threads: Array<StackFrame>): ThreadResultStackFram
   return StackFrame.Halt({ conditions: combinedConditions });
 }
 
-function hasUnmetCondition(condition: Signal | Array<Signal>, state: StateValues): boolean {
+function hasUnmetCondition(condition: Effect | Array<Effect>, state: StateValues): boolean {
   if (Array.isArray(condition))
     return condition.some((condition) => hasUnmetCondition(condition, state));
   const stateToken = condition[SIGNAL];
   return !state.has(stateToken);
 }
 
-function getResolvedConditionValues<T>(condition: Signal<T>, state: StateValues): T | undefined;
+function getResolvedConditionValues<T>(condition: Effect, state: StateValues): T | undefined;
 function getResolvedConditionValues<T>(
-  condition: Array<Signal<T>>,
+  condition: Array<Effect>,
   state: StateValues,
 ): Array<T | undefined>;
 function getResolvedConditionValues(
-  condition: Signal | Array<Signal>,
+  condition: Effect | Array<Effect>,
   state: StateValues,
 ): unknown | undefined | Array<unknown | undefined>;
 function getResolvedConditionValues(
-  condition: Signal | Array<Signal>,
+  condition: Effect | Array<Effect>,
   state: StateValues,
 ): unknown | undefined | Array<unknown | undefined> {
   if (Array.isArray(condition))

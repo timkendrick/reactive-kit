@@ -4,7 +4,7 @@ import * as lib from './lib';
 
 test('module exports', () => {
   expect({ ...lib }).toEqual({
-    isSignal: lib.isSignal,
+    isEffect: lib.isEffect,
     isStateful: lib.isStateful,
     PollStatus: lib.PollStatus,
     SIGNAL: lib.SIGNAL,

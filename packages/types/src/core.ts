@@ -1,8 +1,8 @@
-import { isSignal, type Signal } from './signal';
+import { isEffect, type Effect } from './effect';
 import { isStateful, type Stateful } from './state';
 
-export type Reactive<T> = T | Signal<T> | Stateful<T>;
+export type Reactive<T> = T | Effect | Stateful<T>;
 
 export function isStatic<T>(value: Reactive<T>): value is T {
-  return !isSignal(value) && !isStateful(value);
+  return !isEffect(value) && !isStateful(value);
 }

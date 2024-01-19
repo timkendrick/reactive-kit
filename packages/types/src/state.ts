@@ -6,7 +6,7 @@ import {
   type EnumVariant,
 } from '@trigger/utils';
 import { type Reactive } from './core';
-import { type Signal } from './signal';
+import { type Effect } from './effect';
 
 export type Stateful<T> = StatefulGeneratorFunction<T>;
 
@@ -18,7 +18,7 @@ export interface StatefulGeneratorFunction<T>
   (): StatefulGenerator<T>;
 }
 export type StatefulGenerator<T> = Iterator<StatefulYieldValue, T, StatefulNextValue>;
-export type StatefulYieldValue = Signal<unknown>;
+export type StatefulYieldValue = Effect;
 export type StatefulNextValue = any;
 
 export function isStateful(value: unknown): value is Stateful<unknown> {
@@ -38,7 +38,7 @@ export type StatefulValue<T> = Enum<{
     value: Reactive<T>;
   };
   [StatefulValueType.Blocked]: {
-    condition: Signal | Array<Signal>;
+    condition: Effect | Array<Effect>;
   };
 }>;
 
@@ -60,7 +60,7 @@ export const StatefulValue = (() => {
     ),
     [StatefulValueType.Blocked]: Object.assign(
       function Blocked<T>(
-        condition: Signal,
+        condition: Effect,
       ): EnumVariant<StatefulValue<T>, StatefulValueType.Blocked> {
         return instantiateEnum(StatefulValueType.Blocked, { condition });
       },
@@ -83,7 +83,7 @@ export const enum ConditionTreeType {
 
 export type ConditionTree = Enum<{
   [ConditionTreeType.Unit]: {
-    condition: Signal;
+    condition: Effect;
   };
   [ConditionTreeType.Pair]: {
     left: ConditionTree;

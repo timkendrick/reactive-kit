@@ -2,14 +2,14 @@ import {
   ConditionTree,
   ConditionTreeType,
   SIGNAL,
-  type Signal,
+  type Effect,
   type StateToken,
 } from '@trigger/types';
 import { VARIANT } from '@trigger/utils';
 
-export function flattenConditionTree(tree: ConditionTree): Map<StateToken, Signal> {
+export function flattenConditionTree(tree: ConditionTree): Map<StateToken, Effect> {
   const queue = [tree];
-  const results = new Map<StateToken, Signal>();
+  const results = new Map<StateToken, Effect>();
   let item: ConditionTree | undefined;
   while ((item = queue.pop())) {
     switch (item[VARIANT]) {
@@ -30,7 +30,7 @@ export function flattenConditionTree(tree: ConditionTree): Map<StateToken, Signa
   return results;
 }
 
-export function collectConditionTree(conditions: Array<Signal>): ConditionTree | null {
+export function collectConditionTree(conditions: Array<Effect>): ConditionTree | null {
   switch (conditions.length) {
     case 0:
       return null;

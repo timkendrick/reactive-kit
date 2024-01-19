@@ -2,13 +2,14 @@ import {
   Reactive,
   StateValues,
   StateToken,
-  Signal,
+  Effect,
   Handler,
   HandlerResult,
   ProcessId,
   HandlerAction,
   HandlerInput,
   SIGNAL,
+  EffectType,
 } from '@trigger/types';
 import { Enum, EnumVariant, match, nonNull } from '@trigger/utils';
 import {
@@ -18,6 +19,7 @@ import {
   flattenDependencyTree,
   EvaluationResult,
   evaluate,
+  groupEffectsByType,
 } from '../utils';
 
 export type EvaluateHandlerMessage = Enum<{
@@ -28,10 +30,10 @@ export type EvaluateHandlerMessage = Enum<{
     expression: Reactive<any>;
   };
   SubscribeEffects: {
-    effects: Array<Signal<any>>;
+    effects: Map<EffectType, Array<Effect>>;
   };
   UnsubscribeEffects: {
-    effects: Array<Signal<any>>;
+    effects: Map<EffectType, Array<Effect>>;
   };
   EmitResult: {
     expression: Reactive<any>;
@@ -62,6 +64,10 @@ export type EvaluateHandlerUnsubscribeEffectsMessage = EnumVariant<
   'UnsubscribeEffects'
 >;
 export type EvaluateHandlerEmitResultMessage = EnumVariant<EvaluateHandlerMessage, 'EmitResult'>;
+export type EvaluateHandlerEmitEffectValuesMessage = EnumVariant<
+  EvaluateHandlerMessage,
+  'EmitEffectValues'
+>;
 
 type EvaluateHandlerInputMessage =
   | EvaluateHandlerSubscribeMessage
@@ -78,12 +84,14 @@ interface QuerySubscription<T> {
   result: EvaluationResult<T>;
 }
 
+export const EVALUATE_SIGNAL_TYPE = '@trigger/evaluate';
+
 export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHandlerOutput> {
   private state: StateValues;
   private callbackId: number;
   // FIXME: Hash queries to prevent duplicate subscriptions
   private subscriptions: Map<Reactive<any>, QuerySubscription<any>> = new Map();
-  private activeSignals: Map<StateToken, Signal<any>> = new Map();
+  private activeEffects: Map<StateToken, Effect> = new Map();
 
   constructor(options: { callbackId: ProcessId; state?: StateValues }) {
     const { callbackId, state } = options;
@@ -127,21 +135,21 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
         subscription,
         subscription.result.dependencies,
         previousDependencies,
-        this.activeSignals,
+        this.activeEffects,
         this.subscriptions,
       );
     for (const effect of unsubscribedEffects) {
-      this.activeSignals.delete(effect[SIGNAL]);
+      this.activeEffects.delete(effect[SIGNAL]);
     }
     for (const effect of subscribedEffects) {
-      this.activeSignals.set(effect[SIGNAL], effect);
+      this.activeEffects.set(effect[SIGNAL], effect);
     }
     const subscribeEffectsAction =
       subscribedEffects.length > 0
         ? HandlerAction.Send(
             this.callbackId,
             EvaluateHandlerMessage.SubscribeEffects({
-              effects: subscribedEffects,
+              effects: groupEffectsByType(subscribedEffects),
             }),
           )
         : null;
@@ -150,7 +158,7 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
         ? HandlerAction.Send(
             this.callbackId,
             EvaluateHandlerMessage.UnsubscribeEffects({
-              effects: unsubscribedEffects,
+              effects: groupEffectsByType(unsubscribedEffects),
             }),
           )
         : null;
@@ -171,19 +179,19 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
       subscription,
       updatedDependencies,
       previousDependencies,
-      this.activeSignals,
+      this.activeEffects,
       this.subscriptions,
     );
     if (unsubscribedEffects.length === 0) return [];
     for (const effect of unsubscribedEffects) {
-      this.activeSignals.delete(effect[SIGNAL]);
+      this.activeEffects.delete(effect[SIGNAL]);
     }
     const unsubscribeEffectsAction =
       unsubscribedEffects.length > 0
         ? HandlerAction.Send(
             this.callbackId,
             EvaluateHandlerMessage.UnsubscribeEffects({
-              effects: unsubscribedEffects,
+              effects: groupEffectsByType(unsubscribedEffects),
             }),
           )
         : null;
@@ -195,9 +203,9 @@ function getEvaluationResultEffectSubscriptionActions(
   subscription: QuerySubscription<any>,
   updatedDependencies: DependencyTree,
   previousDependencies: DependencyTree | null,
-  effectsLookup: Map<StateToken, Signal<any>>,
+  effectsLookup: Map<StateToken, Effect>,
   subscriptions: Map<any, QuerySubscription<any>>,
-): { subscribed: Array<Signal<any>>; unsubscribed: Array<Signal<any>> } {
+): { subscribed: Array<Effect>; unsubscribed: Array<Effect> } {
   // Determine the set of effects that have been subscribed or unsubscribed as a result of this evaluation
   const { result } = subscription;
   const unresolvedEffects = EvaluationResult.Pending.is(result)

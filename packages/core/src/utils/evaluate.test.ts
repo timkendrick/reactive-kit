@@ -3,7 +3,7 @@ import {
   ConditionTree,
   Reactive,
   SIGNAL,
-  Signal,
+  Effect,
   StateToken,
   StateValues,
   Stateful,
@@ -11,7 +11,7 @@ import {
 } from '@trigger/types';
 import { DependencyTree } from './dependency';
 import { EvaluationResult, evaluate } from './evaluate';
-import { createSignal } from './signal';
+import { createEffect } from './effect';
 
 describe(evaluate, () => {
   test('static root', () => {
@@ -22,7 +22,7 @@ describe(evaluate, () => {
 
   describe('signal root', () => {
     test('unresolved signal', () => {
-      const signal: Signal<string> = createSignal('effect:foo', null);
+      const signal = createEffect('effect:foo', null);
       const root: Reactive<string> = signal;
       const state: StateValues = new Map();
       expect(evaluate(root, state)).toEqual(
@@ -34,7 +34,7 @@ describe(evaluate, () => {
     });
 
     test('resolved signal', () => {
-      const signal: Signal<string> = createSignal('effect:foo', null);
+      const signal = createEffect('effect:foo', null);
       const root: Reactive<string> = signal;
       const state: StateValues = new Map([[signal[SIGNAL], 'foo']]);
       expect(evaluate(root, state)).toEqual(
@@ -56,7 +56,7 @@ describe(evaluate, () => {
 
     describe('single dependency', () => {
       test('unresolved dependency', () => {
-        const signal: Signal<string> = createSignal('effect:foo', null);
+        const signal = createEffect('effect:foo', null);
         const root: Stateful<string> = function* (): StatefulGenerator<string> {
           const value: string = yield signal;
           return value.toUpperCase();
@@ -71,7 +71,7 @@ describe(evaluate, () => {
       });
 
       test('resolved dependency', () => {
-        const signal: Signal<string> = createSignal('effect:foo', null);
+        const signal = createEffect('effect:foo', null);
         const root: Stateful<string> = function* () {
           const value: string = yield signal;
           return value.toUpperCase();
@@ -85,8 +85,8 @@ describe(evaluate, () => {
 
     describe('multiple dependencies', () => {
       test('unresolved dependencies', () => {
-        const signal1: Signal<string> = createSignal('effect:foo', null);
-        const signal2: Signal<string> = createSignal('effect:bar', null);
+        const signal1 = createEffect('effect:foo', null);
+        const signal2 = createEffect('effect:bar', null);
         const root: Stateful<string> = function* () {
           const value1: string = yield signal1;
           const value2: string = yield signal2;
@@ -102,8 +102,8 @@ describe(evaluate, () => {
       });
 
       test('partially resolved dependencies', () => {
-        const signal1: Signal<string> = createSignal('effect:foo', null);
-        const signal2: Signal<string> = createSignal('effect:bar', null);
+        const signal1 = createEffect('effect:foo', null);
+        const signal2 = createEffect('effect:bar', null);
         const root: Stateful<string> = function* () {
           const value1: string = yield signal1;
           const value2: string = yield signal2;
@@ -122,8 +122,8 @@ describe(evaluate, () => {
       });
 
       test('fully resolved dependencies', () => {
-        const signal1: Signal<string> = createSignal('effect:foo', null);
-        const signal2: Signal<string> = createSignal('effect:bar', null);
+        const signal1 = createEffect('effect:foo', null);
+        const signal2 = createEffect('effect:bar', null);
         const root: Stateful<string> = function* () {
           const value1: string = yield signal1;
           const value2: string = yield signal2;
@@ -148,8 +148,8 @@ describe(evaluate, () => {
     describe('chained dependencies', () => {
       describe('aliased effect', () => {
         test('partially resolved dependencies', () => {
-          const signal1: Signal<string> = createSignal('effect:foo', null);
-          const signal2: Signal<string> = createSignal('effect:bar', null);
+          const signal1 = createEffect('effect:foo', null);
+          const signal2 = createEffect('effect:bar', null);
           const root: Stateful<string> = function* (): StatefulGenerator<string> {
             const value: string = yield signal1;
             return value.toUpperCase();
@@ -167,8 +167,8 @@ describe(evaluate, () => {
         });
 
         test('fully resolved dependencies', () => {
-          const signal1: Signal<string> = createSignal('effect:foo', null);
-          const signal2: Signal<string> = createSignal('effect:bar', null);
+          const signal1 = createEffect('effect:foo', null);
+          const signal2 = createEffect('effect:bar', null);
           const root: Stateful<string> = function* (): StatefulGenerator<string> {
             const value: string = yield signal1;
             return value.toUpperCase();
@@ -191,8 +191,8 @@ describe(evaluate, () => {
 
       describe('aliased generator', () => {
         test('partially resolved dependencies', () => {
-          const signal1: Signal<string> = createSignal('effect:foo', null);
-          const signal2: Signal<string> = createSignal('effect:bar', null);
+          const signal1 = createEffect('effect:foo', null);
+          const signal2 = createEffect('effect:bar', null);
           const generator: Stateful<string> = function* () {
             const value = yield signal2;
             return `-> ${value}`;
@@ -214,8 +214,8 @@ describe(evaluate, () => {
         });
 
         test('fully resolved dependencies', () => {
-          const signal1: Signal<string> = createSignal('effect:foo', null);
-          const signal2: Signal<string> = createSignal('effect:bar', null);
+          const signal1 = createEffect('effect:foo', null);
+          const signal2 = createEffect('effect:bar', null);
           const generator: Stateful<string> = function* () {
             const value = yield signal2;
             return `-> ${value}`;

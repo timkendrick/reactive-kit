@@ -1,6 +1,10 @@
-import { Signal } from '@trigger/types';
-import { createSignal } from '../utils';
+import { Effect } from '@trigger/types';
+import { createEffect } from '../utils';
 
-export function never<T>(): Signal<T> {
-  return createSignal('@trigger::never', null);
+export const EFFECT_TYPE_NEVER = '@trigger::never';
+
+export interface NeverEffect extends Effect<typeof EFFECT_TYPE_NEVER, null> {}
+
+export function never(): NeverEffect {
+  return createEffect(EFFECT_TYPE_NEVER, null);
 }

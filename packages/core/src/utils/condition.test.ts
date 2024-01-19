@@ -1,24 +1,24 @@
 import { describe, expect, test } from 'vitest';
-import { ConditionTree, SIGNAL } from '@trigger/types';
+import { ConditionTree, SIGNAL, Effect, StateToken } from '@trigger/types';
 import { flattenConditionTree } from './condition';
-import { createSignal } from './signal';
+import { createEffect } from './effect';
 
 describe(flattenConditionTree, () => {
   test('unit', () => {
-    const foo = createSignal('effect:foo', null);
+    const foo = createEffect('effect:foo', null);
     const tree = ConditionTree.Unit({ condition: foo });
-    expect(flattenConditionTree(tree)).toEqual(new Map([[foo[SIGNAL], foo]]));
+    expect(flattenConditionTree(tree)).toEqual(new Map<StateToken, Effect>([[foo[SIGNAL], foo]]));
   });
 
   test('pair', () => {
-    const foo = createSignal('effect:foo', null);
-    const bar = createSignal('effect:bar', null);
+    const foo = createEffect('effect:foo', null);
+    const bar = createEffect('effect:bar', null);
     const tree = ConditionTree.Pair({
       left: ConditionTree.Unit({ condition: foo }),
       right: ConditionTree.Unit({ condition: bar }),
     });
     expect(flattenConditionTree(tree)).toEqual(
-      new Map([
+      new Map<StateToken, Effect>([
         [foo[SIGNAL], foo],
         [bar[SIGNAL], bar],
       ]),
@@ -26,9 +26,9 @@ describe(flattenConditionTree, () => {
   });
 
   test('multiple', () => {
-    const foo = createSignal('effect:foo', null);
-    const bar = createSignal('effect:bar', null);
-    const baz = createSignal('effect:baz', null);
+    const foo = createEffect('effect:foo', null);
+    const bar = createEffect('effect:bar', null);
+    const baz = createEffect('effect:baz', null);
     const tree = ConditionTree.Multiple({
       children: [
         ConditionTree.Unit({ condition: foo }),
@@ -37,7 +37,7 @@ describe(flattenConditionTree, () => {
       ],
     });
     expect(flattenConditionTree(tree)).toEqual(
-      new Map([
+      new Map<StateToken, Effect>([
         [foo[SIGNAL], foo],
         [bar[SIGNAL], bar],
         [baz[SIGNAL], baz],
