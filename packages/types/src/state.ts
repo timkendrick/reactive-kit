@@ -7,26 +7,28 @@ import {
 } from '@trigger/utils';
 import { type Reactive } from './core';
 import { type Effect } from './effect';
+import { HASH } from './hash';
 
-export type Stateful<T> = StatefulGeneratorFunction<T>;
+export const STATEFUL = Symbol.for('@trigger::stateful');
 
-type NonConstructorKeys<T> = { [P in keyof T]: T[P] extends new () => any ? never : P }[keyof T];
-type NonConstructor<T> = Pick<T, NonConstructorKeys<T>>;
-
-export interface StatefulGeneratorFunction<T>
-  extends Omit<NonConstructor<GeneratorFunction>, typeof Symbol.toStringTag> {
-  (): StatefulGenerator<T>;
+export interface Stateful<T> {
+  [STATEFUL]: StatefulIteratorFactory<T>;
+  [HASH](state: bigint): bigint;
 }
-export type StatefulGenerator<T> = Iterator<StatefulYieldValue, T, StatefulNextValue>;
+
+export interface StatefulIteratorFactory<T> {
+  (): StatefulIterator<T>;
+}
+export type StatefulIterator<T> = Iterator<StatefulYieldValue, T, StatefulNextValue>;
 export type StatefulYieldValue = Effect;
 export type StatefulNextValue = any;
 
 export function isStateful(value: unknown): value is Stateful<unknown> {
-  return isGeneratorFunction(value);
+  return value != null && typeof value === 'object' && STATEFUL in value;
 }
 
 export type StateValues = Map<StateToken, Reactive<unknown>>;
-export type StateToken = bigint | symbol;
+export type StateToken = bigint;
 
 const enum StatefulValueType {
   Resolved = 'Resolved',

@@ -1,14 +1,24 @@
-import { Effect } from '@trigger/types';
-import { createEffect, Hashable } from '../utils';
+import { type Effect, type Hashable } from '@trigger/types';
+import { createEffect } from '../utils';
 
 export const EFFECT_TYPE_VARIABLE_GET = 'core::variable::get';
 export const EFFECT_TYPE_VARIABLE_SET = 'core::variable::set';
 
 export type VariableId = string;
 
-export interface VariableGetEffect extends Effect<typeof EFFECT_TYPE_VARIABLE_GET, VariableId> {}
+export interface VariableGetEffect
+  extends Effect<VariableGetEffectType, VariableGetEffectPayload> {}
+
+export type VariableGetEffectType = typeof EFFECT_TYPE_VARIABLE_GET;
+
+export type VariableGetEffectPayload = VariableId;
+
 export interface VariableSetEffect<T extends Hashable>
-  extends Effect<typeof EFFECT_TYPE_VARIABLE_SET, [VariableId, T]> {}
+  extends Effect<VariableSetEffectType, VariableSetEffectPayload<T>> {}
+
+export type VariableSetEffectType = typeof EFFECT_TYPE_VARIABLE_SET;
+
+export type VariableSetEffectPayload<T extends Hashable> = [VariableId, T];
 
 export function variable<T extends Hashable>(
   uid: VariableId,

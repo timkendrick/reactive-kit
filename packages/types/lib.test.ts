@@ -4,14 +4,16 @@ import * as lib from './lib';
 
 test('module exports', () => {
   expect({ ...lib }).toEqual({
-    isStatic: lib.isStatic,
+    ConditionTree: lib.ConditionTree,
     DependencyTree: lib.DependencyTree,
-    SIGNAL: lib.SIGNAL,
-    isEffect: lib.isEffect,
+    EFFECT: lib.EFFECT,
     EvaluationResult: lib.EvaluationResult,
     HandlerAction: lib.HandlerAction,
+    HASH: lib.HASH,
+    isEffect: lib.isEffect,
     isStateful: lib.isStateful,
+    isStatic: lib.isStatic,
+    STATEFUL: lib.STATEFUL,
     StatefulValue: lib.StatefulValue,
-    ConditionTree: lib.ConditionTree,
   });
 });

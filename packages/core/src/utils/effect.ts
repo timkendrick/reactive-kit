@@ -1,25 +1,33 @@
-import { SIGNAL, EffectType, type Effect, type StateToken } from '@trigger/types';
-import { Hashable, hash } from './hash';
+import {
+  EFFECT,
+  type EffectType,
+  type Effect,
+  type StateToken,
+  type Hashable,
+  HASH,
+} from '@trigger/types';
+import { createHasher, hash } from './hash';
 
-export function createEffect<T extends EffectType, V extends Hashable>(
+export function createEffect<T extends EffectType, P extends Hashable>(
   type: T,
-  data: V,
-): Effect<T, V>;
-export function createEffect<T extends EffectType, V>(
+  payload: P,
+): Effect<T, P>;
+export function createEffect<T extends EffectType, P extends Hashable>(
   id: StateToken,
   type: T,
-  data: V,
-): Effect<T, V>;
-export function createEffect<T extends EffectType, V>(
+  payload: P,
+): Effect<T, P>;
+export function createEffect<T extends EffectType, P extends Hashable>(
   id: StateToken | T,
-  type: T | V,
-  data?: V,
-): Effect<T> {
-  if (typeof id === 'string') return createEffect(hash(id, type as Hashable), id, type);
+  type: T | P,
+  payload?: P,
+): Effect<T, P> {
+  if (typeof id === 'string') return createEffect(hash(id, type as Hashable), id as T, type as P);
   return {
-    [SIGNAL]: id,
+    [EFFECT]: id,
     type: type as T,
-    data,
+    payload: payload as P,
+    [HASH]: createHasher(id),
   };
 }
 
@@ -34,4 +42,11 @@ export function groupEffectsByType(effects: Array<Effect>): Map<EffectType, Arra
     }
     return groupedEffects;
   }, new Map<EffectType, Array<Effect>>());
+}
+
+export function getTypedEffects<T extends Effect>(
+  effectType: T['type'],
+  effects: Map<EffectType, Array<Effect>>,
+): Array<T> | null {
+  return (effects as Map<T['type'], Array<T>>).get(effectType) ?? null;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { ConditionTree, SIGNAL, Effect, StateToken } from '@trigger/types';
+import { ConditionTree, EFFECT, Effect, StateToken } from '@trigger/types';
 import { flattenConditionTree } from './condition';
 import { createEffect } from './effect';
 
@@ -7,7 +7,7 @@ describe(flattenConditionTree, () => {
   test('unit', () => {
     const foo = createEffect('effect:foo', null);
     const tree = ConditionTree.Unit({ condition: foo });
-    expect(flattenConditionTree(tree)).toEqual(new Map<StateToken, Effect>([[foo[SIGNAL], foo]]));
+    expect(flattenConditionTree(tree)).toEqual(new Map<StateToken, Effect>([[foo[EFFECT], foo]]));
   });
 
   test('pair', () => {
@@ -19,8 +19,8 @@ describe(flattenConditionTree, () => {
     });
     expect(flattenConditionTree(tree)).toEqual(
       new Map<StateToken, Effect>([
-        [foo[SIGNAL], foo],
-        [bar[SIGNAL], bar],
+        [foo[EFFECT], foo],
+        [bar[EFFECT], bar],
       ]),
     );
   });
@@ -38,9 +38,9 @@ describe(flattenConditionTree, () => {
     });
     expect(flattenConditionTree(tree)).toEqual(
       new Map<StateToken, Effect>([
-        [foo[SIGNAL], foo],
-        [bar[SIGNAL], bar],
-        [baz[SIGNAL], baz],
+        [foo[EFFECT], foo],
+        [bar[EFFECT], bar],
+        [baz[EFFECT], baz],
       ]),
     );
   });

@@ -1,4 +1,4 @@
-export const VARIANT: unique symbol = Symbol();
+export const VARIANT = '@@type';
 
 export type EnumDiscriminantKey = typeof VARIANT;
 

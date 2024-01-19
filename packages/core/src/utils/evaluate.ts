@@ -1,16 +1,17 @@
 import {
-  Reactive,
+  ConditionTree,
+  DependencyTree,
+  Effect,
+  EFFECT,
+  EvaluationResult,
   isEffect,
   isStateful,
-  StateValues,
-  SIGNAL,
   isStatic,
-  ConditionTree,
-  Effect,
+  Reactive,
   Stateful,
-  StatefulGenerator,
-  DependencyTree,
-  EvaluationResult,
+  STATEFUL,
+  StatefulIterator,
+  StateValues,
 } from '@trigger/types';
 import { Enum, EnumVariant, VARIANT, nonNull } from '@trigger/utils';
 import { collectConditionTree, flattenConditionTree } from './condition';
@@ -44,7 +45,7 @@ type StackFrame = Enum<{
   };
   // Resume an in-progress stateful expression evaluation
   Resume: {
-    evaluation: StatefulGenerator<unknown>;
+    evaluation: StatefulIterator<unknown>;
   };
   // Handle a condition
   Handle: {
@@ -90,11 +91,7 @@ const StackFrame = Enum.create<StackFrame>({
 });
 
 type ThreadResultStackFrame = EnumVariant<StackFrame, 'Result'> | EnumVariant<StackFrame, 'Halt'>;
-const THREAD_RESULT_PLACEHOLDER = StackFrame.Halt({
-  conditions: ConditionTree.Unit({
-    condition: createEffect('@trigger:unreachable', null),
-  }),
-});
+const THREAD_RESULT_UNDEFINED_PLACEHOLDER = StackFrame.Result({ value: undefined });
 
 const STACK_FRAME_PLACEHOLDER = StackFrame.Noop({});
 
@@ -109,15 +106,16 @@ export function evaluate<T>(expression: Reactive<T>, state: StateValues): Evalua
       : StackFrame.Handle({ condition: expression }),
   );
   let stackFrame: StackFrame | undefined;
-  let threadResultRegister: ThreadResultStackFrame = THREAD_RESULT_PLACEHOLDER;
+  let threadResultRegister: ThreadResultStackFrame = THREAD_RESULT_UNDEFINED_PLACEHOLDER;
   loop: while ((stackFrame = stack.pop())) {
     switch (stackFrame[VARIANT]) {
       case 'Evaluate': {
         const { expression } = stackFrame;
-        const evaluation = expression();
+        const generator = expression[STATEFUL];
+        const evaluation = generator();
         // TODO: determine whether to reuse cached stateful values based on updated state values
         // Store a dummy value in the result register to kick off the evaluation iterator
-        threadResultRegister = StackFrame.Result({ value: undefined });
+        threadResultRegister = THREAD_RESULT_UNDEFINED_PLACEHOLDER;
         // Proceed with the evaluation iteration
         stack.push(StackFrame.Resume({ evaluation }));
         continue;
@@ -132,9 +130,9 @@ export function evaluate<T>(expression: Reactive<T>, state: StateValues): Evalua
         let result = evaluation.next(continuationValue);
         // Continue evaluating the expression, providing any fully-resolved effect values as required
         // FIXME: allow pushing multiple state dependencies onto the stack simultaneously
-        while (!result.done && state.has(result.value[SIGNAL])) {
+        while (!result.done && state.has(result.value[EFFECT])) {
           const condition = result.value;
-          const stateToken = condition[SIGNAL];
+          const stateToken = condition[EFFECT];
           // Register the condition as a dependency of this evaluation
           combinedDependencies = combineDependencies(
             combinedDependencies,
@@ -166,7 +164,7 @@ export function evaluate<T>(expression: Reactive<T>, state: StateValues): Evalua
       }
       case 'Handle': {
         const condition = stackFrame.condition;
-        const stateToken = condition[SIGNAL];
+        const stateToken = condition[EFFECT];
         // Register the signal as a dependency of this evaluation
         combinedDependencies = combineDependencies(
           combinedDependencies,
@@ -313,7 +311,7 @@ function collectThreadResults(threads: Array<StackFrame>): ThreadResultStackFram
 function hasUnmetCondition(condition: Effect | Array<Effect>, state: StateValues): boolean {
   if (Array.isArray(condition))
     return condition.some((condition) => hasUnmetCondition(condition, state));
-  const stateToken = condition[SIGNAL];
+  const stateToken = condition[EFFECT];
   return !state.has(stateToken);
 }
 
@@ -332,6 +330,6 @@ function getResolvedConditionValues(
 ): unknown | undefined | Array<unknown | undefined> {
   if (Array.isArray(condition))
     return condition.map((condition) => getResolvedConditionValues(condition, state));
-  const stateToken = condition[SIGNAL];
+  const stateToken = condition[EFFECT];
   return state.get(stateToken);
 }

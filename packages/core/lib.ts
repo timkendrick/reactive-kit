@@ -1,2 +1,2 @@
-export * from './src/signal';
+export * from './src/effect';
 export * from './src/utils';
