@@ -5,65 +5,17 @@ import {
   StateValues,
   SIGNAL,
   isStatic,
-  ConditionTreeType,
   ConditionTree,
   Effect,
   Stateful,
   StatefulGenerator,
+  DependencyTree,
+  EvaluationResult,
 } from '@trigger/types';
-import { Enum, EnumVariant, VARIANT, instantiateEnum, nonNull } from '@trigger/utils';
+import { Enum, EnumVariant, VARIANT, nonNull } from '@trigger/utils';
 import { collectConditionTree, flattenConditionTree } from './condition';
-import { combineDependencies, DependencyTree, EMPTY_DEPENDENCIES } from './dependency';
+import { combineDependencies, EMPTY_DEPENDENCIES } from './dependency';
 import { createEffect } from './effect';
-
-export const enum EvaluationResultType {
-  Pending = 'Pending',
-  Ready = 'Ready',
-}
-
-export type EvaluationResult<T> = Enum<{
-  [EvaluationResultType.Pending]: {
-    conditions: ConditionTree;
-    dependencies: DependencyTree;
-  };
-  [EvaluationResultType.Ready]: {
-    value: Reactive<T>;
-    dependencies: DependencyTree;
-  };
-}>;
-
-export const EvaluationResult = {
-  [EvaluationResultType.Pending]: Object.assign(
-    function Pending<T>(
-      conditions: ConditionTree,
-      dependencies: DependencyTree,
-    ): EnumVariant<EvaluationResult<T>, EvaluationResultType.Pending> {
-      return instantiateEnum(EvaluationResultType.Pending, { conditions, dependencies });
-    },
-    {
-      is: function is<T>(
-        value: EvaluationResult<T>,
-      ): value is EnumVariant<EvaluationResult<T>, EvaluationResultType.Pending> {
-        return value[VARIANT] === EvaluationResultType.Pending;
-      },
-    },
-  ),
-  [EvaluationResultType.Ready]: Object.assign(
-    function Ready<T>(
-      value: T,
-      dependencies: DependencyTree,
-    ): EnumVariant<EvaluationResult<T>, EvaluationResultType.Ready> {
-      return instantiateEnum(EvaluationResultType.Ready, { value, dependencies });
-    },
-    {
-      is: function is<T>(
-        value: EvaluationResult<T>,
-      ): value is EnumVariant<EvaluationResult<T>, EvaluationResultType.Ready> {
-        return value[VARIANT] === EvaluationResultType.Ready;
-      },
-    },
-  ),
-};
 
 class MutableStack<T> {
   private values: Array<T>;
@@ -301,14 +253,14 @@ export function evaluate<T>(expression: Reactive<T>, state: StateValues): Evalua
 function resolveConditions(conditions: ConditionTree, stack: MutableStack<StackFrame>): void {
   // Push the blocking conditions onto the stack to be processed and continue execution
   switch (conditions[VARIANT]) {
-    case ConditionTreeType.Unit: {
+    case ConditionTree.Unit[VARIANT]: {
       // If there is only a single blocking condition, continue on the current thread stack
       // Push the condition onto the stack to be handled
       stack.push(StackFrame.Handle({ condition: conditions.condition }));
       return;
     }
-    case ConditionTreeType.Pair:
-    case ConditionTreeType.Multiple: {
+    case ConditionTree.Pair[VARIANT]:
+    case ConditionTree.Multiple[VARIANT]: {
       // Otherwise if there are multiple blocking conditions, push each onto the stack to be executed in its own thread
       const effects = Array.from(flattenConditionTree(conditions).values());
       // Insert placeholder cells to store copies of the condition values once they have been handled

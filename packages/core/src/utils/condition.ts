@@ -1,10 +1,4 @@
-import {
-  ConditionTree,
-  ConditionTreeType,
-  SIGNAL,
-  type Effect,
-  type StateToken,
-} from '@trigger/types';
+import { ConditionTree, SIGNAL, type Effect, type StateToken } from '@trigger/types';
 import { VARIANT } from '@trigger/utils';
 
 export function flattenConditionTree(tree: ConditionTree): Map<StateToken, Effect> {
@@ -13,15 +7,15 @@ export function flattenConditionTree(tree: ConditionTree): Map<StateToken, Effec
   let item: ConditionTree | undefined;
   while ((item = queue.pop())) {
     switch (item[VARIANT]) {
-      case ConditionTreeType.Unit: {
+      case ConditionTree.Unit[VARIANT]: {
         results.set(item.condition[SIGNAL], item.condition);
         continue;
       }
-      case ConditionTreeType.Pair: {
+      case ConditionTree.Pair[VARIANT]: {
         queue.push(item.left, item.right);
         continue;
       }
-      case ConditionTreeType.Multiple: {
+      case ConditionTree.Multiple[VARIANT]: {
         queue.push(...item.children);
         continue;
       }

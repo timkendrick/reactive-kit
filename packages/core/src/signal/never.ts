@@ -1,7 +1,7 @@
 import { Effect } from '@trigger/types';
 import { createEffect } from '../utils';
 
-export const EFFECT_TYPE_NEVER = '@trigger::never';
+export const EFFECT_TYPE_NEVER = 'core::never';
 
 export interface NeverEffect extends Effect<typeof EFFECT_TYPE_NEVER, null> {}
 

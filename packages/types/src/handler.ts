@@ -13,7 +13,7 @@ export interface HandlerInput<T> {
 
 export type HandlerResult<T> = Array<HandlerAction<T>>;
 
-export const enum HandlerActionType {
+const enum HandlerActionType {
   Send = 'Send',
 }
 
@@ -33,6 +33,7 @@ export const HandlerAction = {
       return instantiateEnum(HandlerActionType.Send, { pid, message });
     },
     {
+      [VARIANT]: HandlerActionType.Send,
       is: function is<T>(
         value: HandlerAction<T>,
       ): value is EnumVariant<HandlerAction<T>, HandlerActionType.Send> {

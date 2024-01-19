@@ -4,10 +4,14 @@ import * as lib from './lib';
 
 test('module exports', () => {
   expect({ ...lib }).toEqual({
-    isEffect: lib.isEffect,
-    isStateful: lib.isStateful,
-    PollStatus: lib.PollStatus,
+    isStatic: lib.isStatic,
+    DependencyTree: lib.DependencyTree,
     SIGNAL: lib.SIGNAL,
-    STATEFUL: lib.STATEFUL,
+    isEffect: lib.isEffect,
+    EvaluationResult: lib.EvaluationResult,
+    HandlerAction: lib.HandlerAction,
+    isStateful: lib.isStateful,
+    StatefulValue: lib.StatefulValue,
+    ConditionTree: lib.ConditionTree,
   });
 });

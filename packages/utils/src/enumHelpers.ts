@@ -49,6 +49,7 @@ export type EnumConstructor<E extends Enum<any>> = {
 
 export interface EnumVariantConstructor<E extends Enum<any>, T extends EnumDiscriminant<E>> {
   (options: EnumOptions<E, T>): EnumVariant<E, T>;
+  readonly [VARIANT]: T;
   is(value: E): value is EnumVariant<E, T>;
 }
 
@@ -73,6 +74,7 @@ export function enumVariantConstructor<E extends Enum<any>, T extends EnumDiscri
   discriminant: T,
 ): EnumVariantConstructor<E, T> {
   create.is = is;
+  create[VARIANT] = discriminant;
   return create;
 
   function create(options: EnumOptions<E, T>): EnumVariant<E, T> {

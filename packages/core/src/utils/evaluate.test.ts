@@ -3,14 +3,14 @@ import {
   ConditionTree,
   Reactive,
   SIGNAL,
-  Effect,
   StateToken,
   StateValues,
   Stateful,
   StatefulGenerator,
+  EvaluationResult,
+  DependencyTree,
 } from '@trigger/types';
-import { DependencyTree } from './dependency';
-import { EvaluationResult, evaluate } from './evaluate';
+import { evaluate } from './evaluate';
 import { createEffect } from './effect';
 
 describe(evaluate, () => {

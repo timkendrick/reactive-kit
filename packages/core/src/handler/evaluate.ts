@@ -1,90 +1,52 @@
 import {
-  Reactive,
-  StateValues,
-  StateToken,
+  DependencyTree,
   Effect,
+  EvaluationResult,
   Handler,
-  HandlerResult,
-  ProcessId,
   HandlerAction,
   HandlerInput,
+  HandlerResult,
+  ProcessId,
+  Reactive,
   SIGNAL,
-  EffectType,
+  StateToken,
+  StateValues,
 } from '@trigger/types';
-import { Enum, EnumVariant, match, nonNull } from '@trigger/utils';
+import { nonNull } from '@trigger/utils';
 import {
   EMPTY_DEPENDENCIES,
-  DependencyTree,
+  evaluate,
   flattenConditionTree,
   flattenDependencyTree,
-  EvaluationResult,
-  evaluate,
   groupEffectsByType,
 } from '../utils';
+import {
+  EmitResultMessage,
+  MESSAGE_SUBSCRIBE,
+  MESSAGE_UNSUBSCRIBE,
+  SubscribeEffectsMessage,
+  SubscribeMessage,
+  UnsubscribeEffectsMessage,
+  UnsubscribeMessage,
+  createEmitResultMessage,
+  createSubscribeEffectsMessage,
+  createUnsubscribeEffectsMessage,
+} from '../messages';
 
-export type EvaluateHandlerMessage = Enum<{
-  Subscribe: {
-    expression: Reactive<any>;
-  };
-  Unsubscribe: {
-    expression: Reactive<any>;
-  };
-  SubscribeEffects: {
-    effects: Map<EffectType, Array<Effect>>;
-  };
-  UnsubscribeEffects: {
-    effects: Map<EffectType, Array<Effect>>;
-  };
-  EmitResult: {
-    expression: Reactive<any>;
-    result: EvaluationResult<any>;
-  };
-  EmitEffectValues: {
-    values: Map<StateToken, Reactive<any>>;
-  };
-}>;
-
-export const EvaluateHandlerMessage = Enum.create<EvaluateHandlerMessage>({
-  Subscribe: true,
-  Unsubscribe: true,
-  SubscribeEffects: true,
-  UnsubscribeEffects: true,
-  EmitResult: true,
-  EmitEffectValues: true,
-});
-
-export type EvaluateHandlerSubscribeMessage = EnumVariant<EvaluateHandlerMessage, 'Subscribe'>;
-export type EvaluateHandlerUnsubscribeMessage = EnumVariant<EvaluateHandlerMessage, 'Unsubscribe'>;
-export type EvaluateHandlerSubscribeEffectsMessage = EnumVariant<
-  EvaluateHandlerMessage,
-  'SubscribeEffects'
->;
-export type EvaluateHandlerUnsubscribeEffectsMessage = EnumVariant<
-  EvaluateHandlerMessage,
-  'UnsubscribeEffects'
->;
-export type EvaluateHandlerEmitResultMessage = EnumVariant<EvaluateHandlerMessage, 'EmitResult'>;
-export type EvaluateHandlerEmitEffectValuesMessage = EnumVariant<
-  EvaluateHandlerMessage,
-  'EmitEffectValues'
->;
-
-type EvaluateHandlerInputMessage =
-  | EvaluateHandlerSubscribeMessage
-  | EvaluateHandlerUnsubscribeMessage;
+type EvaluateHandlerInputMessage = SubscribeMessage<any> | UnsubscribeMessage<any>;
 type EvaluateHandlerOutputMessage =
-  | EvaluateHandlerSubscribeEffectsMessage
-  | EvaluateHandlerUnsubscribeEffectsMessage
-  | EvaluateHandlerEmitResultMessage;
+  | SubscribeEffectsMessage
+  | UnsubscribeEffectsMessage
+  | EmitResultMessage<any>;
 
 type EvaluateHandlerInput = HandlerInput<EvaluateHandlerInputMessage>;
 type EvaluateHandlerOutput = HandlerResult<EvaluateHandlerOutputMessage>;
 
+export const EFFECT_TYPE_EVALUATE = 'core::evaluate';
+
 interface QuerySubscription<T> {
   result: EvaluationResult<T>;
 }
-
-export const EVALUATE_SIGNAL_TYPE = '@trigger/evaluate';
 
 export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHandlerOutput> {
   private state: StateValues;
@@ -100,13 +62,15 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
   }
 
   public handle({ message }: EvaluateHandlerInput): EvaluateHandlerOutput {
-    return match(message, {
-      Subscribe: (message) => this.handleSubscribe(message),
-      Unsubscribe: (message) => this.handleUnsubscribe(message),
-    });
+    switch (message.type) {
+      case MESSAGE_SUBSCRIBE:
+        return this.handleSubscribe(message);
+      case MESSAGE_UNSUBSCRIBE:
+        return this.handleUnsubscribe(message);
+    }
   }
 
-  private handleSubscribe(message: EvaluateHandlerSubscribeMessage): EvaluateHandlerOutput {
+  private handleSubscribe(message: SubscribeMessage<any>): EvaluateHandlerOutput {
     const { expression } = message;
     // Get or create a subscription for the provided expression,
     // tracking any existing dependencies if the expression already exists
@@ -118,13 +82,7 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
     const { result } = subscription;
     // If the result is already available, prepare to emit it immediately
     const emitResultAction = EvaluationResult.Ready.is(result)
-      ? HandlerAction.Send(
-          this.callbackId,
-          EvaluateHandlerMessage.EmitResult({
-            expression,
-            result: result.value,
-          }),
-        )
+      ? HandlerAction.Send(this.callbackId, createEmitResultMessage(expression, result.value))
       : null;
     // If the subscription already exists, no need to subscribe to any new effects
     if (existingSubscription) {
@@ -148,18 +106,14 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
       subscribedEffects.length > 0
         ? HandlerAction.Send(
             this.callbackId,
-            EvaluateHandlerMessage.SubscribeEffects({
-              effects: groupEffectsByType(subscribedEffects),
-            }),
+            createSubscribeEffectsMessage(groupEffectsByType(subscribedEffects)),
           )
         : null;
     const unsubscribeEffectsAction =
       unsubscribedEffects.length > 0
         ? HandlerAction.Send(
             this.callbackId,
-            EvaluateHandlerMessage.UnsubscribeEffects({
-              effects: groupEffectsByType(unsubscribedEffects),
-            }),
+            createUnsubscribeEffectsMessage(groupEffectsByType(unsubscribedEffects)),
           )
         : null;
     return [
@@ -169,7 +123,7 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
     ];
   }
 
-  private handleUnsubscribe(message: EvaluateHandlerUnsubscribeMessage): EvaluateHandlerOutput {
+  private handleUnsubscribe(message: UnsubscribeMessage<any>): EvaluateHandlerOutput {
     const { expression } = message;
     const subscription = this.subscriptions.get(expression);
     if (!subscription) return [];
@@ -190,9 +144,7 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
       unsubscribedEffects.length > 0
         ? HandlerAction.Send(
             this.callbackId,
-            EvaluateHandlerMessage.UnsubscribeEffects({
-              effects: groupEffectsByType(unsubscribedEffects),
-            }),
+            createUnsubscribeEffectsMessage(groupEffectsByType(unsubscribedEffects)),
           )
         : null;
     return unsubscribeEffectsAction ? [unsubscribeEffectsAction] : [];

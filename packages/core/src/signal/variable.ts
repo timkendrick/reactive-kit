@@ -1,8 +1,8 @@
 import { Effect } from '@trigger/types';
 import { createEffect, Hashable } from '../utils';
 
-export const EFFECT_TYPE_VARIABLE_GET = '@trigger::variable::get';
-export const EFFECT_TYPE_VARIABLE_SET = '@trigger::variable::set';
+export const EFFECT_TYPE_VARIABLE_GET = 'core::variable::get';
+export const EFFECT_TYPE_VARIABLE_SET = 'core::variable::set';
 
 export type VariableId = string;
 

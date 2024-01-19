@@ -28,7 +28,7 @@ export function isStateful(value: unknown): value is Stateful<unknown> {
 export type StateValues = Map<StateToken, Reactive<unknown>>;
 export type StateToken = bigint | symbol;
 
-export const enum StatefulValueType {
+const enum StatefulValueType {
   Resolved = 'Resolved',
   Blocked = 'Blocked',
 }
@@ -51,6 +51,7 @@ export const StatefulValue = (() => {
         return instantiateEnum(StatefulValueType.Resolved, { value });
       },
       {
+        [VARIANT]: StatefulValueType.Resolved,
         is: function is<T>(
           value: StatefulValue<T>,
         ): value is EnumVariant<StatefulValue<T>, StatefulValueType.Resolved> {
@@ -65,6 +66,7 @@ export const StatefulValue = (() => {
         return instantiateEnum(StatefulValueType.Blocked, { condition });
       },
       {
+        [VARIANT]: StatefulValueType.Blocked,
         is: function is<T>(
           value: StatefulValue<T>,
         ): value is EnumVariant<StatefulValue<T>, StatefulValueType.Blocked> {
@@ -75,7 +77,7 @@ export const StatefulValue = (() => {
   };
 })();
 
-export const enum ConditionTreeType {
+const enum ConditionTreeType {
   Unit = 'Unit',
   Pair = 'Pair',
   Multiple = 'Multiple',
