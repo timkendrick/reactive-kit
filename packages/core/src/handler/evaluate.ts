@@ -4,7 +4,6 @@ import {
   EvaluationResult,
   Handler,
   HandlerAction,
-  HandlerInput,
   HandlerResult,
   ProcessId,
   Reactive,
@@ -13,6 +12,8 @@ import {
   StateValues,
   Hash,
   Hashable,
+  HandlerMessage,
+  Stream,
 } from '@trigger/types';
 import { nonNull } from '@trigger/utils';
 import {
@@ -36,6 +37,7 @@ import {
   UnsubscribeEffectsMessage,
 } from '../message';
 import { EFFECT_TYPE_EVALUATE, EvaluateEffect } from '../effect/evaluate';
+import { filter, flow, map, pipe } from '../utils/stream';
 
 type EvaluateHandlerInputMessage =
   | SubscribeEffectsMessage
@@ -46,8 +48,21 @@ type EvaluateHandlerOutputMessage =
   | UnsubscribeEffectsMessage
   | EmitEffectValuesMessage;
 
-type EvaluateHandlerInput = HandlerInput<EvaluateHandlerInputMessage>;
+type EvaluateHandlerInput = EvaluateHandlerInputMessage;
 type EvaluateHandlerOutput = HandlerResult<EvaluateHandlerOutputMessage>;
+
+function isEvaluateHandlerInputMessage(
+  message: HandlerMessage<unknown>,
+): message is EvaluateHandlerInputMessage {
+  switch (message.type) {
+    case MESSAGE_SUBSCRIBE_EFFECTS:
+    case MESSAGE_UNSUBSCRIBE_EFFECTS:
+    case MESSAGE_EMIT_EFFECT_VALUES:
+      return true;
+    default:
+      return false;
+  }
+}
 
 interface QuerySubscription<T> {
   effect: EvaluateEffect;
@@ -59,7 +74,9 @@ interface EvaluateEffectResult<T> {
   dependencies: DependencyTree;
 }
 
-export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHandlerOutput> {
+export class EvaluateHandler
+  implements Handler<EvaluateHandlerInputMessage, EvaluateHandlerOutputMessage>
+{
   private state: StateValues;
   private callbackId: number;
   // FIXME: Hash queries to prevent duplicate subscriptions
@@ -72,7 +89,19 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
     this.callbackId = callbackId;
   }
 
-  public handle({ message }: EvaluateHandlerInput): EvaluateHandlerOutput {
+  public events(
+    input: Stream<HandlerMessage<unknown>>,
+  ): Stream<Array<EvaluateHandlerInputMessage>> {
+    return pipe(
+      input,
+      flow(
+        filter(isEvaluateHandlerInputMessage),
+        map((message) => [message]),
+      ),
+    );
+  }
+
+  public handle(message: EvaluateHandlerInput): EvaluateHandlerOutput {
     switch (message.type) {
       case MESSAGE_SUBSCRIBE_EFFECTS:
         return this.handleSubscribeEffects(message);
@@ -86,7 +115,7 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
   private handleSubscribeEffects(message: SubscribeEffectsMessage): EvaluateHandlerOutput {
     const { effects } = message;
     const evaluateEffects = getTypedEffects<EvaluateEffect>(EFFECT_TYPE_EVALUATE, effects);
-    if (!evaluateEffects || evaluateEffects.length === 0) return [];
+    if (!evaluateEffects || evaluateEffects.length === 0) return null;
     const { results, subscribedEffects, unsubscribedEffects } = evaluateEffects.reduce(
       (combinedResults, effect) => {
         // Subscribe to the provided evaluation root
@@ -122,7 +151,7 @@ export class EvaluateHandler implements Handler<EvaluateHandlerInput, EvaluateHa
     // FIXME: Ensure top-level evaluations are not unsubscribed due to a different query unsubscribing a sub-query for the same evaluation
     const { effects } = message;
     const typedEffects = getTypedEffects<EvaluateEffect>(EFFECT_TYPE_EVALUATE, effects);
-    if (!typedEffects || typedEffects.length === 0) return [];
+    if (!typedEffects || typedEffects.length === 0) return null;
     const { subscribedEffects, unsubscribedEffects } = typedEffects.reduce(
       (combinedResults, effect) => {
         // Unsubscribe from the provided evaluation root

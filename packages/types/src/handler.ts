@@ -1,17 +1,23 @@
 import { Enum, EnumVariant, VARIANT, instantiateEnum } from '@trigger/utils';
+import { Stream } from './stream';
 
 export type ProcessId = number;
 
-export interface Handler<I, O> {
-  handle(message: I): O;
+export interface Handler<I extends HandlerMessage<unknown>, O extends HandlerMessage<unknown> = I> {
+  events(input: Stream<HandlerMessage<unknown>>): Stream<Array<I>>;
+  handle(message: I, context: HandlerContext): HandlerResult<O>;
 }
 
-export interface HandlerInput<T> {
-  message: T;
-  self: ProcessId;
+export interface HandlerMessage<T> {
+  type: T;
 }
 
-export type HandlerResult<T> = Array<HandlerAction<T>>;
+export interface HandlerContext {
+  readonly pid: ProcessId;
+  generatePid(): ProcessId;
+}
+
+export type HandlerResult<T> = Array<HandlerAction<T>> | null;
 
 const enum HandlerActionType {
   Send = 'Send',
