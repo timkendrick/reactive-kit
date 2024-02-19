@@ -1,8 +1,9 @@
-import { type Effect, type EffectType, type HandlerMessage } from '@trigger/types';
+import { type Effect, type EffectType } from '@trigger/types';
+import { type Message } from './message';
 
 export const MESSAGE_SUBSCRIBE_EFFECTS = 'core::subscribeEffects';
 
-export interface SubscribeEffectsMessage extends HandlerMessage<typeof MESSAGE_SUBSCRIBE_EFFECTS> {
+export interface SubscribeEffectsMessage extends Message<typeof MESSAGE_SUBSCRIBE_EFFECTS> {
   effects: Map<EffectType, Array<Effect>>;
 }
 

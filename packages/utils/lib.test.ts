@@ -15,6 +15,7 @@ test('module exports', () => {
     match: lib.match,
     nonNull: lib.nonNull,
     noop: lib.noop,
+    PhantomType: lib.PhantomType,
     unreachable: lib.unreachable,
   });
 });

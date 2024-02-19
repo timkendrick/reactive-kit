@@ -1,19 +1,17 @@
 import {
+  ActorHandle,
   DependencyTree,
   Effect,
+  EFFECT,
   EvaluationResult,
-  Handler,
   HandlerAction,
   HandlerResult,
-  ProcessId,
-  Reactive,
-  EFFECT,
-  StateToken,
-  StateValues,
   Hash,
   Hashable,
-  HandlerMessage,
-  Stream,
+  Reactive,
+  StateToken,
+  StateValues,
+  SyncActor,
 } from '@trigger/types';
 import { nonNull } from '@trigger/utils';
 import {
@@ -37,7 +35,7 @@ import {
   UnsubscribeEffectsMessage,
 } from '../message';
 import { EFFECT_TYPE_EVALUATE, EvaluateEffect } from '../effect/evaluate';
-import { filter, flow, map, pipe } from '../utils/stream';
+import { type Message } from '../message/message';
 
 type EvaluateHandlerInputMessage =
   | SubscribeEffectsMessage
@@ -52,7 +50,7 @@ type EvaluateHandlerInput = EvaluateHandlerInputMessage;
 type EvaluateHandlerOutput = HandlerResult<EvaluateHandlerOutputMessage>;
 
 function isEvaluateHandlerInputMessage(
-  message: HandlerMessage<unknown>,
+  message: Message<unknown>,
 ): message is EvaluateHandlerInputMessage {
   switch (message.type) {
     case MESSAGE_SUBSCRIBE_EFFECTS:
@@ -74,31 +72,20 @@ interface EvaluateEffectResult<T> {
   dependencies: DependencyTree;
 }
 
-export class EvaluateHandler
-  implements Handler<EvaluateHandlerInputMessage, EvaluateHandlerOutputMessage>
-{
+export class EvaluateHandler implements SyncActor<Message<unknown>> {
   private state: StateValues;
-  private callbackId: number;
+  private callbackHandle: ActorHandle<EvaluateHandlerOutputMessage>;
   // FIXME: Hash queries to prevent duplicate subscriptions
   private subscriptions: Map<Hash, QuerySubscription<any>> = new Map();
   private activeEffects: Map<StateToken, Effect> = new Map();
 
-  constructor(options: { callbackId: ProcessId; state?: StateValues }) {
-    const { callbackId, state } = options;
+  constructor(options: {
+    callbackHandle: ActorHandle<EvaluateHandlerOutputMessage>;
+    state?: StateValues;
+  }) {
+    const { callbackHandle, state } = options;
     this.state = state ?? new Map();
-    this.callbackId = callbackId;
-  }
-
-  public events(
-    input: Stream<HandlerMessage<unknown>>,
-  ): Stream<Array<EvaluateHandlerInputMessage>> {
-    return pipe(
-      input,
-      flow(
-        filter(isEvaluateHandlerInputMessage),
-        map((message) => [message]),
-      ),
-    );
+    this.callbackHandle = callbackHandle;
   }
 
   public handle(message: EvaluateHandlerInput): EvaluateHandlerOutput {
@@ -224,20 +211,20 @@ export class EvaluateHandler
     const subscribeEffectsAction =
       subscribedEffects.length > 0
         ? HandlerAction.Send(
-            this.callbackId,
+            this.callbackHandle,
             createSubscribeEffectsMessage(groupEffectsByType(subscribedEffects)),
           )
         : null;
     const unsubscribeEffectsAction =
       unsubscribedEffects.length > 0
         ? HandlerAction.Send(
-            this.callbackId,
+            this.callbackHandle,
             createUnsubscribeEffectsMessage(groupEffectsByType(unsubscribedEffects)),
           )
         : null;
     const emitResultsAction =
       results && results.size > 0
-        ? HandlerAction.Send(this.callbackId, createEmitEffectValuesMessage(results))
+        ? HandlerAction.Send(this.callbackHandle, createEmitEffectValuesMessage(results))
         : null;
     return [
       ...(subscribeEffectsAction ? [subscribeEffectsAction] : []),

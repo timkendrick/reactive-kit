@@ -122,7 +122,7 @@ export function pipe<I, O>(input: Stream<I>, transform: StreamTransform<I, O>): 
   return transform(input);
 }
 
-export function flow<I1, I2, O>(
+export function chain<I1, I2, O>(
   left: StreamTransform<I1, I2>,
   right: StreamTransform<I2, O>,
 ): StreamTransform<I1, O> {

@@ -1,8 +1,9 @@
-import { type HandlerMessage, type Reactive, type StateToken } from '@trigger/types';
+import { type Reactive, type StateToken } from '@trigger/types';
+import { type Message } from './message';
 
 export const MESSAGE_EMIT_EFFECT_VALUES = 'core::emitEffectValues';
 
-export interface EmitEffectValuesMessage extends HandlerMessage<typeof MESSAGE_EMIT_EFFECT_VALUES> {
+export interface EmitEffectValuesMessage extends Message<typeof MESSAGE_EMIT_EFFECT_VALUES> {
   values: Map<StateToken, Reactive<any>>;
 }
 
