@@ -15,3 +15,9 @@ export function createEmitEffectValuesMessage(
     values,
   };
 }
+
+export function isEmitEffectValuesMessage(
+  message: Message<unknown>,
+): message is EmitEffectValuesMessage {
+  return message.type === MESSAGE_EMIT_EFFECT_VALUES;
+}

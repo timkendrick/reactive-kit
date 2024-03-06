@@ -1,17 +1,25 @@
 import {
   Actor,
   ActorHandle,
+  ActorHandleMethod,
   ActorType,
   AsyncActor,
+  AsyncTaskFactory,
   HandlerAction,
   HandlerActionType,
   HandlerContext,
-  StreamSink,
+  HandlerResult,
   SyncActor,
-  UnsubscribeCallback,
 } from '@trigger/types';
-import { input } from '../utils/stream';
-import { Enum, EnumVariant, PhantomType, VARIANT, instantiateEnum } from '@trigger/utils';
+import {
+  AsyncQueue,
+  Enum,
+  EnumVariant,
+  PhantomType,
+  VARIANT,
+  instantiateEnum,
+  subscribeAsyncIterator,
+} from '@trigger/utils';
 
 enum ActorStateType {
   Sync = 'Sync',
@@ -32,12 +40,8 @@ interface SyncActorState<T> {
 interface AsyncActorState<T> {
   handle: ActorHandle<T>;
   actor: AsyncActor<T>;
-  events: AsyncActorEvents<T>;
-}
-
-interface AsyncActorEvents<T> {
-  queue: StreamSink<T>;
-  unsubscribe: UnsubscribeCallback;
+  inbox: AsyncQueue<T>;
+  outbox: AsyncQueue<HandlerResult<T>>;
 }
 
 const ActorState = {
@@ -69,14 +73,14 @@ const ActorState = {
   ),
 };
 
-type SchedulerPhase<T> = Enum<{
+type AsyncSchedulerPhase<T> = Enum<{
   Idle: void;
   Busy: {
-    queue: Array<SchedulerCommand<T>>;
+    queue: Array<AsyncSchedulerCommand<T>>;
   };
 }>;
 
-type SchedulerCommand<T> = Enum<{
+type AsyncSchedulerCommand<T> = Enum<{
   Dispatch: {
     target: SchedulerActorHandle<T>;
     message: T;
@@ -95,31 +99,51 @@ type SchedulerCommand<T> = Enum<{
   };
 }>;
 
-export class Scheduler<T> {
+export class AsyncScheduler<T> implements AsyncIterator<T, null> {
   private handlers: Map<unknown, ActorState<T>>;
-  private phase: SchedulerPhase<T> = instantiateEnum<SchedulerPhase<T>>('Idle', {});
+  private phase: AsyncSchedulerPhase<T> = instantiateEnum<AsyncSchedulerPhase<T>>('Idle', {});
+  private inputHandle: SchedulerActorHandle<T>;
+  private outputHandle: SchedulerActorHandle<T>;
+  private outputQueue: AsyncQueue<T>;
   private nextHandleId: number = 1;
 
-  public constructor(factory: () => Actor<T>) {
+  public constructor(factory: (output: ActorHandle<T>) => Actor<T>) {
     this.phase;
     this.handlers = new Map();
-    const rootHandle = this.generateHandle<T>();
-    this.handlers.set(rootHandle, this.spawnActor(rootHandle, factory));
+    const inputHandle = this.generateHandle<T>();
+    const outputHandle = this.generateHandle<T>();
+    this.inputHandle = inputHandle;
+    this.outputHandle = outputHandle;
+    this.outputQueue = new AsyncQueue<T>();
+    this.handlers.set(
+      inputHandle,
+      this.spawnActor(inputHandle, () => factory(outputHandle)),
+    );
   }
 
   private spawnActor(handle: SchedulerActorHandle<T>, factory: () => Actor<T>): ActorState<T> {
     const handler = factory();
-    const context = this.createHandlerContext(handle);
     switch (handler[VARIANT]) {
       case ActorType.Sync: {
         const { actor } = handler;
+        const context = this.createHandlerContext(handle);
         return ActorState.Sync({ handle, actor, context });
       }
       case ActorType.Async: {
         const { actor } = handler;
-        const callback = this.handleCommands.bind(this);
-        const events = subscribeActorEvents(actor, context, callback);
-        return ActorState.Async({ handle, actor, events });
+        const inbox = new AsyncQueue<T>();
+        const outbox = new AsyncQueue<HandlerResult<T>>();
+        subscribeHandlerEvents(actor, inbox, outbox, (results: HandlerResult<unknown>): void => {
+          if (!results || results.length === 0) return;
+          this.handleCommands(
+            results.map((action) =>
+              instantiateEnum<AsyncSchedulerCommand<T>>('Dispatch', {
+                action,
+              }),
+            ),
+          );
+        });
+        return ActorState.Async({ handle, actor, inbox, outbox });
       }
     }
   }
@@ -134,32 +158,40 @@ export class Scheduler<T> {
     return new SchedulerActorHandle(uid);
   }
 
-  public dispatch(target: ActorHandle<T>, message: T): void {
+  public dispatch(message: T): void {
     return this.handleCommands([
-      instantiateEnum<SchedulerCommand<T>>('Dispatch', {
-        action: HandlerAction.Send(target, message),
+      instantiateEnum<AsyncSchedulerCommand<T>>('Dispatch', {
+        action: HandlerAction.Send(this.inputHandle, message),
       }),
     ]);
   }
 
-  private handleCommands(commands: Array<SchedulerCommand<T>>): void {
+  public next(): Promise<IteratorResult<T, null>> {
+    return this.outputQueue.next();
+  }
+
+  private handleCommands(commands: Array<AsyncSchedulerCommand<T>>): void {
     // If another dispatch is already in progress, push the actions onto the internal queue
     if (this.phase[VARIANT] === 'Busy') {
       this.phase.queue.push(...commands);
       return;
     }
     const idlePhase = this.phase;
-    this.phase = instantiateEnum<SchedulerPhase<T>>('Busy', {
+    this.phase = instantiateEnum<AsyncSchedulerPhase<T>>('Busy', {
       queue: [...commands],
     });
-    let command: SchedulerCommand<T> | undefined;
+    let command: AsyncSchedulerCommand<T> | undefined;
     // Iterate through all queued commands until the queue is exhausted
     while (this.phase[VARIANT] === 'Busy' && (command = this.phase.queue.shift())) {
       switch (command[VARIANT]) {
         case 'Dispatch': {
           const { message, target } = command;
-          const handlerState = this.handlers.get(target.id());
-          if (!handlerState) continue;
+          const handlerId = target.id();
+          const handlerState = this.handlers.get(handlerId);
+          if (!handlerState) {
+            if (handlerId === this.outputHandle.id()) this.outputQueue.push(message);
+            continue;
+          }
           switch (handlerState[VARIANT]) {
             case ActorStateType.Sync: {
               const { actor, context } = handlerState;
@@ -168,12 +200,13 @@ export class Scheduler<T> {
               this.phase.queue.push(...commands);
               break;
             }
-            case ActorStateType.Async:
+            case ActorStateType.Async: {
               // Push the message into the handler's event queue
-              // (this will flow through the event stream transformer either synchronously or asynchronously,
-              // to be picked up by the handler's event stream output listener as an internal action)
-              handlerState.events.queue.next(message);
+              // (this will flow through the event handler asynchronously, to be picked up by the handler's
+              // event subscriber callback as an internal action)
+              handlerState.inbox.push(message);
               break;
+            }
           }
           break;
         }
@@ -194,7 +227,8 @@ export class Scheduler<T> {
           const handlerState = this.handlers.get(target);
           if (!handlerState) continue;
           if (handlerState[VARIANT] === ActorStateType.Async) {
-            handlerState.events.unsubscribe();
+            handlerState.inbox.return();
+            handlerState.outbox.return();
           }
           break;
         }
@@ -207,27 +241,30 @@ export class Scheduler<T> {
     actor: SyncActor<T>,
     context: SchedulerHandlerContext<T>,
     message: T,
-  ): Array<SchedulerCommand<T>> {
+  ): Array<AsyncSchedulerCommand<T>> {
     const results = actor.handle(message, context);
     const spawnedActors = context.collectSpawnedActors();
     if (!results) return [];
-    const commands = new Array<SchedulerCommand<T>>();
+    const commands = new Array<AsyncSchedulerCommand<T>>();
     for (const action of results) {
       switch (action[VARIANT]) {
         case HandlerActionType.Send: {
-          const command = instantiateEnum<SchedulerCommand<T>>('Dispatch', action);
+          const command = instantiateEnum<AsyncSchedulerCommand<T>>('Dispatch', action);
           commands.push(command);
+          break;
         }
         case HandlerActionType.Spawn: {
           if (!spawnedActors) continue;
           const spawnedActor = spawnedActors.get(action.target);
           if (!spawnedActor) continue;
-          const command = instantiateEnum<SchedulerCommand<T>>('Spawn', spawnedActor);
+          const command = instantiateEnum<AsyncSchedulerCommand<T>>('Spawn', spawnedActor);
           commands.push(command);
+          break;
         }
         case HandlerActionType.Kill: {
-          const command = instantiateEnum<SchedulerCommand<T>>('Kill', action);
+          const command = instantiateEnum<AsyncSchedulerCommand<T>>('Kill', action);
           commands.push(command);
+          break;
         }
       }
     }
@@ -235,34 +272,72 @@ export class Scheduler<T> {
   }
 }
 
-function subscribeActorEvents<T>(
-  handler: AsyncActor<T>,
-  context: HandlerContext<T>,
-  callback: (commands: Array<SchedulerCommand<T>>) => void,
-): AsyncActorEvents<T> {
-  // Create an events pipeline which operates as follows:
-  // 1. Messages are pushed into the handler's queue by the scheduler
-  // 2. The handler's custom event transformation pipeline transforms the incoming message stream either synchronously or asynchronously
-  // 3. The transformed message stream is pushed into the scheduler's internal event queue to be invoked on the handler directly
-  const queue = input<T>();
-  const events = handler.events(queue);
-  const unsubscribe = events.subscribe({
-    next: (messages: Array<T>): void => {
-      const commands = messages.map((message) =>
-        instantiateEnum<SchedulerCommand<T>>('Handle', {
-          handler,
-          context,
-          message,
-        }),
-      );
-      callback(commands);
-    },
-  });
-  return { queue, unsubscribe };
+function subscribeHandlerEvents<I, O>(
+  handler: AsyncActor<I, O>,
+  inbox: AsyncQueue<I>,
+  outbox: AsyncQueue<HandlerResult<O>>,
+  callback: (results: HandlerResult<unknown>) => void,
+): Promise<void> {
+  return Promise.race([
+    subscribeHandlerMessages(handler, inbox, outbox),
+    subscribeAsyncIterator(outbox, callback).then(() => {}),
+  ]);
+
+  async function subscribeHandlerMessages<I, O>(
+    handler: AsyncActor<I, O>,
+    inbox: AsyncQueue<I>,
+    outbox: AsyncQueue<HandlerResult<O>>,
+  ): Promise<void> {
+    const enum MessageType {
+      Input,
+      Output,
+    }
+    function withMessageType<T extends MessageType, V>(
+      type: T,
+      result: Promise<V>,
+    ): Promise<{ type: T; result: V }> {
+      return result.then((result) => ({ type, result }));
+    }
+    let isInputCompleted = false;
+    let isOutputCompleted = false;
+    let nextInput = withMessageType(MessageType.Input, inbox.next());
+    let nextOutput = withMessageType(MessageType.Output, handler.next());
+    loop: while (true) {
+      const status = await Promise.race([nextInput, nextOutput]);
+      switch (status.type) {
+        case MessageType.Input: {
+          const { result } = status;
+          if (result.done) {
+            isInputCompleted = true;
+            nextInput = new Promise<never>(() => {});
+            if (isOutputCompleted) break loop;
+            continue loop;
+          }
+          const { value: message } = result;
+          nextInput = withMessageType(MessageType.Input, inbox.next());
+          nextOutput = withMessageType(MessageType.Output, handler.next(message));
+          continue loop;
+        }
+        case MessageType.Output: {
+          const { result } = status;
+          const { value: handlerResult } = result;
+          isOutputCompleted = Boolean(result.done);
+          nextOutput = isOutputCompleted
+            ? new Promise<never>(() => {})
+            : withMessageType(MessageType.Output, handler.next());
+          outbox.push(handlerResult);
+          if (isInputCompleted && isOutputCompleted) break loop;
+          continue loop;
+        }
+      }
+    }
+    handler.return?.();
+    return;
+  }
 }
 
 class SchedulerActorHandle<T> implements ActorHandle<T> {
-  public _type: PhantomType<T> = undefined as never;
+  public _type: PhantomType<ActorHandleMethod<T>> = undefined as never;
   private uid: number;
 
   public constructor(uid: number) {
@@ -297,9 +372,9 @@ class SchedulerHandlerContext<T> implements HandlerContext<T> {
     return handle;
   }
 
-  public spawnAsync<T>(factory: () => AsyncActor<T>): ActorHandle<T> {
+  public spawnAsync<T>(factory: AsyncTaskFactory<T>): ActorHandle<T> {
     const handle = this.generateHandle<T>();
-    this.spawned.set(handle, { handle, factory: () => Actor.Async(factory()) });
+    this.spawned.set(handle, { handle, factory: () => Actor.Async(factory(handle)) });
     return handle;
   }
 

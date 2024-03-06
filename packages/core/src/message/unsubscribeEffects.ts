@@ -15,3 +15,9 @@ export function createUnsubscribeEffectsMessage(
     effects,
   };
 }
+
+export function isUnsubscribeEffectsMessage(
+  message: Message<unknown>,
+): message is UnsubscribeEffectsMessage {
+  return message.type === MESSAGE_UNSUBSCRIBE_EFFECTS;
+}

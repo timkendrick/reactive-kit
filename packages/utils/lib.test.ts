@@ -4,6 +4,7 @@ import * as lib from './lib';
 
 test('module exports', () => {
   expect({ ...lib }).toEqual({
+    AsyncQueue: lib.AsyncQueue,
     Enum: lib.Enum,
     VARIANT: lib.VARIANT,
     enumConstructor: lib.enumConstructor,
@@ -16,6 +17,7 @@ test('module exports', () => {
     nonNull: lib.nonNull,
     noop: lib.noop,
     PhantomType: lib.PhantomType,
+    subscribeAsyncIterator: lib.subscribeAsyncIterator,
     unreachable: lib.unreachable,
   });
 });

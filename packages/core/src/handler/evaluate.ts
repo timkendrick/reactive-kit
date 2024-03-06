@@ -5,6 +5,7 @@ import {
   EFFECT,
   EvaluationResult,
   HandlerAction,
+  HandlerContext,
   HandlerResult,
   Hash,
   Hashable,
@@ -49,19 +50,6 @@ type EvaluateHandlerOutputMessage =
 type EvaluateHandlerInput = EvaluateHandlerInputMessage;
 type EvaluateHandlerOutput = HandlerResult<EvaluateHandlerOutputMessage>;
 
-function isEvaluateHandlerInputMessage(
-  message: Message<unknown>,
-): message is EvaluateHandlerInputMessage {
-  switch (message.type) {
-    case MESSAGE_SUBSCRIBE_EFFECTS:
-    case MESSAGE_UNSUBSCRIBE_EFFECTS:
-    case MESSAGE_EMIT_EFFECT_VALUES:
-      return true;
-    default:
-      return false;
-  }
-}
-
 interface QuerySubscription<T> {
   effect: EvaluateEffect;
   result: EvaluationResult<T>;
@@ -72,34 +60,48 @@ interface EvaluateEffectResult<T> {
   dependencies: DependencyTree;
 }
 
-export class EvaluateHandler implements SyncActor<Message<unknown>> {
-  private state: StateValues;
-  private callbackHandle: ActorHandle<EvaluateHandlerOutputMessage>;
+export class EvaluateHandler implements SyncActor<EvaluateHandlerInput> {
+  private readonly next: ActorHandle<EvaluateHandlerOutputMessage>;
+  private effectState: StateValues;
   // FIXME: Hash queries to prevent duplicate subscriptions
   private subscriptions: Map<Hash, QuerySubscription<any>> = new Map();
   private activeEffects: Map<StateToken, Effect> = new Map();
 
-  constructor(options: {
-    callbackHandle: ActorHandle<EvaluateHandlerOutputMessage>;
-    state?: StateValues;
-  }) {
-    const { callbackHandle, state } = options;
-    this.state = state ?? new Map();
-    this.callbackHandle = callbackHandle;
+  constructor(options: { state?: StateValues; next: ActorHandle<EvaluateHandlerOutputMessage> }) {
+    const { state, next } = options;
+    this.effectState = state ?? new Map();
+    this.next = next;
   }
 
-  public handle(message: EvaluateHandlerInput): EvaluateHandlerOutput {
+  public accept(message: Message<unknown>): message is EvaluateHandlerInput {
     switch (message.type) {
       case MESSAGE_SUBSCRIBE_EFFECTS:
-        return this.handleSubscribeEffects(message);
       case MESSAGE_UNSUBSCRIBE_EFFECTS:
-        return this.handleUnsubscribeEffects(message);
       case MESSAGE_EMIT_EFFECT_VALUES:
-        return this.handleEmitEffectValues(message);
+        return true;
+      default:
+        return false;
     }
   }
 
-  private handleSubscribeEffects(message: SubscribeEffectsMessage): EvaluateHandlerOutput {
+  public handle(
+    message: EvaluateHandlerInput,
+    context: HandlerContext<EvaluateHandlerInput>,
+  ): EvaluateHandlerOutput {
+    switch (message.type) {
+      case MESSAGE_SUBSCRIBE_EFFECTS:
+        return this.handleSubscribeEffects(message, context);
+      case MESSAGE_UNSUBSCRIBE_EFFECTS:
+        return this.handleUnsubscribeEffects(message, context);
+      case MESSAGE_EMIT_EFFECT_VALUES:
+        return this.handleEmitEffectValues(message, context);
+    }
+  }
+
+  private handleSubscribeEffects(
+    message: SubscribeEffectsMessage,
+    context: HandlerContext<EvaluateHandlerInput>,
+  ): EvaluateHandlerOutput {
     const { effects } = message;
     const evaluateEffects = getTypedEffects<EvaluateEffect>(EFFECT_TYPE_EVALUATE, effects);
     if (!evaluateEffects || evaluateEffects.length === 0) return null;
@@ -134,7 +136,10 @@ export class EvaluateHandler implements SyncActor<Message<unknown>> {
     });
   }
 
-  private handleUnsubscribeEffects(message: UnsubscribeEffectsMessage): EvaluateHandlerOutput {
+  private handleUnsubscribeEffects(
+    message: UnsubscribeEffectsMessage,
+    context: HandlerContext<EvaluateHandlerInput>,
+  ): EvaluateHandlerOutput {
     // FIXME: Ensure top-level evaluations are not unsubscribed due to a different query unsubscribing a sub-query for the same evaluation
     const { effects } = message;
     const typedEffects = getTypedEffects<EvaluateEffect>(EFFECT_TYPE_EVALUATE, effects);
@@ -161,20 +166,26 @@ export class EvaluateHandler implements SyncActor<Message<unknown>> {
     });
   }
 
-  private handleEmitEffectValues(message: EmitEffectValuesMessage): EvaluateHandlerOutput {
+  private handleEmitEffectValues(
+    message: EmitEffectValuesMessage,
+    context: HandlerContext<EvaluateHandlerInput>,
+  ): EvaluateHandlerOutput {
     const { values } = message;
     // Determine the set of subscriptions that could potentially be affected by the provided effect updates
     const updatedSubscriptions = getAffectedSubscriptions(this.subscriptions, values);
     // Update the state with the incoming effect values
     for (const [stateToken, value] of values) {
-      this.state.set(stateToken, value);
+      this.effectState.set(stateToken, value);
     }
     // Re-evaluate all potentially-affected subscriptions and emit any updated results
     const { results, subscribedEffects, unsubscribedEffects } = updatedSubscriptions.reduce(
       (combinedResults, subscription) => {
         const previousResult = subscription.result;
         const { effect } = subscription;
-        const result = (subscription.result = evaluate(effect.payload.expression, this.state));
+        const result = (subscription.result = evaluate(
+          effect.payload.expression,
+          this.effectState,
+        ));
         // If the result is fully resolved, ensure it is re-emitted in this result set
         if (
           EvaluationResult.Ready.is(result) &&
@@ -211,20 +222,20 @@ export class EvaluateHandler implements SyncActor<Message<unknown>> {
     const subscribeEffectsAction =
       subscribedEffects.length > 0
         ? HandlerAction.Send(
-            this.callbackHandle,
+            this.next,
             createSubscribeEffectsMessage(groupEffectsByType(subscribedEffects)),
           )
         : null;
     const unsubscribeEffectsAction =
       unsubscribedEffects.length > 0
         ? HandlerAction.Send(
-            this.callbackHandle,
+            this.next,
             createUnsubscribeEffectsMessage(groupEffectsByType(unsubscribedEffects)),
           )
         : null;
     const emitResultsAction =
       results && results.size > 0
-        ? HandlerAction.Send(this.callbackHandle, createEmitEffectValuesMessage(results))
+        ? HandlerAction.Send(this.next, createEmitEffectValuesMessage(results))
         : null;
     return [
       ...(subscribeEffectsAction ? [subscribeEffectsAction] : []),
@@ -248,7 +259,7 @@ export class EvaluateHandler implements SyncActor<Message<unknown>> {
     // otherwise evaluate the expression and store it as the subscription result
     const subscription = existingSubscription || {
       effect,
-      result: evaluate(expression, this.state),
+      result: evaluate(expression, this.effectState),
     };
     if (!existingSubscription) this.subscriptions.set(expressionId, subscription);
     const { result } = subscription;

@@ -11,7 +11,7 @@ export type Actor<T> = Enum<{
     actor: SyncActor<T>;
   };
   [ActorType.Async]: {
-    actor: AsyncActor<T>;
+    actor: AsyncActor<T, T>;
   };
 }>;
 
@@ -28,7 +28,7 @@ export const Actor = {
     },
   ),
   [ActorType.Async]: Object.assign(
-    function Async<T>(actor: AsyncActor<T>): EnumVariant<Actor<T>, ActorType.Async> {
+    function Async<T>(actor: AsyncActor<T, T>): EnumVariant<Actor<T>, ActorType.Async> {
       return instantiateEnum(ActorType.Async, { actor });
     },
     {
@@ -44,19 +44,16 @@ export interface SyncActor<T> {
   handle(message: T, context: HandlerContext<T>): HandlerResult;
 }
 
-export interface AsyncActor<T, V = unknown> {
-  events(input: Stream<T>): Stream<Array<V>>;
-  handle(message: V, context: HandlerContext<T>): HandlerResult;
-}
+export type ActorHandleMethod<T> = { bivarianceHack(message: T): void }['bivarianceHack'];
 
 export interface ActorHandle<T> {
-  _type: PhantomType<T>;
+  _type: PhantomType<ActorHandleMethod<T>>;
 }
 
 export interface HandlerContext<T> {
   self(): ActorHandle<T>;
   spawn<T>(factory: () => SyncActor<T>): ActorHandle<T>;
-  spawnAsync<T>(factory: () => AsyncActor<T>): ActorHandle<T>;
+  spawnAsync<T>(factory: AsyncTaskFactory<T>): ActorHandle<T>;
 }
 
 export type HandlerResult<T = unknown> = Array<HandlerAction<T>> | null;
@@ -79,6 +76,17 @@ export type HandlerAction<T> = Enum<{
     message: T;
   };
 }>;
+
+export type AsyncTaskHandle = ActorHandle<never>;
+
+export type AsyncTaskFactory<I, O = unknown> = (self: ActorHandle<I>) => AsyncActor<I, O>;
+
+export interface AsyncActor<I, O = unknown>
+  extends AsyncIterator<HandlerResult<O>, HandlerResult<O>, I> {}
+
+export type AsyncTaskResult<T = unknown> = IteratorResult<HandlerResult<T>, HandlerResult<T>>;
+export type AsyncTaskYieldResult<T> = IteratorYieldResult<HandlerResult<T>>;
+export type AsyncTaskReturnResult<T> = IteratorReturnResult<HandlerResult<T>>;
 
 export const HandlerAction = {
   [HandlerActionType.Spawn]: Object.assign(

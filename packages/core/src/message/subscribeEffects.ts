@@ -15,3 +15,9 @@ export function createSubscribeEffectsMessage(
     effects,
   };
 }
+
+export function isSubscribeEffectsMessage(
+  message: Message<unknown>,
+): message is SubscribeEffectsMessage {
+  return message.type === MESSAGE_SUBSCRIBE_EFFECTS;
+}
