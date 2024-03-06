@@ -1,1 +1,5 @@
+/coverage/
+/docs/
+/packages/*/dist/
 /vitest.config.ts.timestamp-*.mjs
+/packages/*/vitest.config.ts.timestamp-*.mjs
