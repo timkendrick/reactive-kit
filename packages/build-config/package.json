@@ -1,9 +1,9 @@
 {
   "private": true,
-  "name": "@trigger/build-config",
+  "name": "@reactive-kit/build-config",
   "version": "0.0.1",
   "license": "MIT",
-  "description": "Build tool configuration",
+  "description": "ReactiveKit build configuration",
   "author": "Tim Kendrick <timkendrick@gmail.com>",
   "scripts": {
     "lint": "eslint --ext js,cjs,mjs,ts ."

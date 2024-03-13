@@ -1,5 +1,7 @@
 {
   "private": true,
+  "license": "MIT",
+  "description": "ReactiveKit",
   "author": "Tim Kendrick <timkendrick@gmail.com>",
   "scripts": {
     "ci": "pnpm run verify && pnpm run build",

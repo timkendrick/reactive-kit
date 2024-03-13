@@ -3,7 +3,7 @@
   "include": ["*.config.ts"],
   "compilerOptions": {
     "paths": {
-      "@trigger/*": ["./packages/*"]
+      "@reactive-kit/*": ["./packages/*"]
     }
   }
 }

@@ -1,1 +1,1 @@
-export { default } from '@trigger/build-config/templates/prettier/prettier.config.mjs';
+export { default } from '@reactive-kit/build-config/templates/prettier/prettier.config.mjs';

@@ -1,1 +1,1 @@
-module.exports = require('@trigger/build-config/templates/eslint/lib.eslintrc.cjs');
+module.exports = require('@reactive-kit/build-config/templates/eslint/lib.eslintrc.cjs');

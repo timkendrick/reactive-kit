@@ -24,6 +24,56 @@ importers:
         specifier: ^0.34
         version: 0.34.3
 
+  packages/actor:
+    dependencies:
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+
+  packages/actor-utils:
+    dependencies:
+      '@reactive-kit/actor':
+        specifier: workspace:*
+        version: link:../actor
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+
   packages/build-config:
     dependencies:
       '@types/node':
@@ -80,16 +130,115 @@ importers:
 
   packages/build-tools:
     devDependencies:
-      '@trigger/build-config':
+      '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
 
-  packages/core:
+  packages/effect:
     dependencies:
-      '@trigger/types':
+      '@reactive-kit/utils':
         specifier: workspace:*
-        version: link:../types
-      '@trigger/utils':
+        version: link:../utils
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+
+  packages/effects/evaluate:
+    dependencies:
+      '@reactive-kit/actor':
+        specifier: workspace:*
+        version: link:../../actor
+      '@reactive-kit/actor-utils':
+        specifier: workspace:*
+        version: link:../../actor-utils
+      '@reactive-kit/effect':
+        specifier: workspace:*
+        version: link:../../effect
+      '@reactive-kit/interpreter':
+        specifier: workspace:*
+        version: link:../../interpreter
+      '@reactive-kit/runtime-messages':
+        specifier: workspace:*
+        version: link:../../runtime-messages
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../../utils
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../../build-config
+
+  packages/effects/fetch:
+    dependencies:
+      '@reactive-kit/actor':
+        specifier: workspace:*
+        version: link:../../actor
+      '@reactive-kit/actor-utils':
+        specifier: workspace:*
+        version: link:../../actor-utils
+      '@reactive-kit/effect':
+        specifier: workspace:*
+        version: link:../../effect
+      '@reactive-kit/runtime-messages':
+        specifier: workspace:*
+        version: link:../../runtime-messages
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../../utils
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../../build-config
+
+  packages/interpreter:
+    dependencies:
+      '@reactive-kit/effect':
+        specifier: workspace:*
+        version: link:../effect
+      '@reactive-kit/utils':
         specifier: workspace:*
         version: link:../utils
       eslint:
@@ -108,13 +257,19 @@ importers:
         specifier: ^0.34
         version: 0.34.3
     devDependencies:
-      '@trigger/build-config':
+      '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
 
-  packages/types:
+  packages/runtime-messages:
     dependencies:
-      '@trigger/utils':
+      '@reactive-kit/effect':
+        specifier: workspace:*
+        version: link:../effect
+      '@reactive-kit/interpreter':
+        specifier: workspace:*
+        version: link:../interpreter
+      '@reactive-kit/utils':
         specifier: workspace:*
         version: link:../utils
       eslint:
@@ -129,8 +284,39 @@ importers:
       vite:
         specifier: ^4
         version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
     devDependencies:
-      '@trigger/build-config':
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+
+  packages/scheduler:
+    dependencies:
+      '@reactive-kit/actor':
+        specifier: workspace:*
+        version: link:../actor
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
+    devDependencies:
+      '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
 
@@ -152,7 +338,7 @@ importers:
         specifier: ^0.34
         version: 0.34.3
     devDependencies:
-      '@trigger/build-config':
+      '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
 

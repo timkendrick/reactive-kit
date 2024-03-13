@@ -1,0 +1,48 @@
+{
+  "private": true,
+  "name": "@reactive-kit/scheduler",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "ReactiveKit actor scheduler",
+  "author": "Tim Kendrick <timkendrick@gmail.com>",
+  "type": "module",
+  "main": "./lib.ts",
+  "module": "./lib.ts",
+  "scripts": {
+    "build": "pnpm run build:lib && pnpm run build:docs && pnpm run build:pkg",
+    "build:lib": "vite build",
+    "build:docs": "typedoc",
+    "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
+    "lint": "pnpm run '/^lint:.*/'",
+    "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
+    "lint:typescript": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
+  },
+  "pkg": {
+    "type": "module",
+    "main": "./lib/lib.cjs",
+    "module": "/lib/lib.js",
+    "types": "./lib.d.ts",
+    "exports": {
+      ".": {
+        "import": "./lib/lib.js",
+        "require": "./lib/lib.cjs"
+      }
+    }
+  },
+  "dependencies": {
+    "@reactive-kit/actor": "workspace:*",
+    "@reactive-kit/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@reactive-kit/build-config": "workspace:*"
+  },
+  "peerDependencies": {
+    "eslint": "^8",
+    "typedoc": "^0.25",
+    "typescript": "^5",
+    "vite": "^4",
+    "vitest": "^0.34"
+  }
+}

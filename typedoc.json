@@ -1,5 +1,5 @@
 {
-  "name": "trigger",
+  "name": "reactive-kit",
   "entryPoints": ["packages/*"],
   "exclude": ["packages/build-config", "packages/build-tools"],
   "entryPointStrategy": "packages"

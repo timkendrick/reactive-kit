@@ -5,10 +5,12 @@ import * as lib from './lib';
 test('module exports', () => {
   expect({ ...lib }).toEqual({
     AsyncQueue: lib.AsyncQueue,
+    createHasher: lib.createHasher,
     Enum: lib.Enum,
-    VARIANT: lib.VARIANT,
     enumConstructor: lib.enumConstructor,
     enumVariantConstructor: lib.enumVariantConstructor,
+    hash: lib.hash,
+    HASH: lib.HASH,
     instantiateEnum: lib.instantiateEnum,
     isEnumVariant: lib.isEnumVariant,
     isGenerator: lib.isGenerator,
@@ -19,5 +21,6 @@ test('module exports', () => {
     PhantomType: lib.PhantomType,
     subscribeAsyncIterator: lib.subscribeAsyncIterator,
     unreachable: lib.unreachable,
+    VARIANT: lib.VARIANT,
   });
 });
