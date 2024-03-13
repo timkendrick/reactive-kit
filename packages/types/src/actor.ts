@@ -1,58 +1,17 @@
 import { Enum, type EnumVariant, type PhantomType, VARIANT, instantiateEnum } from '@trigger/utils';
-import { Stream } from './stream';
 
-export enum ActorType {
-  Sync = 'Sync',
-  Async = 'Async',
+export interface Actor<I, O = unknown> {
+  handle(message: I, context: HandlerContext<I>): HandlerResult<O>;
 }
-
-export type Actor<T> = Enum<{
-  [ActorType.Sync]: {
-    actor: SyncActor<T>;
-  };
-  [ActorType.Async]: {
-    actor: AsyncActor<T, T>;
-  };
-}>;
-
-export const Actor = {
-  [ActorType.Sync]: Object.assign(
-    function Sync<T>(actor: SyncActor<T>): EnumVariant<Actor<T>, ActorType.Sync> {
-      return instantiateEnum(ActorType.Sync, { actor });
-    },
-    {
-      [VARIANT]: ActorType.Sync,
-      is: function is<T>(value: Actor<T>): value is EnumVariant<Actor<T>, ActorType.Sync> {
-        return value[VARIANT] === ActorType.Sync;
-      },
-    },
-  ),
-  [ActorType.Async]: Object.assign(
-    function Async<T>(actor: AsyncActor<T, T>): EnumVariant<Actor<T>, ActorType.Async> {
-      return instantiateEnum(ActorType.Async, { actor });
-    },
-    {
-      [VARIANT]: ActorType.Async,
-      is: function is<T>(value: Actor<T>): value is EnumVariant<Actor<T>, ActorType.Async> {
-        return value[VARIANT] === ActorType.Async;
-      },
-    },
-  ),
-};
-
-export interface SyncActor<T> {
-  handle(message: T, context: HandlerContext<T>): HandlerResult;
-}
-
-export type ActorHandleMethod<T> = { bivarianceHack(message: T): void }['bivarianceHack'];
 
 export interface ActorHandle<T> {
-  _type: PhantomType<ActorHandleMethod<T>>;
+  // See https://stackoverflow.com/questions/52667959/what-is-the-purpose-of-bivariancehack-in-typescript-types
+  _type: PhantomType<{ bivarianceHack(message: T): void }['bivarianceHack']>;
 }
 
 export interface HandlerContext<T> {
   self(): ActorHandle<T>;
-  spawn<T>(factory: () => SyncActor<T>): ActorHandle<T>;
+  spawn<T>(factory: () => Actor<T>): ActorHandle<T>;
   spawnAsync<T>(factory: AsyncTaskFactory<T>): ActorHandle<T>;
 }
 

@@ -4,8 +4,6 @@ import * as lib from './lib';
 
 test('module exports', () => {
   expect({ ...lib }).toEqual({
-    Actor: lib.Actor,
-    ActorType: lib.ActorType,
     ConditionTree: lib.ConditionTree,
     DependencyTree: lib.DependencyTree,
     EFFECT: lib.EFFECT,

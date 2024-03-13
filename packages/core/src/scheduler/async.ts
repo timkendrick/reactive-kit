@@ -1,25 +1,65 @@
 import {
-  Actor,
   ActorHandle,
-  ActorHandleMethod,
-  ActorType,
   AsyncActor,
   AsyncTaskFactory,
-  HandlerAction,
   HandlerActionType,
   HandlerContext,
   HandlerResult,
-  SyncActor,
+  Actor,
 } from '@trigger/types';
 import {
   AsyncQueue,
   Enum,
   EnumVariant,
-  PhantomType,
   VARIANT,
   instantiateEnum,
   subscribeAsyncIterator,
 } from '@trigger/utils';
+
+enum MaybeAsyncActorType {
+  Sync = 'Sync',
+  Async = 'Async',
+}
+
+export type MaybeAsyncActor<T> = Enum<{
+  [MaybeAsyncActorType.Sync]: {
+    actor: Actor<T>;
+  };
+  [MaybeAsyncActorType.Async]: {
+    actor: AsyncActor<T, T>;
+  };
+}>;
+
+export const MaybeAsyncActor = {
+  [MaybeAsyncActorType.Sync]: Object.assign(
+    function Sync<T>(actor: Actor<T>): EnumVariant<MaybeAsyncActor<T>, MaybeAsyncActorType.Sync> {
+      return instantiateEnum(MaybeAsyncActorType.Sync, { actor });
+    },
+    {
+      [VARIANT]: MaybeAsyncActorType.Sync,
+      is: function is<T>(
+        value: MaybeAsyncActor<T>,
+      ): value is EnumVariant<MaybeAsyncActor<T>, MaybeAsyncActorType.Sync> {
+        return value[VARIANT] === MaybeAsyncActorType.Sync;
+      },
+    },
+  ),
+  [MaybeAsyncActorType.Async]: Object.assign(
+    function Async<T>(
+      actor: AsyncActor<T, T>,
+    ): EnumVariant<MaybeAsyncActor<T>, MaybeAsyncActorType.Async> {
+      return instantiateEnum(MaybeAsyncActorType.Async, { actor });
+    },
+    {
+      [VARIANT]: MaybeAsyncActorType.Async,
+      is: function is<T>(
+        value: MaybeAsyncActor<T>,
+      ): value is EnumVariant<MaybeAsyncActor<T>, MaybeAsyncActorType.Async> {
+        return value[VARIANT] === MaybeAsyncActorType.Async;
+      },
+    },
+  ),
+};
 
 enum ActorStateType {
   Sync = 'Sync',
@@ -33,7 +73,7 @@ type ActorState<T> = Enum<{
 
 interface SyncActorState<T> {
   handle: ActorHandle<T>;
-  actor: SyncActor<T>;
+  actor: Actor<T>;
   context: SchedulerHandlerContext<T>;
 }
 
@@ -86,13 +126,13 @@ type AsyncSchedulerCommand<T> = Enum<{
     message: T;
   };
   Handle: {
-    handler: SyncActor<T>;
+    handler: Actor<T>;
     context: SchedulerHandlerContext<T>;
     message: T;
   };
   Spawn: {
     handle: SchedulerActorHandle<T>;
-    factory: () => Actor<T>;
+    factory: () => MaybeAsyncActor<T>;
   };
   Kill: {
     target: ActorHandle<T>;
@@ -117,19 +157,22 @@ export class AsyncScheduler<T> implements AsyncIterator<T, null> {
     this.outputQueue = new AsyncQueue<T>();
     this.handlers.set(
       inputHandle,
-      this.spawnActor(inputHandle, () => factory(outputHandle)),
+      this.spawnActor(inputHandle, () => MaybeAsyncActor.Sync(factory(outputHandle))),
     );
   }
 
-  private spawnActor(handle: SchedulerActorHandle<T>, factory: () => Actor<T>): ActorState<T> {
+  private spawnActor(
+    handle: SchedulerActorHandle<T>,
+    factory: () => MaybeAsyncActor<T>,
+  ): ActorState<T> {
     const handler = factory();
     switch (handler[VARIANT]) {
-      case ActorType.Sync: {
+      case MaybeAsyncActorType.Sync: {
         const { actor } = handler;
         const context = this.createHandlerContext(handle);
         return ActorState.Sync({ handle, actor, context });
       }
-      case ActorType.Async: {
+      case MaybeAsyncActorType.Async: {
         const { actor } = handler;
         const inbox = new AsyncQueue<T>();
         const outbox = new AsyncQueue<HandlerResult<T>>();
@@ -159,9 +202,11 @@ export class AsyncScheduler<T> implements AsyncIterator<T, null> {
   }
 
   public dispatch(message: T): void {
+    if (this.handlers.size === 0) return;
     return this.handleCommands([
       instantiateEnum<AsyncSchedulerCommand<T>>('Dispatch', {
-        action: HandlerAction.Send(this.inputHandle, message),
+        target: this.inputHandle,
+        message,
       }),
     ]);
   }
@@ -186,10 +231,9 @@ export class AsyncScheduler<T> implements AsyncIterator<T, null> {
       switch (command[VARIANT]) {
         case 'Dispatch': {
           const { message, target } = command;
-          const handlerId = target.id();
-          const handlerState = this.handlers.get(handlerId);
+          const handlerState = this.handlers.get(target);
           if (!handlerState) {
-            if (handlerId === this.outputHandle.id()) this.outputQueue.push(message);
+            if (target === this.outputHandle) this.outputQueue.push(message);
             continue;
           }
           switch (handlerState[VARIANT]) {
@@ -226,6 +270,7 @@ export class AsyncScheduler<T> implements AsyncIterator<T, null> {
           const { target } = command;
           const handlerState = this.handlers.get(target);
           if (!handlerState) continue;
+          this.handlers.delete(target);
           if (handlerState[VARIANT] === ActorStateType.Async) {
             handlerState.inbox.return();
             handlerState.outbox.return();
@@ -235,10 +280,11 @@ export class AsyncScheduler<T> implements AsyncIterator<T, null> {
       }
     }
     this.phase = idlePhase;
+    if (this.handlers.size === 0) this.outputQueue.return();
   }
 
   private invokeHandler(
-    actor: SyncActor<T>,
+    actor: Actor<T>,
     context: SchedulerHandlerContext<T>,
     message: T,
   ): Array<AsyncSchedulerCommand<T>> {
@@ -249,20 +295,26 @@ export class AsyncScheduler<T> implements AsyncIterator<T, null> {
     for (const action of results) {
       switch (action[VARIANT]) {
         case HandlerActionType.Send: {
-          const command = instantiateEnum<AsyncSchedulerCommand<T>>('Dispatch', action);
+          const { target, message } = action;
+          const command = instantiateEnum<AsyncSchedulerCommand<T>>('Dispatch', {
+            target,
+            message,
+          });
           commands.push(command);
           break;
         }
         case HandlerActionType.Spawn: {
+          const { target } = action;
           if (!spawnedActors) continue;
-          const spawnedActor = spawnedActors.get(action.target);
+          const spawnedActor = spawnedActors.get(target);
           if (!spawnedActor) continue;
           const command = instantiateEnum<AsyncSchedulerCommand<T>>('Spawn', spawnedActor);
           commands.push(command);
           break;
         }
         case HandlerActionType.Kill: {
-          const command = instantiateEnum<AsyncSchedulerCommand<T>>('Kill', action);
+          const { target } = action;
+          const command = instantiateEnum<AsyncSchedulerCommand<T>>('Kill', { target });
           commands.push(command);
           break;
         }
@@ -337,7 +389,7 @@ function subscribeHandlerEvents<I, O>(
 }
 
 class SchedulerActorHandle<T> implements ActorHandle<T> {
-  public _type: PhantomType<ActorHandleMethod<T>> = undefined as never;
+  public _type: ActorHandle<T>['_type'] = undefined as never;
   private uid: number;
 
   public constructor(uid: number) {
@@ -366,15 +418,15 @@ class SchedulerHandlerContext<T> implements HandlerContext<T> {
     return this.handle;
   }
 
-  public spawn<T>(factory: () => SyncActor<T>): ActorHandle<T> {
+  public spawn<T>(factory: () => Actor<T>): ActorHandle<T> {
     const handle = this.generateHandle<T>();
-    this.spawned.set(handle, { handle, factory: () => Actor.Sync(factory()) });
+    this.spawned.set(handle, { handle, factory: () => MaybeAsyncActor.Sync(factory()) });
     return handle;
   }
 
   public spawnAsync<T>(factory: AsyncTaskFactory<T>): ActorHandle<T> {
     const handle = this.generateHandle<T>();
-    this.spawned.set(handle, { handle, factory: () => Actor.Async(factory(handle)) });
+    this.spawned.set(handle, { handle, factory: () => MaybeAsyncActor.Async(factory(handle)) });
     return handle;
   }
 
@@ -388,5 +440,5 @@ class SchedulerHandlerContext<T> implements HandlerContext<T> {
 
 interface SpawnedActor<T> {
   handle: SchedulerActorHandle<T>;
-  factory: () => Actor<T>;
+  factory: () => MaybeAsyncActor<T>;
 }

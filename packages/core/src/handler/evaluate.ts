@@ -12,7 +12,7 @@ import {
   Reactive,
   StateToken,
   StateValues,
-  SyncActor,
+  Actor,
 } from '@trigger/types';
 import { nonNull } from '@trigger/utils';
 import {
@@ -60,7 +60,7 @@ interface EvaluateEffectResult<T> {
   dependencies: DependencyTree;
 }
 
-export class EvaluateHandler implements SyncActor<EvaluateHandlerInput> {
+export class EvaluateHandler implements Actor<EvaluateHandlerInput> {
   private readonly next: ActorHandle<EvaluateHandlerOutputMessage>;
   private effectState: StateValues;
   // FIXME: Hash queries to prevent duplicate subscriptions

@@ -2,7 +2,7 @@ import {
   ActorHandle,
   HandlerContext,
   HandlerResult,
-  SyncActor,
+  Actor,
   HandlerAction,
   HandlerActionType,
   EFFECT,
@@ -23,7 +23,7 @@ import {
 } from '../message';
 import { EFFECT_TYPE_FETCH, FetchEffect, FetchRequest, FetchResponse } from '../effect/fetch';
 import { type Message } from '../message/message';
-import { fromCancelablePromiseFactory } from '../utils/promise';
+import { fromCancelablePromiseFactory } from '../utils/actor/promise';
 
 type FetchHandlerInputMessage =
   | SubscribeEffectsMessage
@@ -61,7 +61,7 @@ interface FetchSubscription {
   controller: AbortController;
 }
 
-export class FetchHandler implements SyncActor<FetchHandlerInput> {
+export class FetchHandler implements Actor<FetchHandlerInput> {
   private readonly next: ActorHandle<FetchHandlerOutputMessage>;
   private subscriptions: Map<StateToken, RequestId> = new Map();
   private requests: Map<RequestId, FetchSubscription> = new Map();
@@ -111,10 +111,7 @@ export class FetchHandler implements SyncActor<FetchHandlerInput> {
         const handle = context.spawnAsync(
           fromCancelablePromiseFactory<FetchHandlerInputMessage>(() => ({
             result: fetchRequest(effect.payload, signal).then((response) => [
-              HandlerAction[HandlerActionType.Send](
-                self,
-                createFetchHandlerReadyMessage(requestId, response),
-              ),
+              HandlerAction.Send(self, createFetchHandlerReadyMessage(requestId, response)),
             ]),
             abort: controller,
           })),
@@ -149,7 +146,7 @@ export class FetchHandler implements SyncActor<FetchHandlerInput> {
         this.requests.delete(requestId);
         const { handle, controller } = requestState;
         controller.abort();
-        return HandlerAction[HandlerActionType.Kill](handle);
+        return HandlerAction.Kill(handle);
       })
       .filter(nonNull);
     if (actions.length === 0) return null;
@@ -169,7 +166,7 @@ export class FetchHandler implements SyncActor<FetchHandlerInput> {
     this.subscriptions.delete(stateToken);
     const effectValues = new Map([[stateToken, response]]);
     const emitMessage = createEmitEffectValuesMessage(effectValues);
-    const action = HandlerAction[HandlerActionType.Send](this.next, emitMessage);
+    const action = HandlerAction.Send(this.next, emitMessage);
     return [action];
   }
 }
