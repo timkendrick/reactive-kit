@@ -1,0 +1,55 @@
+{
+  "private": true,
+  "name": "@reactive-kit/compiler",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "Compiler",
+  "author": "Tim Kendrick <timkendrick@gmail.com>",
+  "type": "module",
+  "main": "./lib.ts",
+  "module": "./lib.ts",
+  "scripts": {
+    "build": "pnpm run build:lib && pnpm run build:docs && pnpm run build:pkg",
+    "build:lib": "vite build",
+    "build:docs": "typedoc",
+    "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
+    "lint": "pnpm run '/^lint:.*/'",
+    "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
+    "lint:typescript": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
+  },
+  "pkg": {
+    "type": "module",
+    "main": "./lib/lib.cjs",
+    "module": "/lib/lib.js",
+    "types": "./lib.d.ts",
+    "exports": {
+      ".": {
+        "import": "./lib/lib.js",
+        "require": "./lib/lib.cjs"
+      }
+    }
+  },
+  "dependencies": {
+    "@reactive-kit/babel-plugin-reactive-functions": "workspace:*",
+    "@babel/core": "7.24.0",
+    "@babel/parser": "7.24.0",
+    "@babel/traverse": "7.24.0",
+    "@babel/types": "7.24.0",
+    "@types/babel__core": "7.20.5",
+    "@types/babel__traverse": "7.20.5",
+    "recast": "0.23.6"
+  },
+  "devDependencies": {
+    "@reactive-kit/build-config": "workspace:*",
+    "@reactive-kit/babel-types": "workspace:*"
+  },
+  "peerDependencies": {
+    "eslint": "^8",
+    "typedoc": "^0.25",
+    "typescript": "^5",
+    "vite": "^4",
+    "vitest": "^0.34"
+  }
+}
