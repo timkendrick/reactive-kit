@@ -1,14 +1,14 @@
-import type { HASH, Hashable } from '@reactive-kit/utils';
+import type { Hashable, CustomHashable } from '@reactive-kit/utils';
 
 export type StateToken = bigint;
 
-export const EFFECT = Symbol.for('@reactive-kit::effect');
+export const EFFECT = Symbol.for('@reactive-kit/symbols/effect');
 
 export type EffectType = string;
 
-export interface Effect<T extends EffectType = EffectType, P extends Hashable = Hashable> {
+export interface Effect<T extends EffectType = EffectType, P extends Hashable = Hashable>
+  extends CustomHashable {
   [EFFECT]: StateToken;
-  [HASH](state: bigint): bigint;
   type: T;
   payload: P;
 }

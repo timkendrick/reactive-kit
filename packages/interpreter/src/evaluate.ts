@@ -52,13 +52,14 @@ type StackFrame = Enum<{
   Result: {
     value: unknown;
   };
-  // Copy the contents of the result register to a position lower down the stack
-  // (where depth of 0 refers to the frame immediately below the Copy frame)
+  // Copy the contents of the result register to a position lower down the stack,
+  // overwriting the stack frame at the target position
   Copy: {
+    // A depth of 0 refers to the frame immediately below the Copy frame
     depth: number;
   };
-  // Join the preceding `count` stack values into a single frame, according to the provided combiner function
-  Join: {
+  // Combine the preceding `count` stack values into a single frame, according to the provided combining function
+  Squash: {
     count: number;
     combine: (values: Array<StackFrame>) => StackFrame;
   };
@@ -80,7 +81,7 @@ const StackFrame = Enum.create<StackFrame>({
   Handle: true,
   Result: true,
   Copy: true,
-  Join: true,
+  Squash: true,
   Halt: true,
   Catch: true,
   Terminate: true,
@@ -109,17 +110,19 @@ export function evaluate<T>(expression: Reactive<T>, state: StateValues): Evalua
       case 'Evaluate': {
         const { expression } = stackFrame;
         const generator = expression[STATEFUL];
+        // Instantiate a new stateful iteration
         const evaluation = generator();
         // TODO: determine whether to reuse cached stateful values based on updated state values
         // Store a dummy value in the result register to kick off the evaluation iterator
         threadResultRegister = THREAD_RESULT_UNDEFINED_PLACEHOLDER;
         // Proceed with the evaluation iteration
         stack.push(StackFrame.Resume({ evaluation }));
-        continue;
+        continue loop;
       }
       case 'Resume': {
         const { evaluation } = stackFrame;
         // If we are resuming an in-progress evaluation, get the current resolved effect value from the result register
+        // (if this is the first step of the generator, the result register will contain the undefined result)
         const continuationValue = StackFrame.Result.is(threadResultRegister)
           ? threadResultRegister.value
           : undefined;
@@ -127,37 +130,42 @@ export function evaluate<T>(expression: Reactive<T>, state: StateValues): Evalua
         let result = evaluation.next(continuationValue);
         // Continue evaluating the expression, providing any fully-resolved effect values as required
         // FIXME: allow pushing multiple state dependencies onto the stack simultaneously
-        while (!result.done && state.has(result.value[EFFECT])) {
-          const condition = result.value;
-          const stateToken = condition[EFFECT];
-          // Register the condition as a dependency of this evaluation
-          combinedDependencies = combineDependencies(
-            combinedDependencies,
-            DependencyTree.Unit({ value: stateToken }),
-          );
-          const stateValue = state.get(stateToken);
-          // If the state value is unresolved, push it onto the stack for evaluation
-          if (isStateful(stateValue) || isEffect(stateValue)) {
-            // Queue up the current stack frame again to be resolved again once the condition has been handled
+        while (!result.done) {
+          const { value: yieldedValue } = result;
+          if (isStateful(yieldedValue)) {
+            // The expression evaluation has emitted a chained stateful value, so queue up the current stack frame again
+            // to be resolved again once the inner generator has completed
             stack.push(stackFrame);
-            if (isStateful(stateValue)) stack.push(StackFrame.Evaluate({ expression: stateValue }));
-            if (isEffect(stateValue)) stack.push(StackFrame.Handle({ condition: stateValue }));
+            // Initiate a new evaluation stack for evaluating the inner expression
+            stack.push(StackFrame.Evaluate({ expression: yieldedValue }));
             continue loop;
+          } else if (isEffect(yieldedValue)) {
+            if (!state.has(yieldedValue[EFFECT])) {
+              // The expression evaluation has reached a halt condition, so queue up the current stack frame again
+              // to be resolved again once the condition has been handled
+              stack.push(stackFrame);
+              // Initiate a new evaluation stack for handling the condition
+              stack.push(StackFrame.Handle({ condition: yieldedValue }));
+              continue loop;
+            }
+            const condition = yieldedValue;
+            const stateToken = condition[EFFECT];
+            // Register the condition as a dependency of this evaluation
+            combinedDependencies = combineDependencies(
+              combinedDependencies,
+              DependencyTree.Unit({ value: stateToken }),
+            );
+            const stateValue = state.get(stateToken);
+            // Continue evaluating the stateful value
+            result = { done: false, value: stateValue };
           } else {
-            // Otherwise if the state value is fully resolved, provide the value to continue the expression evaluation
-            result = evaluation.next(stateValue);
+            // Otherwise if the yielded value is fully resolved, provide the value to continue evaluation of the expression
+            result = evaluation.next(yieldedValue);
           }
         }
-        if (result.done) {
-          // The stateful expression has resolved successfully, so push the result onto the stack and continue execution
-          stack.push(StackFrame.Result({ value: result.value }));
-          continue;
-        }
-        // The expression evaluation has reached a halt condition, so queue up the current stack frame again
-        // to be resolved again once the condition has been handled
-        stack.push(stackFrame);
-        stack.push(StackFrame.Handle({ condition: result.value }));
-        continue;
+        // The stateful expression has completed successfully, so push the result onto the stack and continue execution
+        stack.push(StackFrame.Result({ value: result.value }));
+        continue loop;
       }
       case 'Handle': {
         const condition = stackFrame.condition;
@@ -197,7 +205,7 @@ export function evaluate<T>(expression: Reactive<T>, state: StateValues): Evalua
         stack.overwrite(threadResultRegister, stackFrame.depth);
         continue;
       }
-      case 'Join': {
+      case 'Squash': {
         // Combine the results of the preceding `count` stack values into a single frame
         const threadResults = Array.from({ length: stackFrame.count }, () => stack.pop())
           .filter(nonNull)
@@ -262,7 +270,7 @@ function resolveConditions(conditions: ConditionTree, stack: MutableStack<StackF
       for (const condition of effects) stack.push(STACK_FRAME_PLACEHOLDER);
       // Push an instruction onto the stack that will combine the values stored in the preceding condition placeholders into a single stack frame
       stack.push(
-        StackFrame.Join({
+        StackFrame.Squash({
           count: effects.length,
           combine: collectThreadResults,
         }),
@@ -270,7 +278,7 @@ function resolveConditions(conditions: ConditionTree, stack: MutableStack<StackF
       // Push each condition onto the stack to be processed and continue execution
       for (const condition of effects) {
         // Copy the condition into the preassigned placeholder once it has been handled
-        // (bearing in mind a depth of 1 for the immediately preceding Join frame)
+        // (bearing in mind a depth of 1 for the immediately preceding Squash frame)
         stack.push(StackFrame.Copy({ depth: 1 + effects.length }));
         stack.push(StackFrame.Catch({}));
         // Handle the condition

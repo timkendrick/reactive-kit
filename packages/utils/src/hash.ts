@@ -1,4 +1,4 @@
-export const HASH: unique symbol = Symbol.for('@reactive-kit::hash');
+export const HASH: unique symbol = Symbol.for('@reactive-kit/symbols/hash');
 
 export type Hash = bigint;
 
@@ -11,7 +11,11 @@ export type Hashable =
   | bigint
   | Array<Hashable>
   | { [key: string]: Hashable }
-  | { [HASH](state: Hash): Hash };
+  | CustomHashable;
+
+export interface CustomHashable {
+  [HASH]: Hash | ((hash: (...values: Array<Hashable>) => Hash) => Hash);
+}
 
 export type HashableObject<T extends { [K in keyof T]: Hashable }> = T;
 
@@ -20,6 +24,10 @@ const HASH_SEED = 14_695_981_039_346_656_037n;
 const HASH_STEP = 1_099_511_628_211n;
 
 const STRING_ENCODER = new TextEncoder();
+
+export function hashSeed(): Hash {
+  return HASH_SEED;
+}
 
 export function hash(...values: Array<Hashable>): Hash {
   return values.reduce(writeValueHash, HASH_SEED);
@@ -30,11 +38,11 @@ export function createHasher(value: Hashable): (state: Hash) => Hash {
   return (state: Hash) => (state === HASH_SEED ? precomputedHash : writeValueHash(state, value));
 }
 
-function writeByteHash(state: Hash, byte: number): Hash {
+export function writeByteHash(state: Hash, byte: number): Hash {
   return BigInt.asUintN(HASH_BITS, (state ^ BigInt(byte)) * HASH_STEP);
 }
 
-function writeUint8ArrayHash(state: Hash, value: Uint8Array): Hash {
+export function writeUint8ArrayHash(state: Hash, value: Uint8Array): Hash {
   state = writeByteHash(state, value.length);
   for (const byte of value) {
     state = writeByteHash(state, byte);
@@ -42,7 +50,7 @@ function writeUint8ArrayHash(state: Hash, value: Uint8Array): Hash {
   return state;
 }
 
-function writeValueHash(state: Hash, value: Hashable): Hash {
+export function writeValueHash(state: Hash, value: Hashable): Hash {
   if (value == null) return writeNullHash(writeByteHash(state, 0));
   switch (typeof value) {
     case 'undefined':
@@ -57,31 +65,37 @@ function writeValueHash(state: Hash, value: Hashable): Hash {
       return writeBigintHash(writeByteHash(state, 5), value);
     case 'object':
       if (Array.isArray(value)) return writeArrayHash(writeByteHash(state, 6), value);
-      if (HASH in value) return value[HASH](writeByteHash(state, 7));
+      if (HASH in value) {
+        const hasher = value[HASH];
+        return writeBigintHash(
+          writeByteHash(state, 7),
+          typeof hasher === 'function' ? (value[HASH] = hasher(hash)) : hasher,
+        );
+      }
       return writeObjectHash(writeByteHash(state, 8), value);
     default:
       throw new Error(`Unable to hash value: ${value}`);
   }
 }
 
-function writeNullHash(state: Hash): Hash {
+export function writeNullHash(state: Hash): Hash {
   return state;
 }
 
-function writeUndefinedHash(state: Hash): Hash {
+export function writeUndefinedHash(state: Hash): Hash {
   return state;
 }
 
-function writeBooleanHash(state: Hash, value: boolean): Hash {
+export function writeBooleanHash(state: Hash, value: boolean): Hash {
   return writeByteHash(state, value ? 1 : 0);
 }
 
-function writeStringHash(state: Hash, value: string): Hash {
+export function writeStringHash(state: Hash, value: string): Hash {
   const bytes = STRING_ENCODER.encode(value);
   return writeUint8ArrayHash(state, bytes);
 }
 
-function writeNumberHash(state: Hash, value: number): Hash {
+export function writeNumberHash(state: Hash, value: number): Hash {
   const serializer = new Float64Array(1);
   serializer[0] = value;
   const view = new DataView(serializer.buffer);
@@ -92,7 +106,7 @@ function writeNumberHash(state: Hash, value: number): Hash {
   return state;
 }
 
-function writeBigintHash(state: Hash, value: Hash): Hash {
+export function writeBigintHash(state: Hash, value: Hash): Hash {
   const serializer = new BigUint64Array(1);
   serializer[0] = value;
   const view = new DataView(serializer.buffer);
@@ -107,7 +121,7 @@ function writeBigintHash(state: Hash, value: Hash): Hash {
   return state;
 }
 
-function writeArrayHash(state: Hash, value: Array<Hashable>): Hash {
+export function writeArrayHash(state: Hash, value: Array<Hashable>): Hash {
   state = writeByteHash(state, value.length);
   for (const item of value) {
     state = writeValueHash(state, item);
@@ -115,7 +129,7 @@ function writeArrayHash(state: Hash, value: Array<Hashable>): Hash {
   return state;
 }
 
-function writeObjectHash(state: Hash, value: { [key: string]: Hashable }): Hash {
+export function writeObjectHash(state: Hash, value: { [key: string]: Hashable }): Hash {
   const entries = Object.entries(value).sort(([a], [b]) => a.localeCompare(b));
   state = writeByteHash(state, entries.length);
   for (const [key, value] of entries) {

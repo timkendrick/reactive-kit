@@ -1,21 +1,34 @@
 import { type Effect, type StateToken } from '@reactive-kit/effect';
-import { Enum, instantiateEnum, VARIANT, type EnumVariant } from '@reactive-kit/utils';
-import { HASH } from '@reactive-kit/utils/src/hash';
+import {
+  Enum,
+  instantiateEnum,
+  VARIANT,
+  type EnumVariant,
+  type CustomHashable,
+} from '@reactive-kit/utils';
 import { type Reactive } from '../types';
 
-export const STATEFUL = Symbol.for('@reactive-kit::stateful');
+export const STATEFUL = Symbol.for('@reactive-kit/symbols/stateful');
 
-export interface Stateful<T> {
+export interface Stateful<T> extends CustomHashable {
   [STATEFUL]: StatefulIteratorFactory<T>;
-  [HASH](state: bigint): bigint;
 }
 
 export interface StatefulIteratorFactory<T> {
   (): StatefulIterator<T>;
 }
-export type StatefulIterator<T> = Iterator<StatefulYieldValue, T, StatefulNextValue>;
-export type StatefulYieldValue = Effect;
-export type StatefulNextValue = any;
+export type StatefulIterator<T> = Iterator<
+  StatefulIteratorYieldValue<unknown>,
+  T,
+  StatefulIteratorNextValue
+>;
+export type StatefulIteratorResult<T> = Iterator<
+  StatefulIteratorYieldValue<unknown>,
+  T,
+  StatefulIteratorNextValue
+>;
+export type StatefulIteratorYieldValue<T> = Effect | Reactive<T>;
+export type StatefulIteratorNextValue = any;
 
 export function isStateful(value: unknown): value is Stateful<unknown> {
   return value != null && typeof value === 'object' && STATEFUL in value;

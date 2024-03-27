@@ -17,10 +17,10 @@ export function createEffect<T extends EffectType, P extends Hashable>(
 ): Effect<T, P> {
   if (typeof id === 'string') return createEffect(hash(id, type as Hashable), id as T, type as P);
   return {
+    [HASH]: hash(id),
     [EFFECT]: id,
     type: type as T,
     payload: payload as P,
-    [HASH]: createHasher(id),
   };
 }
 

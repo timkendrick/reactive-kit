@@ -1,6 +1,6 @@
 import { type StateToken } from '@reactive-kit/effect';
 import { VARIANT } from '@reactive-kit/utils';
-import { DependencyTree } from '../types';
+import { DependencyTree, EvaluationResult, EvaluationResultType } from '../types';
 
 export const EMPTY_DEPENDENCIES = DependencyTree.Empty({});
 
@@ -8,6 +8,23 @@ export function combineDependencies(left: DependencyTree, right: DependencyTree)
   if (DependencyTree.Empty.is(right)) return left;
   if (DependencyTree.Empty.is(left)) return right;
   return DependencyTree.Pair({ left, right });
+}
+
+export function withDependencies<T>(
+  dependencies: DependencyTree,
+  result: EvaluationResult<T>,
+): EvaluationResult<T> {
+  const combinedDependencies = combineDependencies(dependencies, result.dependencies);
+  switch (result[VARIANT]) {
+    case EvaluationResultType.Pending: {
+      const { conditions } = result;
+      return EvaluationResult.Pending(conditions, combinedDependencies);
+    }
+    case EvaluationResultType.Ready: {
+      const { value } = result;
+      return EvaluationResult.Ready(value, combinedDependencies);
+    }
+  }
 }
 
 export function flattenDependencyTree(tree: DependencyTree): Set<StateToken> {

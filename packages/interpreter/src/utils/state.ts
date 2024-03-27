@@ -1,13 +1,12 @@
-import { HASH, createHasher } from '@reactive-kit/utils';
-import { type StateToken } from '@reactive-kit/effect';
+import { HASH, Hash } from '@reactive-kit/utils';
 import { STATEFUL, type Stateful, type StatefulIteratorFactory } from '../types';
 
 export function createStatefulGenerator<T>(
-  hash: StateToken,
+  hash: Hash,
   generator: StatefulIteratorFactory<T>,
 ): Stateful<T> {
   return {
+    [HASH]: hash,
     [STATEFUL]: generator,
-    [HASH]: createHasher(hash),
   };
 }

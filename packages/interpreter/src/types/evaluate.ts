@@ -3,7 +3,7 @@ import { type ConditionTree } from './state';
 import { type DependencyTree } from './dependency';
 import { type Reactive } from './reactive';
 
-const enum EvaluationResultType {
+export enum EvaluationResultType {
   Pending = 'Pending',
   Ready = 'Ready',
 }
@@ -38,7 +38,7 @@ export const EvaluationResult = {
   ),
   [EvaluationResultType.Ready]: Object.assign(
     function Ready<T>(
-      value: T,
+      value: Reactive<T>,
       dependencies: DependencyTree,
     ): EnumVariant<EvaluationResult<T>, EvaluationResultType.Ready> {
       return instantiateEnum(EvaluationResultType.Ready, { value, dependencies });
