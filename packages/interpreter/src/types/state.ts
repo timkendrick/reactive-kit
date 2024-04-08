@@ -1,11 +1,6 @@
 import { type Effect, type StateToken } from '@reactive-kit/effect';
-import {
-  Enum,
-  instantiateEnum,
-  VARIANT,
-  type EnumVariant,
-  type CustomHashable,
-} from '@reactive-kit/utils';
+import { type CustomHashable } from '@reactive-kit/hash';
+import { Enum, instantiateEnum, VARIANT, type EnumVariant } from '@reactive-kit/utils';
 import { type Reactive } from '../types';
 
 export const STATEFUL = Symbol.for('@reactive-kit/symbols/stateful');

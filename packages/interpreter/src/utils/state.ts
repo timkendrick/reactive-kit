@@ -1,4 +1,4 @@
-import { HASH, Hash } from '@reactive-kit/utils';
+import { HASH, type Hash } from '@reactive-kit/hash';
 import { STATEFUL, type Stateful, type StatefulIteratorFactory } from '../types';
 
 export function createStatefulGenerator<T>(

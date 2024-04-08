@@ -1,5 +1,5 @@
 import { createEffect, EFFECT, StateToken } from '@reactive-kit/effect';
-import { hash } from '@reactive-kit/utils';
+import { hash } from '@reactive-kit/hash';
 import { describe, expect, test } from 'vitest';
 import { ConditionTree, Reactive, StateValues, EvaluationResult, DependencyTree } from './types';
 import { evaluate } from './evaluate';

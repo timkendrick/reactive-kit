@@ -6,7 +6,7 @@ import {
   writeValueHash,
   type Hash,
   type Hashable,
-} from '@reactive-kit/utils';
+} from '@reactive-kit/hash';
 import {
   NODE_FIELDS,
   VISITOR_KEYS,

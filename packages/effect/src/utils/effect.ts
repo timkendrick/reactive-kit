@@ -1,4 +1,4 @@
-import { createHasher, hash, type Hashable, HASH } from '@reactive-kit/utils';
+import { hash, type Hashable, HASH } from '@reactive-kit/hash';
 import { EFFECT, type EffectType, type Effect, type StateToken } from '../types';
 
 export function createEffect<T extends EffectType, P extends Hashable>(
@@ -17,11 +17,15 @@ export function createEffect<T extends EffectType, P extends Hashable>(
 ): Effect<T, P> {
   if (typeof id === 'string') return createEffect(hash(id, type as Hashable), id as T, type as P);
   return {
-    [HASH]: hash(id),
+    [HASH]: id,
     [EFFECT]: id,
     type: type as T,
     payload: payload as P,
   };
+}
+
+export function createEffectHook<T>(effect: Effect<any>): Promise<T> {
+  return effect as unknown as Promise<T>;
 }
 
 export function groupEffectsByType(effects: Array<Effect>): Map<EffectType, Array<Effect>> {

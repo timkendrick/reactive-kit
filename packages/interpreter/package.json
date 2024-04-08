@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@reactive-kit/effect": "workspace:*",
+    "@reactive-kit/hash": "workspace:*",
     "@reactive-kit/utils": "workspace:*"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-import type { Hashable, CustomHashable } from '@reactive-kit/utils';
+import type { Hashable, CustomHashable } from '@reactive-kit/hash';
 
 export type StateToken = bigint;
 

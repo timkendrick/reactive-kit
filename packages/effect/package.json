@@ -30,7 +30,7 @@
     }
   },
   "dependencies": {
-    "@reactive-kit/utils": "workspace:*"
+    "@reactive-kit/hash": "workspace:*"
   },
   "devDependencies": {
     "@reactive-kit/build-config": "workspace:*"

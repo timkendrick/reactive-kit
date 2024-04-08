@@ -1,6 +1,6 @@
 import { type StateToken } from '@reactive-kit/effect';
 import { type Reactive } from '@reactive-kit/interpreter';
-import { type Message } from '@reactive-kit/utils';
+import { type Message } from '../message';
 
 export const MESSAGE_EMIT_EFFECT_VALUES = 'core::emitEffectValues';
 

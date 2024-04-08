@@ -5,6 +5,7 @@ import * as lib from './lib';
 test('module exports', () => {
   expect({ ...lib }).toEqual({
     createEffect: lib.createEffect,
+    createEffectHook: lib.createEffectHook,
     EFFECT: lib.EFFECT,
     getTypedEffects: lib.getTypedEffects,
     groupEffectsByType: lib.groupEffectsByType,
