@@ -31,14 +31,12 @@
       }
     }
   },
-  "dependencies": {
-    "@reactive-kit/babel-plugin-reactive-functions": "workspace:*",
-    "@babel/core": "7.24.4"
-  },
   "devDependencies": {
+    "@reactive-kit/babel-plugin-reactive-functions": "workspace:*",
     "@reactive-kit/build-config": "workspace:*",
     "@reactive-kit/babel-test-utils": "workspace:*",
     "@reactive-kit/babel-types": "workspace:*",
+    "@babel/core": "7.24.4",
     "@types/babel__core": "7.20.5"
   },
   "peerDependencies": {

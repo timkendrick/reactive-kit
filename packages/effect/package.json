@@ -29,11 +29,9 @@
       }
     }
   },
-  "dependencies": {
-    "@reactive-kit/hash": "workspace:*"
-  },
   "devDependencies": {
-    "@reactive-kit/build-config": "workspace:*"
+    "@reactive-kit/build-config": "workspace:*",
+    "@reactive-kit/hash": "workspace:*"
   },
   "peerDependencies": {
     "eslint": "^8",

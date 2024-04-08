@@ -32,10 +32,8 @@
     }
   },
   "devDependencies": {
-    "@reactive-kit/build-config": "workspace:*"
-  },
-  "dependencies": {
     "@reactive-kit/babel-types": "workspace:*",
+    "@reactive-kit/build-config": "workspace:*",
     "@babel/core": "7.24.4",
     "@babel/generator": "7.24.4",
     "@babel/types": "7.24.0",

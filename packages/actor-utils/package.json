@@ -31,10 +31,8 @@
       }
     }
   },
-  "dependencies": {
-    "@reactive-kit/actor": "workspace:*"
-  },
   "devDependencies": {
+    "@reactive-kit/actor": "workspace:*",
     "@reactive-kit/build-config": "workspace:*"
   },
   "peerDependencies": {

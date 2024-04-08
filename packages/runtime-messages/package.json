@@ -31,13 +31,11 @@
       }
     }
   },
-  "dependencies": {
+  "devDependencies": {
+    "@reactive-kit/build-config": "workspace:*",
     "@reactive-kit/effect": "workspace:*",
     "@reactive-kit/interpreter": "workspace:*",
     "@reactive-kit/utils": "workspace:*"
-  },
-  "devDependencies": {
-    "@reactive-kit/build-config": "workspace:*"
   },
   "peerDependencies": {
     "eslint": "^8",
