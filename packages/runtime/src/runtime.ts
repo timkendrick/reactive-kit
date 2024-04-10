@@ -48,6 +48,7 @@ export class Runtime {
     const { state = null } = options ?? {};
     this.scheduler = new AsyncScheduler((output, context) => {
       const input = context.self();
+      // FIXME: compose effect handlers into single combined effect handler
       const evaluateHandler = context.spawn(() => new EvaluateHandler({ state }, input));
       const effectHandlers = Array.from(handlers, (factory) => context.spawn(() => factory(input)));
       return new BroadcastActor<RuntimeMessage>([evaluateHandler, ...effectHandlers, output]);

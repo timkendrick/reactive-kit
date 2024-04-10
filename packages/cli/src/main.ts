@@ -1,10 +1,10 @@
 import { register } from 'node:module';
 import { join } from 'node:path';
-import { subscribeAsyncIterator } from '@reactive-kit/utils';
+import { handlers } from '@reactive-kit/handlers';
 import { type Hashable } from '@reactive-kit/hash';
 import { type Reactive } from '@reactive-kit/interpreter';
 import { Runtime } from '@reactive-kit/runtime';
-import handlers from './handlers';
+import { subscribeAsyncIterator } from '@reactive-kit/utils';
 
 declare module 'node:module' {
   export function register(

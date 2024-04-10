@@ -1,6 +1,6 @@
 {
   "name": "reactive-kit",
-  "entryPoints": ["packages/*"],
+  "entryPoints": ["packages/*", "packages/effects/*/*"],
   "exclude": ["packages/build-config", "packages/build-tools"],
   "entryPointStrategy": "packages"
 }

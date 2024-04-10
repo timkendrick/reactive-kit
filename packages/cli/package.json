@@ -32,14 +32,11 @@
     "@reactive-kit/loader": "workspace:*"
   },
   "devDependencies": {
-    "@reactive-kit/actor": "workspace:*",
     "@reactive-kit/build-config": "workspace:*",
-    "@reactive-kit/handler-fetch": "workspace:*",
-    "@reactive-kit/handler-time": "workspace:*",
+    "@reactive-kit/handlers": "workspace:*",
     "@reactive-kit/hash": "workspace:*",
     "@reactive-kit/interpreter": "workspace:*",
     "@reactive-kit/runtime": "workspace:*",
-    "@reactive-kit/runtime-messages": "workspace:*",
     "@reactive-kit/utils": "workspace:*"
   },
   "peerDependencies": {
