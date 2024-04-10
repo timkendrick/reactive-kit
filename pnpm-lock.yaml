@@ -413,6 +413,31 @@ importers:
         specifier: workspace:*
         version: link:../hash
 
+  packages/effect-time:
+    dependencies:
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+      '@reactive-kit/effect':
+        specifier: workspace:*
+        version: link:../effect
+
   packages/handler-evaluate:
     dependencies:
       eslint:
@@ -492,6 +517,46 @@ importers:
       '@reactive-kit/effect-fetch':
         specifier: workspace:*
         version: link:../effect-fetch
+      '@reactive-kit/runtime-messages':
+        specifier: workspace:*
+        version: link:../runtime-messages
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
+
+  packages/handler-time:
+    dependencies:
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
+    devDependencies:
+      '@reactive-kit/actor':
+        specifier: workspace:*
+        version: link:../actor
+      '@reactive-kit/actor-utils':
+        specifier: workspace:*
+        version: link:../actor-utils
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+      '@reactive-kit/effect':
+        specifier: workspace:*
+        version: link:../effect
+      '@reactive-kit/effect-time':
+        specifier: workspace:*
+        version: link:../effect-time
       '@reactive-kit/runtime-messages':
         specifier: workspace:*
         version: link:../runtime-messages
