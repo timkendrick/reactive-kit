@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@reactive-kit/babel-plugin-reactive-functions": "workspace:*",
+    "@reactive-kit/babel-plugin-reactive-jsx": "workspace:*",
     "@reactive-kit/build-config": "workspace:*",
     "@reactive-kit/babel-test-utils": "workspace:*",
     "@reactive-kit/babel-types": "workspace:*",

@@ -343,6 +343,9 @@ importers:
       '@reactive-kit/babel-plugin-reactive-functions':
         specifier: workspace:*
         version: link:../babel-plugin-reactive-functions
+      '@reactive-kit/babel-plugin-reactive-jsx':
+        specifier: workspace:*
+        version: link:../babel-plugin-reactive-jsx
       '@reactive-kit/babel-test-utils':
         specifier: workspace:*
         version: link:../babel-test-utils
