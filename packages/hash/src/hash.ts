@@ -11,6 +11,7 @@ export type Hashable =
   | bigint
   | Array<Hashable>
   | { [key: string]: Hashable }
+  | Date
   | CustomHashable;
 
 export interface CustomHashable {
@@ -65,14 +66,15 @@ export function writeValueHash(state: Hash, value: Hashable): Hash {
       return writeBigintHash(writeByteHash(state, 5), value);
     case 'object':
       if (Array.isArray(value)) return writeArrayHash(writeByteHash(state, 6), value);
+      if (value instanceof Date) return writeNumberHash(writeByteHash(state, 7), value.getTime());
       if (HASH in value) {
         const hasher = value[HASH];
         return writeBigintHash(
-          writeByteHash(state, 7),
+          writeByteHash(state, 8),
           typeof hasher === 'function' ? (value[HASH] = hasher(hash)) : hasher,
         );
       }
-      return writeObjectHash(writeByteHash(state, 8), value);
+      return writeObjectHash(writeByteHash(state, 9), value);
     default:
       throw new Error(`Unable to hash value: ${value}`);
   }
