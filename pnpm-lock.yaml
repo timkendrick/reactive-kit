@@ -242,6 +242,52 @@ importers:
         specifier: workspace:*
         version: link:../build-config
 
+  packages/cli:
+    dependencies:
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
+    devDependencies:
+      '@reactive-kit/actor':
+        specifier: workspace:*
+        version: link:../actor
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+      '@reactive-kit/handler-fetch':
+        specifier: workspace:*
+        version: link:../handler-fetch
+      '@reactive-kit/handler-time':
+        specifier: workspace:*
+        version: link:../handler-time
+      '@reactive-kit/hash':
+        specifier: workspace:*
+        version: link:../hash
+      '@reactive-kit/interpreter':
+        specifier: workspace:*
+        version: link:../interpreter
+      '@reactive-kit/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@reactive-kit/runtime-messages':
+        specifier: workspace:*
+        version: link:../runtime-messages
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
+
   packages/compiler:
     dependencies:
       eslint:

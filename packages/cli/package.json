@@ -1,0 +1,43 @@
+{
+  "private": true,
+  "name": "@reactive-kit/cli",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "ReactiveKit CLI runner",
+  "author": "Tim Kendrick <timkendrick@gmail.com>",
+  "type": "module",
+  "main": "./index.ts",
+  "scripts": {
+    "build": "pnpm run build:lib && pnpm run build:pkg",
+    "build:lib": "vite build",
+    "build:docs": "typedoc",
+    "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
+    "lint": "pnpm run '/^lint:.*/'",
+    "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
+    "lint:typescript": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
+  },
+  "pkg": {
+    "main": "./index.cjs",
+    "bin": "./index.cjs"
+  },
+  "devDependencies": {
+    "@reactive-kit/actor": "workspace:*",
+    "@reactive-kit/build-config": "workspace:*",
+    "@reactive-kit/handler-fetch": "workspace:*",
+    "@reactive-kit/handler-time": "workspace:*",
+    "@reactive-kit/hash": "workspace:*",
+    "@reactive-kit/interpreter": "workspace:*",
+    "@reactive-kit/runtime": "workspace:*",
+    "@reactive-kit/runtime-messages": "workspace:*",
+    "@reactive-kit/utils": "workspace:*"
+  },
+  "peerDependencies": {
+    "eslint": "^8",
+    "typedoc": "^0.25",
+    "typescript": "^5",
+    "vite": "^4",
+    "vitest": "^0.34"
+  }
+}
