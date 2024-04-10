@@ -363,58 +363,67 @@ function subscribeHandlerEvents<I, O>(
     subscribeHandlerMessages(handler, inbox, outbox),
     subscribeAsyncIterator(outbox, callback).then(() => {}),
   ]);
+}
 
-  async function subscribeHandlerMessages<I, O>(
-    handler: AsyncActor<I, O>,
-    inbox: AsyncQueue<I>,
-    outbox: AsyncQueue<HandlerResult<O>>,
-  ): Promise<void> {
-    const enum MessageType {
-      Input,
-      Output,
-    }
-    function withMessageType<T extends MessageType, V>(
-      type: T,
-      result: Promise<V>,
-    ): Promise<{ type: T; result: V }> {
-      return result.then((result) => ({ type, result }));
-    }
+function subscribeHandlerMessages<I, O>(
+  handler: AsyncActor<I, O>,
+  inbox: AsyncQueue<I>,
+  outbox: AsyncQueue<HandlerResult<O>>,
+): Promise<void> {
+  const enum MessageType {
+    Input,
+    Output,
+  }
+  function withMessageType<T extends MessageType, V>(
+    type: T,
+    result: Promise<V>,
+  ): Promise<{ type: T; result: V }> {
+    return result.then((result) => ({ type, result }));
+  }
+  return new Promise<void>((resolve) => {
     let isInputCompleted = false;
     let isOutputCompleted = false;
     let nextInput = withMessageType(MessageType.Input, inbox.next());
     let nextOutput = withMessageType(MessageType.Output, handler.next());
-    loop: while (true) {
-      const status = await Promise.race([nextInput, nextOutput]);
-      switch (status.type) {
-        case MessageType.Input: {
-          const { result } = status;
-          if (result.done) {
-            isInputCompleted = true;
-            nextInput = new Promise<never>(() => {});
-            if (isOutputCompleted) break loop;
-            continue loop;
+    return next();
+
+    function next(): void {
+      Promise.race([nextInput, nextOutput]).then((status) => {
+        switch (status.type) {
+          case MessageType.Input: {
+            const { result } = status;
+            if (result.done) {
+              isInputCompleted = true;
+              nextInput = never();
+              if (isOutputCompleted) return resolve();
+              return next();
+            }
+            const { value: message } = result;
+            nextInput = withMessageType(MessageType.Input, inbox.next());
+            nextOutput = withMessageType(MessageType.Output, handler.next(message));
+            return next();
           }
-          const { value: message } = result;
-          nextInput = withMessageType(MessageType.Input, inbox.next());
-          nextOutput = withMessageType(MessageType.Output, handler.next(message));
-          continue loop;
+          case MessageType.Output: {
+            const { result } = status;
+            const { value: handlerResult } = result;
+            isOutputCompleted = Boolean(result.done);
+            nextOutput = isOutputCompleted
+              ? never()
+              : withMessageType(MessageType.Output, handler.next());
+            outbox.push(handlerResult);
+            if (isInputCompleted && isOutputCompleted) return resolve();
+            return next();
+          }
         }
-        case MessageType.Output: {
-          const { result } = status;
-          const { value: handlerResult } = result;
-          isOutputCompleted = Boolean(result.done);
-          nextOutput = isOutputCompleted
-            ? new Promise<never>(() => {})
-            : withMessageType(MessageType.Output, handler.next());
-          outbox.push(handlerResult);
-          if (isInputCompleted && isOutputCompleted) break loop;
-          continue loop;
-        }
-      }
+      });
     }
+
+    function never(): Promise<never> {
+      return new Promise<never>(() => {});
+    }
+  }).then(() => {
     handler.return?.();
-    return;
-  }
+  });
 }
 
 class SchedulerActorHandle<T> implements ActorHandle<T> {

@@ -13,15 +13,23 @@ export function createAsyncTrigger<T>(): AsyncTrigger<T> {
   return { signal, emit: emit! };
 }
 
-export async function subscribeAsyncIterator<T, V>(
+export function subscribeAsyncIterator<T, V>(
   source: AsyncIterator<T, V, undefined>,
-  callback: (value: T) => void,
+  callback: (value: T) => void | PromiseLike<void>,
 ): Promise<V> {
-  while (true) {
-    const result = await source.next();
-    if (result.done) return result.value;
-    callback(result.value);
-  }
+  return new Promise<V>((resolve, reject) => {
+    return next();
+
+    function next(): void {
+      source.next().then((result) => {
+        if (result.done) {
+          resolve(result.value);
+        } else {
+          Promise.resolve(callback(result.value)).then(() => next());
+        }
+      }, reject);
+    }
+  });
 }
 
 // The queue can either be blocked on subscribers or on values, so model the state accordingly
