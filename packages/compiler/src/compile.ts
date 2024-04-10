@@ -1,4 +1,4 @@
-import { transform } from '@babel/core';
+import { transformSync, type TransformOptions } from '@babel/core';
 import reactiveFunctions from '@reactive-kit/babel-plugin-reactive-functions';
 import { type CompilerOptions } from './types';
 
@@ -6,8 +6,8 @@ const SYNTAX_TYPESCRIPT = ['typescript'] as const;
 const SYNTAX_JSX = ['jsx'] as const;
 
 export function compile(source: string, options?: CompilerOptions): string | null {
-  const { filename, parser: parserOptions = {} } = options ?? {};
-  const result = transform(source, {
+  const { filename, parser: parserOptions = {}, sourcemap } = options ?? {};
+  const result = transformSync(source, {
     sourceFileName: filename,
     sourceType: parserOptions.sourceType ?? 'module',
     parserOpts: {
@@ -19,6 +19,12 @@ export function compile(source: string, options?: CompilerOptions): string | nul
     },
     plugins: [reactiveFunctions],
     code: true,
+    ...(sourcemap
+      ? {
+          inputSourceMap: true as unknown as TransformOptions['inputSourceMap'],
+          sourceMaps: 'inline',
+        }
+      : undefined),
   });
   if (!result) return null;
   return result.code ?? null;

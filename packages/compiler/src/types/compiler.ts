@@ -1,6 +1,7 @@
 export interface CompilerOptions {
   filename: string;
   parser?: ParserOptions;
+  sourcemap?: boolean;
 }
 
 export interface ParserOptions {
