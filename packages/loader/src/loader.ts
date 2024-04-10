@@ -33,12 +33,14 @@ export function load(url: string, context: LoaderContext, next: LoaderNext): Pro
           url,
           sourceType: 'script',
           jsx: isJsxImportSpecifier(url),
+          typescript: isTypescriptImportSpecifier(url),
         });
       case 'module':
         return transpileLoaderResult(result, {
           url,
           sourceType: 'module',
           jsx: isJsxImportSpecifier(url),
+          typescript: isTypescriptImportSpecifier(url),
         });
       case 'builtin':
       case 'json':
@@ -55,11 +57,24 @@ function isJsxImportSpecifier(specifier: string): boolean {
   return false;
 }
 
+function isTypescriptImportSpecifier(specifier: string): boolean {
+  if (specifier.endsWith('.ts')) return true;
+  if (specifier.endsWith('.tsx')) return true;
+  if (specifier.endsWith('.mts')) return true;
+  if (specifier.endsWith('.cts')) return true;
+  return false;
+}
+
 function transpileLoaderResult(
   result: LoaderResult,
-  options: { url: string; sourceType: 'script' | 'module'; jsx: boolean },
+  options: {
+    url: string;
+    sourceType: 'script' | 'module';
+    jsx: boolean;
+    typescript?: boolean;
+  },
 ) {
-  const { url, sourceType, jsx } = options;
+  const { url, sourceType, jsx, typescript } = options;
   return {
     ...result,
     source:
@@ -68,6 +83,7 @@ function transpileLoaderResult(
         parser: {
           sourceType,
           jsx,
+          typescript,
         },
         sourcemap: true,
       }) ?? result.source,
