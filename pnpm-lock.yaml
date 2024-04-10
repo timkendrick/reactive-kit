@@ -105,6 +105,37 @@ importers:
         specifier: workspace:*
         version: link:../hash
 
+  packages/babel-plugin-reactive-jsx:
+    dependencies:
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
+    devDependencies:
+      '@reactive-kit/babel-test-utils':
+        specifier: workspace:*
+        version: link:../babel-test-utils
+      '@reactive-kit/babel-types':
+        specifier: workspace:*
+        version: link:../babel-types
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+      '@reactive-kit/hash':
+        specifier: workspace:*
+        version: link:../hash
+
   packages/babel-test-utils:
     dependencies:
       eslint:
