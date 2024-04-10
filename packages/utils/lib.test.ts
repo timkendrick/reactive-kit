@@ -6,6 +6,7 @@ test('module exports', () => {
   expect({ ...lib }).toEqual({
     AsyncQueue: lib.AsyncQueue,
     Enum: lib.Enum,
+    createAsyncTrigger: lib.createAsyncTrigger,
     enumConstructor: lib.enumConstructor,
     enumVariantConstructor: lib.enumVariantConstructor,
     instantiateEnum: lib.instantiateEnum,

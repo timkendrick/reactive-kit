@@ -1,5 +1,18 @@
 import { Enum, EnumVariant, VARIANT, instantiateEnum } from './enum';
 
+export interface AsyncTrigger<T> {
+  signal: Promise<T>;
+  emit: (value: T) => void;
+}
+
+export function createAsyncTrigger<T>(): AsyncTrigger<T> {
+  let emit: (value: T) => void;
+  const signal = new Promise<T>((resolve) => {
+    emit = resolve;
+  });
+  return { signal, emit: emit! };
+}
+
 export async function subscribeAsyncIterator<T, V>(
   source: AsyncIterator<T, V, undefined>,
   callback: (value: T) => void,
