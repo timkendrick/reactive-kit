@@ -8,6 +8,7 @@ import {
 import {
   Effect,
   EFFECT,
+  EffectType,
   getTypedEffects,
   groupEffectsByType,
   StateToken,
@@ -27,6 +28,9 @@ import {
   createEmitEffectValuesMessage,
   createSubscribeEffectsMessage,
   createUnsubscribeEffectsMessage,
+  isEmitEffectValuesMessage,
+  isSubscribeEffectsMessage,
+  isUnsubscribeEffectsMessage,
   MESSAGE_EMIT_EFFECT_VALUES,
   MESSAGE_SUBSCRIBE_EFFECTS,
   MESSAGE_UNSUBSCRIBE_EFFECTS,
@@ -60,34 +64,27 @@ interface EvaluateEffectResult<T> {
   dependencies: DependencyTree;
 }
 
-export class EvaluateHandler implements Actor<EvaluateHandlerInput> {
+export class EvaluateHandler implements Actor<Message<unknown>> {
   private readonly next: ActorHandle<EvaluateHandlerOutputMessage>;
   private effectState: StateValues;
   // FIXME: Hash queries to prevent duplicate subscriptions
   private subscriptions: Map<Hash, QuerySubscription<any>> = new Map();
   private activeEffects: Map<StateToken, Effect> = new Map();
 
-  constructor(options: { state?: StateValues; next: ActorHandle<EvaluateHandlerOutputMessage> }) {
-    const { state, next } = options;
+  constructor(
+    options: { state: StateValues | null },
+    next: ActorHandle<EvaluateHandlerOutputMessage>,
+  ) {
+    const { state } = options;
     this.effectState = state ?? new Map();
     this.next = next;
   }
 
-  public accept(message: Message<unknown>): message is EvaluateHandlerInput {
-    switch (message.type) {
-      case MESSAGE_SUBSCRIBE_EFFECTS:
-      case MESSAGE_UNSUBSCRIBE_EFFECTS:
-      case MESSAGE_EMIT_EFFECT_VALUES:
-        return true;
-      default:
-        return false;
-    }
-  }
-
   public handle(
-    message: EvaluateHandlerInput,
+    message: Message<unknown>,
     context: HandlerContext<EvaluateHandlerInput>,
   ): EvaluateHandlerOutput {
+    if (!this.accept(message)) return null;
     switch (message.type) {
       case MESSAGE_SUBSCRIBE_EFFECTS:
         return this.handleSubscribeEffects(message, context);
@@ -96,6 +93,13 @@ export class EvaluateHandler implements Actor<EvaluateHandlerInput> {
       case MESSAGE_EMIT_EFFECT_VALUES:
         return this.handleEmitEffectValues(message, context);
     }
+  }
+
+  private accept(message: Message<unknown>): message is EvaluateHandlerInput {
+    if (isEmitEffectValuesMessage(message)) return true;
+    if (isSubscribeEffectsMessage(message)) return message.effects.has(EFFECT_TYPE_EVALUATE);
+    if (isUnsubscribeEffectsMessage(message)) return message.effects.has(EFFECT_TYPE_EVALUATE);
+    return false;
   }
 
   private handleSubscribeEffects(
@@ -115,7 +119,10 @@ export class EvaluateHandler implements Actor<EvaluateHandlerInput> {
         } = this.subscribe(effect);
         // If the result is already available, ensure it is re-emitted in this result set
         if (EvaluationResult.Ready.is(result)) {
-          results.set(hash(effect), { value: result.value, dependencies: result.dependencies });
+          combinedResults.results.set(effect[EFFECT], {
+            value: result.value,
+            dependencies: result.dependencies,
+          });
         }
         // Keep track of any effect subscriptions that were added or removed as a result of this evaluation
         combinedResults.subscribedEffects.push(...subscribedEffects);
@@ -170,12 +177,14 @@ export class EvaluateHandler implements Actor<EvaluateHandlerInput> {
     message: EmitEffectValuesMessage,
     context: HandlerContext<EvaluateHandlerInput>,
   ): EvaluateHandlerOutput {
-    const { values } = message;
+    const { updates } = message;
     // Determine the set of subscriptions that could potentially be affected by the provided effect updates
-    const updatedSubscriptions = getAffectedSubscriptions(this.subscriptions, values);
+    const updatedSubscriptions = getAffectedSubscriptions(this.subscriptions, updates);
     // Update the state with the incoming effect values
-    for (const [stateToken, value] of values) {
-      this.effectState.set(stateToken, value);
+    for (const values of updates.values()) {
+      for (const [stateToken, value] of values) {
+        this.effectState.set(stateToken, value);
+      }
     }
     // Re-evaluate all potentially-affected subscriptions and emit any updated results
     const { results, subscribedEffects, unsubscribedEffects } = updatedSubscriptions.reduce(
@@ -192,8 +201,19 @@ export class EvaluateHandler implements Actor<EvaluateHandlerInput> {
           (!EvaluationResult.Ready.is(previousResult) ||
             !isEqual(result.value, previousResult.value))
         ) {
-          results.set(hash(effect), { value: result.value, dependencies: result.dependencies });
+          combinedResults.results.set(effect[EFFECT], {
+            value: result.value,
+            dependencies: result.dependencies,
+          });
         }
+        // Register any effect subscriptions that have been created or removed as a result of this evaluation
+        const updatedDependencies = result.dependencies;
+        const previousDependencies = previousResult.dependencies;
+        const { subscribedEffects, unsubscribedEffects } = this.updateActiveEffects(
+          subscription,
+          updatedDependencies,
+          previousDependencies,
+        );
         // Keep track of any effect subscriptions that were added or removed as a result of this evaluation
         combinedResults.subscribedEffects.push(...subscribedEffects);
         combinedResults.unsubscribedEffects.push(...unsubscribedEffects);
@@ -235,7 +255,10 @@ export class EvaluateHandler implements Actor<EvaluateHandlerInput> {
         : null;
     const emitResultsAction =
       results && results.size > 0
-        ? HandlerAction.Send(this.next, createEmitEffectValuesMessage(results))
+        ? HandlerAction.Send(
+            this.next,
+            createEmitEffectValuesMessage(new Map([[EFFECT_TYPE_EVALUATE, results]])),
+          )
         : null;
     return [
       ...(subscribeEffectsAction ? [subscribeEffectsAction] : []),
@@ -398,13 +421,19 @@ function getUpdatedDependencies(
 
 function getAffectedSubscriptions(
   subscriptions: Map<bigint, QuerySubscription<any>>,
-  updates: Map<bigint, any>,
+  updates: Map<EffectType, Map<bigint, any>>,
 ): Array<QuerySubscription<any>> {
   // FIXME: Optimize expensive dependency operations
   const affectedSubscriptions = new Array<QuerySubscription<any>>();
+  const updatedStateTokens = new Set<StateToken>();
+  for (const effectValues of updates.values()) {
+    for (const stateToken of effectValues.keys()) {
+      updatedStateTokens.add(stateToken);
+    }
+  }
   for (const subscription of subscriptions.values()) {
     for (const dependency of flattenDependencyTree(subscription.result.dependencies)) {
-      if (updates.has(dependency)) {
+      if (updatedStateTokens.has(dependency)) {
         affectedSubscriptions.push(subscription);
         break;
       }
