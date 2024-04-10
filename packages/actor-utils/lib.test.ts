@@ -11,6 +11,7 @@ test('module exports', () => {
     MapActor: lib.MapActor,
     ScanActor: lib.ScanActor,
     chain: lib.chain,
+    fromAsyncIteratorFactory: lib.fromAsyncIteratorFactory,
     fromCancelablePromiseFactory: lib.fromCancelablePromiseFactory,
     fromPromiseFactory: lib.fromPromiseFactory,
     pipe: lib.pipe,
