@@ -415,6 +415,46 @@ importers:
         specifier: 10.20.2
         version: 10.20.2
 
+  packages/dom:
+    dependencies:
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+      '@reactive-kit/component':
+        specifier: workspace:*
+        version: link:../component
+      '@reactive-kit/handlers':
+        specifier: workspace:*
+        version: link:../handlers
+      '@reactive-kit/hash':
+        specifier: workspace:*
+        version: link:../hash
+      '@reactive-kit/interpreter':
+        specifier: workspace:*
+        version: link:../interpreter
+      '@reactive-kit/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
+
   packages/effect:
     dependencies:
       eslint:
