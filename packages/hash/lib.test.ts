@@ -4,6 +4,7 @@ import * as lib from './lib';
 
 test('module exports', () => {
   expect({ ...lib }).toEqual({
+    assignCustomHash: lib.assignCustomHash,
     createHasher: lib.createHasher,
     hash: lib.hash,
     HASH: lib.HASH,

@@ -15,6 +15,7 @@ import {
   type FetchEffect,
   type FetchHeaders,
   type FetchRequest,
+  type FetchResponseState,
 } from '@reactive-kit/effect-fetch';
 import {
   createEmitEffectValuesMessage,
@@ -27,13 +28,12 @@ import {
   type SubscribeEffectsMessage,
   type UnsubscribeEffectsMessage,
 } from '@reactive-kit/runtime-messages';
-import { nonNull } from '@reactive-kit/utils';
+import { nonNull, generateUid } from '@reactive-kit/utils';
 import {
   createFetchHandlerResponseMessage,
   isFetchHandlerResponseMessage,
   MESSAGE_FETCH_HANDLER_RESPONSE,
   type FetchHandlerResponseMessage,
-  type FetchResponseState,
   type TaskId,
 } from '../messages';
 
@@ -71,7 +71,7 @@ export class FetchHandler implements Actor<Message<unknown>> {
       case MESSAGE_UNSUBSCRIBE_EFFECTS:
         return this.handleUnsubscribeEffects(message, context);
       case MESSAGE_FETCH_HANDLER_RESPONSE:
-        return this.handleFetchHandlerReady(message, context);
+        return this.handleFetchHandlerResponse(message, context);
     }
   }
 
@@ -136,7 +136,7 @@ export class FetchHandler implements Actor<Message<unknown>> {
     return actions;
   }
 
-  private handleFetchHandlerReady(
+  private handleFetchHandlerResponse(
     message: FetchHandlerResponseMessage,
     context: HandlerContext<FetchHandlerInput>,
   ): FetchHandlerOutput {
@@ -175,34 +175,63 @@ function fetchRequest(request: FetchRequest, signal: AbortSignal): Promise<Fetch
     headers: parseRequestHeaders(request.headers),
     body: request.body,
     signal,
-  }).then((response) => {
-    if (response.ok) {
-      return response.text().then(
-        (body): FetchResponseState => ({
-          success: true,
-          response: {
-            status: response.status,
-            headers: parseResponseHeaders(response.headers),
-            body,
-          },
-        }),
-        (err): FetchResponseState => {
-          return { success: false, error: parseResponseError(err), body: null };
-        },
-      );
-    } else {
-      return response.text().then(
-        (body): FetchResponseState => ({
-          success: false,
-          error: new Error(`HTTP error ${response.status}: ${response.statusText}`),
-          body,
-        }),
-        (err): FetchResponseState => {
-          return { success: false, error: parseResponseError(err), body: null };
-        },
-      );
-    }
-  });
+  })
+    .then((response) => {
+      const { status } = response;
+      const headers = parseResponseHeaders(response.headers);
+      const token = generateUid();
+      if (response.ok) {
+        return response.text().then(
+          (body): FetchResponseState => ({
+            success: true,
+            response: {
+              status,
+              headers,
+              body,
+              token,
+            },
+          }),
+          (err): FetchResponseState => ({
+            success: false,
+            error: parseResponseError(err),
+            response: {
+              status,
+              headers,
+              body: null,
+              token,
+            },
+          }),
+        );
+      } else {
+        return response.text().then(
+          (body): FetchResponseState => ({
+            success: false,
+            error: new Error(`HTTP error ${response.status}: ${response.statusText}`),
+            response: {
+              status,
+              headers,
+              body,
+              token,
+            },
+          }),
+          (err): FetchResponseState => ({
+            success: false,
+            error: parseResponseError(err),
+            response: {
+              status,
+              headers,
+              body: null,
+              token,
+            },
+          }),
+        );
+      }
+    })
+    .catch((err) => ({
+      success: false,
+      error: parseResponseError(err),
+      response: null,
+    }));
 }
 
 function parseRequestHeaders(headers: FetchHeaders | null | undefined): Headers {

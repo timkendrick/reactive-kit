@@ -15,7 +15,16 @@ export type Hashable =
   | CustomHashable;
 
 export interface CustomHashable {
-  [HASH]: Hash | ((hash: (...values: Array<Hashable>) => Hash) => Hash);
+  [HASH]: Hash | CustomHashFactory;
+}
+
+type CustomHashFactory = (hash: (...values: Array<Hashable>) => Hash) => Hash;
+
+export function assignCustomHash<T extends object | Function>(
+  hash: Hash | CustomHashFactory,
+  value: T,
+): T & CustomHashable {
+  return Object.assign(value, { [HASH]: hash });
 }
 
 export type HashableObject<T extends { [K in keyof T]: Hashable }> = T;
@@ -67,17 +76,23 @@ export function writeValueHash(state: Hash, value: Hashable): Hash {
     case 'object':
       if (Array.isArray(value)) return writeArrayHash(writeByteHash(state, 6), value);
       if (value instanceof Date) return writeNumberHash(writeByteHash(state, 7), value.getTime());
-      if (HASH in value) {
-        const hasher = value[HASH];
-        return writeBigintHash(
-          writeByteHash(state, 8),
-          typeof hasher === 'function' ? (value[HASH] = hasher(hash)) : hasher,
-        );
-      }
+      if (HASH in value) return writeCustomHash(writeByteHash(state, 8), value);
       return writeObjectHash(writeByteHash(state, 9), value);
+    case 'function':
+      if (HASH in value) return writeCustomHash(writeByteHash(state, 8), value);
+    // Fall through to error case
+    case 'symbol':
     default:
       throw new Error(`Unable to hash value: ${value}`);
   }
+}
+
+function writeCustomHash(state: Hash, value: CustomHashable): Hash {
+  const hasher = value[HASH];
+  return writeBigintHash(
+    state,
+    typeof hasher === 'function' ? (value[HASH] = hasher(hash)) : hasher,
+  );
 }
 
 export function writeNullHash(state: Hash): Hash {

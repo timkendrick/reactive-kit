@@ -535,6 +535,9 @@ importers:
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../hash
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
 
   packages/effect-never:
     dependencies:
