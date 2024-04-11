@@ -9,80 +9,73 @@ export const reactiveFunctions: BabelPlugin = (babel) => {
   return {
     name: 'reactive-functions',
     visitor: {
-      FunctionDeclaration(path) {
-        if (path.node.async) {
-          path.replaceWith(transformFunctionDeclaration(path.node, path.scope));
-        }
+      Function(path) {
+        if (!path.node.async) return;
+        path.replaceWith(transformFunction(path.node, path.scope));
       },
       AwaitExpression(path) {
+        const isTopLevelAwait = !path.getFunctionParent();
+        if (isTopLevelAwait) return;
         path.replaceWith(transformAwaitExpression(path.node));
       },
     },
   };
 
-  function transformFunctionDeclaration(
-    node: Types.FunctionDeclaration,
-    scope: Scope,
-  ): Types.FunctionDeclaration {
+  function transformFunction(node: Types.Function, scope: Scope): Types.Function {
+    const result = createStatefulGenerator(node, scope);
+    if (t.isArrowFunctionExpression(node)) {
+      return {
+        ...node,
+        expression: true,
+        generator: false,
+        async: false,
+        returnType: undefined,
+        body: result,
+      };
+    } else {
+      return {
+        ...node,
+        generator: false,
+        async: false,
+        returnType: undefined,
+        body: t.blockStatement([t.returnStatement(result)]),
+      };
+    }
+  }
+
+  function createStatefulGenerator(node: Types.Function, scope: Scope): Types.Expression {
     const astHash = hashAstNode(node);
-    const {
-      type,
-      id,
-      params,
-      body,
-      generator,
-      async,
-      declare,
-      predicate,
-      returnType,
-      typeParameters,
-      ...metadata
-    } = node;
-    return {
-      type,
-      id,
-      params,
-      body: t.blockStatement([
-        t.returnStatement(
-          t.objectExpression([
-            t.objectProperty(
-              wellKnownSymbol(SYMBOL_NAME_HASH),
-              node.params.length === 0
-                ? t.bigIntLiteral(astHash.toString())
-                : ((hash) =>
-                    t.arrowFunctionExpression(
-                      [t.identifier(hash)],
-                      t.callExpression(t.identifier(hash), [
-                        t.bigIntLiteral(astHash.toString()),
-                        ...node.params.map((param) => instantiateParam(param)),
-                      ]),
-                    ))(scope.generateUid('hash')),
-              true,
-            ),
-            t.objectProperty(
-              wellKnownSymbol(SYMBOL_NAME_STATEFUL),
-              Object.assign(
-                t.functionExpression(id, [], body, true),
-                node.returnType
-                  ? {
-                      returnType:
-                        node.returnType && transformAsyncFunctionReturnType(node.returnType),
-                    }
-                  : undefined,
-              ),
-              true,
-            ),
-          ]),
+    return t.objectExpression([
+      t.objectProperty(
+        wellKnownSymbol(SYMBOL_NAME_HASH),
+        node.params.length === 0
+          ? t.bigIntLiteral(astHash.toString())
+          : ((hash) =>
+              t.arrowFunctionExpression(
+                [hash],
+                t.callExpression(hash, [
+                  t.bigIntLiteral(astHash.toString()),
+                  ...node.params.map((param) => instantiateParam(param)),
+                ]),
+              ))(scope.generateUidIdentifier('hash')),
+        true,
+      ),
+      t.objectProperty(
+        wellKnownSymbol(SYMBOL_NAME_STATEFUL),
+        Object.assign(
+          t.isArrowFunctionExpression(node)
+            ? t.arrowFunctionExpression([], node.body)
+            : t.functionExpression(getFunctionIdentifier(node, scope), [], node.body),
+          { generator: true },
+          node.returnType
+            ? {
+                returnType: node.returnType && transformAsyncFunctionReturnType(node.returnType),
+              }
+            : undefined,
         ),
-      ]),
-      generator: false,
-      async: false,
-      declare,
-      predicate,
-      returnType: undefined,
-      typeParameters,
-      ...metadata,
-    };
+        true,
+      ),
+    ]);
   }
 
   function instantiateParam(param: Types.LVal): Types.Expression {
@@ -232,6 +225,51 @@ export const reactiveFunctions: BabelPlugin = (babel) => {
 
   function transformAwaitExpression(node: Types.AwaitExpression): Types.YieldExpression {
     return t.yieldExpression(node.argument);
+  }
+
+  function getFunctionIdentifier(node: Types.Function, scope: Scope): Types.Identifier | null {
+    switch (node.type) {
+      case 'FunctionDeclaration':
+      case 'FunctionExpression':
+        return node.id ?? null;
+      case 'ClassMethod':
+      case 'ObjectMethod': {
+        const key = getStaticPropertyKey(node.key, node.computed);
+        if (key == null) return null;
+        return t.identifier(key);
+      }
+      case 'ClassPrivateMethod':
+        return scope.generateUidIdentifier(node.key.id.name);
+      case 'ArrowFunctionExpression':
+      default:
+        return null;
+    }
+  }
+
+  function getStaticPropertyKey(key: Types.Expression, computed: boolean): string | null {
+    if (t.isIdentifier(key)) return computed ? null : key.name;
+    if (t.isLiteral(key)) return getLiteralPropertyKey(key);
+    return null;
+  }
+
+  function getLiteralPropertyKey(key: Types.Literal): string | null {
+    switch (key.type) {
+      case 'StringLiteral':
+        return key.value;
+      case 'NumericLiteral':
+      case 'BooleanLiteral':
+      case 'BigIntLiteral':
+      case 'DecimalLiteral':
+        return String(key.value);
+      case 'NullLiteral':
+        return String(null);
+      case 'TemplateLiteral':
+        return key.expressions.length === 0 && key.quasis.length === 1
+          ? key.quasis[0].value.cooked ?? key.quasis[0].value.raw
+          : null;
+      case 'RegExpLiteral':
+        return null;
+    }
   }
 
   function wellKnownSymbol(symbolName: string): Types.PrivateName | Types.Expression {
