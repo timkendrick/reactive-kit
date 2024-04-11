@@ -105,6 +105,10 @@ export function writeNumberHash(state: Hash, value: number): Hash {
   state = writeByteHash(state, view.getUint8(1));
   state = writeByteHash(state, view.getUint8(2));
   state = writeByteHash(state, view.getUint8(3));
+  state = writeByteHash(state, view.getUint8(4));
+  state = writeByteHash(state, view.getUint8(5));
+  state = writeByteHash(state, view.getUint8(6));
+  state = writeByteHash(state, view.getUint8(7));
   return state;
 }
 
