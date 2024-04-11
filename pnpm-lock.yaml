@@ -275,6 +275,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@reactive-kit/loader':
+        specifier: workspace:*
+        version: link:../loader
       eslint:
         specifier: ^8
         version: 8.48.0

@@ -15,6 +15,9 @@ export default mergeConfig(
         formats: ['cjs'],
         fileName: 'index',
       },
+      rollupOptions: {
+        external: ['@reactive-kit/loader'],
+      },
     },
   }),
 );

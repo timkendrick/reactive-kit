@@ -8,10 +8,13 @@
   "type": "module",
   "main": "./index.ts",
   "scripts": {
-    "build": "pnpm run build:lib && pnpm run build:pkg",
+    "build": "pnpm run build:lib && pnpm run build:loader && pnpm run build:pkg",
     "build:lib": "vite build",
     "build:docs": "typedoc",
     "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
+    "build:loader": "pnpm run build:loader:lib && pnpm run build:loader:pkg",
+    "build:loader:lib": "vite build --config loader.vite.config.ts",
+    "build:loader:pkg": "pnpm run --filter build-tools pkg $PWD/../loader $PWD/dist/node_modules/@reactive-kit/loader/package.json",
     "lint": "pnpm run '/^lint:.*/'",
     "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
     "lint:typescript": "tsc --noEmit",
@@ -21,6 +24,12 @@
   "pkg": {
     "main": "./index.cjs",
     "bin": "./index.cjs"
+  },
+  "bundleDependencies": [
+    "@reactive-kit/loader"
+  ],
+  "dependencies": {
+    "@reactive-kit/loader": "workspace:*"
   },
   "devDependencies": {
     "@reactive-kit/actor": "workspace:*",
