@@ -1,4 +1,4 @@
-import { hash, type Hashable, HASH } from '@reactive-kit/hash';
+import { hash, HASH, type CustomHashable, type Hashable } from '@reactive-kit/hash';
 import { EFFECT, type EffectType, type Effect, type StateToken } from '../types';
 
 export function createEffect<T extends EffectType, P extends Hashable>(
@@ -24,7 +24,7 @@ export function createEffect<T extends EffectType, P extends Hashable>(
   };
 }
 
-export function createEffectHook<T>(effect: Effect<any>): Promise<T> {
+export function createEffectHook<T>(effect: Effect): Promise<T> {
   return effect as unknown as Promise<T>;
 }
 
@@ -46,4 +46,23 @@ export function getTypedEffects<T extends Effect>(
   effects: Map<EffectType, Array<Effect>>,
 ): Array<T> | null {
   return (effects as Map<T['type'], Array<T>>).get(effectType) ?? null;
+}
+
+export function transformEffectResult<T, V>(
+  effect: Effect,
+  transform: ((result: T) => V) & CustomHashable,
+) {
+  return {
+    [HASH]: hash('@reactive-kit/effect/transform', effect, transform),
+    [Symbol.for('@reactive-kit/symbols/stateful')]: function* () {
+      const value: T = yield effect;
+      return transform(value);
+    },
+  };
+}
+export function transformHookResult<T, V>(
+  hook: Promise<T>,
+  transform: ((result: T) => V) & CustomHashable,
+): Promise<V> {
+  return transformEffectResult(hook as unknown as Effect, transform) as any as Promise<V>;
 }

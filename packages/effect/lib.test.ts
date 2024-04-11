@@ -10,5 +10,7 @@ test('module exports', () => {
     getTypedEffects: lib.getTypedEffects,
     groupEffectsByType: lib.groupEffectsByType,
     isEffect: lib.isEffect,
+    transformEffectResult: lib.transformEffectResult,
+    transformHookResult: lib.transformHookResult,
   });
 });
