@@ -18,6 +18,7 @@ test('module exports', () => {
     noop: lib.noop,
     PhantomType: lib.PhantomType,
     subscribeAsyncIterator: lib.subscribeAsyncIterator,
+    generateUid: lib.generateUid,
     unreachable: lib.unreachable,
     VARIANT: lib.VARIANT,
   });
