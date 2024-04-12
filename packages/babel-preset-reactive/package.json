@@ -20,7 +20,7 @@
     "build:babel-plugin-reactive-jsx:lib": "vite build --config babel-plugin-reactive-jsx.vite.config.ts",
     "build:babel-plugin-reactive-jsx:pkg": "pnpm run --filter build-tools pkg $PWD/../babel-plugin-reactive-jsx $PWD/dist/node_modules/@reactive-kit/babel-plugin-reactive-jsx/package.json",
     "lint": "pnpm run '/^lint:.*/'",
-    "lint:eslint": "eslint --ext js,cjs,mjs,ts .",
+    "lint:eslint": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts .",
     "lint:typescript": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest watch"

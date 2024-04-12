@@ -7,7 +7,7 @@
   "author": "Tim Kendrick <timkendrick@gmail.com>",
   "scripts": {
     "pkg": "./scripts/pkg",
-    "lint": "eslint --ext cjs ."
+    "lint": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts ."
   },
   "devDependencies": {
     "@reactive-kit/build-config": "workspace:*"
