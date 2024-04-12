@@ -12,7 +12,7 @@
     "build": "pnpm run build:lib && pnpm run build:docs && pnpm run build:pkg",
     "build:lib": "vite build",
     "build:docs": "typedoc",
-    "build:pkg": "pnpm run --filter build-tools pkg $PWD $PWD/dist/package.json",
+    "build:pkg": "pkg . ./dist/package.json",
     "lint": "pnpm run '/^lint:.*/'",
     "lint:eslint": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts .",
     "lint:typescript": "tsc --noEmit"

@@ -295,12 +295,6 @@ importers:
         specifier: 0.34.3
         version: 0.34.3
 
-  packages/build-tools:
-    devDependencies:
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../build-config
-
   packages/cli:
     dependencies:
       '@reactive-kit/loader':

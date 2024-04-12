@@ -5,6 +5,9 @@
   "license": "MIT",
   "description": "ReactiveKit build configuration",
   "author": "Tim Kendrick <timkendrick@gmail.com>",
+  "bin": {
+    "pkg": "./scripts/pkg.cjs"
+  },
   "scripts": {
     "lint": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts ."
   },
