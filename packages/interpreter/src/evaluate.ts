@@ -5,11 +5,9 @@ import {
   DependencyTree,
   EvaluationResult,
   isStateful,
-  isStatic,
   Reactive,
   Stateful,
-  STATEFUL,
-  StatefulIterator,
+  StatefulGenerator,
   StateValues,
 } from './types';
 import { collectConditionTree, flattenConditionTree } from './utils/condition';
@@ -42,7 +40,7 @@ type StackFrame = Enum<{
   };
   // Resume an in-progress stateful expression evaluation
   Resume: {
-    evaluation: StatefulIterator<unknown>;
+    evaluation: StatefulGenerator<unknown>;
   };
   // Handle a condition
   Handle: {
@@ -95,13 +93,14 @@ const STACK_FRAME_PLACEHOLDER = StackFrame.Noop({});
 
 // TODO: consider passing newly-updated state values to evaluate method
 export function evaluate<T>(expression: Reactive<T>, state: StateValues): EvaluationResult<T> {
-  if (isStatic(expression)) return EvaluationResult.Ready(expression, EMPTY_DEPENDENCIES);
   let combinedDependencies: DependencyTree = EMPTY_DEPENDENCIES;
   const stack = new MutableStack<StackFrame>(StackFrame.Terminate({}));
   stack.push(
     isStateful(expression)
       ? StackFrame.Evaluate({ expression })
-      : StackFrame.Handle({ condition: expression }),
+      : isEffect(expression)
+      ? StackFrame.Handle({ condition: expression })
+      : StackFrame.Result({ value: expression }),
   );
   let stackFrame: StackFrame | undefined;
   let threadResultRegister: ThreadResultStackFrame = THREAD_RESULT_UNDEFINED_PLACEHOLDER;
@@ -109,9 +108,8 @@ export function evaluate<T>(expression: Reactive<T>, state: StateValues): Evalua
     switch (stackFrame[VARIANT]) {
       case 'Evaluate': {
         const { expression } = stackFrame;
-        const generator = expression[STATEFUL];
         // Instantiate a new stateful iteration
-        const evaluation = generator();
+        const evaluation = expression[Symbol.iterator]();
         // TODO: determine whether to reuse cached stateful values based on updated state values
         // Store a dummy value in the result register to kick off the evaluation iterator
         threadResultRegister = THREAD_RESULT_UNDEFINED_PLACEHOLDER;

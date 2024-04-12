@@ -51,15 +51,18 @@ export function getTypedEffects<T extends Effect>(
 export function transformEffectResult<T, V>(
   effect: Effect,
   transform: ((result: T) => V) & CustomHashable,
-) {
+): CustomHashable & {
+  [Symbol.iterator]: () => Generator<Effect, V, unknown>;
+} {
   return {
     [HASH]: hash('@reactive-kit/effect/transform', effect, transform),
-    [Symbol.for('@reactive-kit/symbols/stateful')]: function* () {
-      const value: T = yield effect;
+    [Symbol.iterator]: function* () {
+      const value = (yield effect) as T;
       return transform(value);
     },
   };
 }
+
 export function transformHookResult<T, V>(
   hook: Promise<T>,
   transform: ((result: T) => V) & CustomHashable,

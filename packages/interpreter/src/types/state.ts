@@ -1,32 +1,41 @@
 import { type Effect, type StateToken } from '@reactive-kit/effect';
 import { type CustomHashable } from '@reactive-kit/hash';
-import { Enum, instantiateEnum, VARIANT, type EnumVariant } from '@reactive-kit/utils';
+import {
+  Enum,
+  instantiateEnum,
+  isGeneratorFunction,
+  VARIANT,
+  type EnumVariant,
+} from '@reactive-kit/utils';
 import { type Reactive } from '../types';
 
-export const STATEFUL = Symbol.for('@reactive-kit/symbols/stateful');
-
 export interface Stateful<T> extends CustomHashable {
-  [STATEFUL]: StatefulIteratorFactory<T>;
+  [Symbol.iterator]: StatefulGeneratorFactory<T>;
 }
 
-export interface StatefulIteratorFactory<T> {
-  (): StatefulIterator<T>;
+export interface StatefulGeneratorFactory<T> {
+  (): StatefulGenerator<T>;
 }
-export type StatefulIterator<T> = Iterator<
-  StatefulIteratorYieldValue<unknown>,
-  T,
-  StatefulIteratorNextValue
+export type StatefulGenerator<T> = Generator<
+  StatefulGeneratorYieldValue,
+  StatefulGeneratorReturnValue<T>,
+  StatefulGeneratorNextValue
 >;
-export type StatefulIteratorResult<T> = Iterator<
-  StatefulIteratorYieldValue<unknown>,
-  T,
-  StatefulIteratorNextValue
+export type StatefulGeneratorResult<T> = IteratorResult<
+  StatefulGeneratorYieldValue,
+  StatefulGeneratorReturnValue<T>
 >;
-export type StatefulIteratorYieldValue<T> = Effect | Reactive<T>;
-export type StatefulIteratorNextValue = any;
+export type StatefulGeneratorYieldValue = Reactive<unknown>;
+export type StatefulGeneratorReturnValue<T> = T;
+export type StatefulGeneratorNextValue = any;
 
 export function isStateful(value: unknown): value is Stateful<unknown> {
-  return value != null && typeof value === 'object' && STATEFUL in value;
+  return (
+    value != null &&
+    typeof value === 'object' &&
+    Symbol.iterator in value &&
+    isGeneratorFunction(value[Symbol.iterator])
+  );
 }
 
 export type StateValues = Map<StateToken, Reactive<unknown>>;

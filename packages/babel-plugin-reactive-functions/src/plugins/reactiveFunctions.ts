@@ -2,7 +2,6 @@ import type { BabelPlugin, Scope, Types } from '@reactive-kit/babel-types';
 import { hashAstNode } from '../utils/ast';
 
 const SYMBOL_NAME_HASH = '@reactive-kit/symbols/hash';
-const SYMBOL_NAME_STATEFUL = '@reactive-kit/symbols/stateful';
 
 export const reactiveFunctions: BabelPlugin = (babel) => {
   const { types: t } = babel;
@@ -61,7 +60,7 @@ export const reactiveFunctions: BabelPlugin = (babel) => {
         true,
       ),
       t.objectProperty(
-        wellKnownSymbol(SYMBOL_NAME_STATEFUL),
+        t.memberExpression(t.identifier('Symbol'), t.identifier('iterator')),
         Object.assign(
           t.isArrowFunctionExpression(node)
             ? t.arrowFunctionExpression([], node.body)

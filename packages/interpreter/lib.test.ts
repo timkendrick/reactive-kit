@@ -16,8 +16,6 @@ test('module exports', () => {
     flattenConditionTree: lib.flattenConditionTree,
     flattenDependencyTree: lib.flattenDependencyTree,
     isStateful: lib.isStateful,
-    isStatic: lib.isStatic,
-    STATEFUL: lib.STATEFUL,
     StatefulValue: lib.StatefulValue,
     withDependencies: lib.withDependencies,
   });

@@ -1,12 +1,17 @@
 import { HASH, type Hash } from '@reactive-kit/hash';
-import { STATEFUL, type Stateful, type StatefulIteratorFactory } from '../types';
+import { type Stateful, type StatefulGeneratorFactory } from '../types';
+import { isGeneratorFunction } from '@reactive-kit/utils';
 
 export function createStatefulGenerator<T>(
   hash: Hash,
-  generator: StatefulIteratorFactory<T>,
+  generator: StatefulGeneratorFactory<T>,
 ): Stateful<T> {
   return {
     [HASH]: hash,
-    [STATEFUL]: generator,
+    [Symbol.iterator]: isGeneratorFunction(generator)
+      ? generator
+      : function* () {
+          return yield* generator();
+        },
   };
 }
