@@ -1,9 +1,9 @@
 {
   "private": true,
-  "name": "@reactive-kit/effect-never",
+  "name": "@reactive-kit/effect-pending",
   "version": "0.0.1",
   "license": "MIT",
-  "description": "ReactiveKit Never effects",
+  "description": "ReactiveKit Pending effects",
   "author": "Tim Kendrick <timkendrick@gmail.com>",
   "type": "module",
   "main": "./lib.ts",

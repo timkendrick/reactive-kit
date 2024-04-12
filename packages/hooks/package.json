@@ -35,7 +35,7 @@
     "@reactive-kit/build-config": "workspace:*",
     "@reactive-kit/hook-evaluate": "workspace:*",
     "@reactive-kit/hook-fetch": "workspace:*",
-    "@reactive-kit/hook-never": "workspace:*",
+    "@reactive-kit/hook-pending": "workspace:*",
     "@reactive-kit/hook-state": "workspace:*",
     "@reactive-kit/hook-time": "workspace:*"
   },

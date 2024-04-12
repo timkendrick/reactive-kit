@@ -4,6 +4,7 @@ import * as lib from './lib';
 
 test('module exports', () => {
   expect({ ...lib }).toEqual({
-    useNever: lib.useNever,
+    EFFECT_TYPE_PENDING: lib.EFFECT_TYPE_PENDING,
+    createPendingEffect: lib.createPendingEffect,
   });
 });

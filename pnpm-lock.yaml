@@ -684,7 +684,7 @@ importers:
         specifier: workspace:*
         version: link:../../../utils
 
-  packages/effects/never/effect-never:
+  packages/effects/pending/effect-pending:
     dependencies:
       eslint:
         specifier: ^8
@@ -709,7 +709,7 @@ importers:
         specifier: workspace:*
         version: link:../../../effect
 
-  packages/effects/never/hook-never:
+  packages/effects/pending/hook-pending:
     dependencies:
       eslint:
         specifier: ^8
@@ -733,9 +733,9 @@ importers:
       '@reactive-kit/effect':
         specifier: workspace:*
         version: link:../../../effect
-      '@reactive-kit/effect-never':
+      '@reactive-kit/effect-pending':
         specifier: workspace:*
-        version: link:../effect-never
+        version: link:../effect-pending
 
   packages/effects/state/effect-state:
     dependencies:
@@ -969,9 +969,9 @@ importers:
       '@reactive-kit/hook-fetch':
         specifier: workspace:*
         version: link:../effects/fetch/hook-fetch
-      '@reactive-kit/hook-never':
+      '@reactive-kit/hook-pending':
         specifier: workspace:*
-        version: link:../effects/never/hook-never
+        version: link:../effects/pending/hook-pending
       '@reactive-kit/hook-state':
         specifier: workspace:*
         version: link:../effects/state/hook-state

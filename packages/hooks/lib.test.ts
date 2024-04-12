@@ -7,7 +7,7 @@ test('module exports', () => {
     useEvaluate: lib.useEvaluate,
     useFetch: lib.useFetch,
     useGetState: lib.useGetState,
-    useNever: lib.useNever,
+    usePending: lib.usePending,
     useSetState: lib.useSetState,
     useState: lib.useState,
     useTime: lib.useTime,
