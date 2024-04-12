@@ -1,0 +1,30 @@
+{
+  "private": true,
+  "name": "@reactive-kit/examples",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "ReactiveKit examples",
+  "author": "Tim Kendrick <timkendrick@gmail.com>",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm run build:dependencies",
+    "build:dependencies": "pnpm run --filter @reactive-kit/babel-preset-reactive --filter @reactive-kit/cli --filter @reactive-kit/dom --filter @reactive-kit/hooks build",
+    "lint": "pnpm run '/^lint:.*/'",
+    "lint:eslint": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts .",
+    "lint:typescript": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@reactive-kit/build-config": "workspace:*",
+    "@reactive-kit/babel-preset-reactive": "../babel-preset-reactive/dist",
+    "@reactive-kit/cli": "../cli/dist",
+    "@reactive-kit/hooks": "../hooks/dist",
+    "@reactive-kit/dom": "../dom/dist",
+    "@rollup/plugin-babel": "6.0.4",
+    "@rollup/plugin-html": "1.0.3"
+  },
+  "peerDependencies": {
+    "eslint": "^8",
+    "typescript": "^5",
+    "vite": "^4"
+  }
+}
