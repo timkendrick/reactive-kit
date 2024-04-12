@@ -1,5 +1,5 @@
-import { createEffect, type Effect } from '@reactive-kit/effect';
 import type { HashableObject } from '@reactive-kit/hash';
+import { createEffect, type Effect } from '@reactive-kit/types';
 import type { FetchRequest } from '../types';
 
 export const EFFECT_TYPE_FETCH = '@reactive-kit/effect-fetch';

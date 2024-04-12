@@ -1,9 +1,14 @@
-import { createEffect, EFFECT, StateToken } from '@reactive-kit/effect';
 import { hash } from '@reactive-kit/hash';
+import {
+  createEffect,
+  createStateful,
+  EFFECT,
+  type StateToken,
+  type Reactive,
+} from '@reactive-kit/types';
 import { describe, expect, test } from 'vitest';
-import { ConditionTree, Reactive, StateValues, EvaluationResult, DependencyTree } from './types';
+import { ConditionTree, StateValues, EvaluationResult, DependencyTree } from './types';
 import { evaluate } from './evaluate';
-import { createStatefulGenerator } from './utils/state';
 
 describe(evaluate, () => {
   test('static root', () => {
@@ -46,7 +51,7 @@ describe(evaluate, () => {
   describe('stateful root', () => {
     test('no dependencies', () => {
       function main(): Reactive<string> {
-        return createStatefulGenerator(hash(main.name), function* main() {
+        return createStateful(hash(main.name), function* main() {
           return 'foo';
         });
       }
@@ -60,7 +65,7 @@ describe(evaluate, () => {
       test('unresolved dependency', () => {
         const signal = createEffect('effect:foo', null);
         function main(): Reactive<string> {
-          return createStatefulGenerator(hash(main.name), function* main() {
+          return createStateful(hash(main.name), function* main() {
             const value: string = yield signal;
             return value.toUpperCase();
           });
@@ -77,7 +82,7 @@ describe(evaluate, () => {
       test('resolved dependency', () => {
         const signal = createEffect('effect:foo', null);
         function main(): Reactive<string> {
-          return createStatefulGenerator(hash(main.name), function* main() {
+          return createStateful(hash(main.name), function* main() {
             const value: string = yield signal;
             return value.toUpperCase();
           });
@@ -94,7 +99,7 @@ describe(evaluate, () => {
         const signal1 = createEffect('effect:foo', null);
         const signal2 = createEffect('effect:bar', null);
         function main(): Reactive<string> {
-          return createStatefulGenerator(hash(main.name), function* main() {
+          return createStateful(hash(main.name), function* main() {
             const value1: string = yield signal1;
             const value2: string = yield signal2;
             return `${value1}.${value2}`;
@@ -113,7 +118,7 @@ describe(evaluate, () => {
         const signal1 = createEffect('effect:foo', null);
         const signal2 = createEffect('effect:bar', null);
         function main(): Reactive<string> {
-          return createStatefulGenerator(hash(main.name), function* main() {
+          return createStateful(hash(main.name), function* main() {
             const value1: string = yield signal1;
             const value2: string = yield signal2;
             return `${value1}.${value2}`;
@@ -135,7 +140,7 @@ describe(evaluate, () => {
         const signal1 = createEffect('effect:foo', null);
         const signal2 = createEffect('effect:bar', null);
         function main(): Reactive<string> {
-          return createStatefulGenerator(hash(main.name), function* main() {
+          return createStateful(hash(main.name), function* main() {
             const value1: string = yield signal1;
             const value2: string = yield signal2;
             return `${value1}.${value2}`;
@@ -162,19 +167,19 @@ describe(evaluate, () => {
         const signal1 = createEffect('effect:foo', null);
         const signal2 = createEffect('effect:bar', null);
         function left(): Reactive<string> {
-          return createStatefulGenerator(hash(left.name), function* left() {
+          return createStateful(hash(left.name), function* left() {
             const foo: string = yield signal1;
             return `left: ${foo}`;
           });
         }
         function right(): Reactive<string> {
-          return createStatefulGenerator(hash(right.name), function* right() {
+          return createStateful(hash(right.name), function* right() {
             const bar: string = yield signal2;
             return `right: ${bar}`;
           });
         }
         function main(): Reactive<string> {
-          return createStatefulGenerator(hash(main.name), function* main() {
+          return createStateful(hash(main.name), function* main() {
             const leftValue: string = yield left();
             const rightValue: string = yield right();
             return `${leftValue}, ${rightValue}`;
@@ -234,7 +239,7 @@ describe(evaluate, () => {
           const signal1 = createEffect('effect:foo', null);
           const signal2 = createEffect('effect:bar', null);
           function main(): Reactive<string> {
-            return createStatefulGenerator(hash(main.name), function* main() {
+            return createStateful(hash(main.name), function* main() {
               const value: string = yield signal1;
               return value.toUpperCase();
             });
@@ -255,7 +260,7 @@ describe(evaluate, () => {
           const signal1 = createEffect('effect:foo', null);
           const signal2 = createEffect('effect:bar', null);
           function main(): Reactive<string> {
-            return createStatefulGenerator(hash(main.name), function* main() {
+            return createStateful(hash(main.name), function* main() {
               const value: string = yield signal1;
               return value.toUpperCase();
             });
@@ -281,13 +286,13 @@ describe(evaluate, () => {
           const signal1 = createEffect('effect:foo', null);
           const signal2 = createEffect('effect:bar', null);
           function generator(): Reactive<string> {
-            return createStatefulGenerator(hash(generator.name), function* generator() {
+            return createStateful(hash(generator.name), function* generator() {
               const value: string = yield signal2;
               return `-> ${value}`;
             });
           }
           function main(): Reactive<string> {
-            return createStatefulGenerator(hash(main.name), function* main() {
+            return createStateful(hash(main.name), function* main() {
               const value: string = yield signal1;
               return value.toUpperCase();
             });
@@ -308,13 +313,13 @@ describe(evaluate, () => {
           const signal1 = createEffect('effect:foo', null);
           const signal2 = createEffect('effect:bar', null);
           function generator(): Reactive<string> {
-            return createStatefulGenerator(hash(generator.name), function* generator() {
+            return createStateful(hash(generator.name), function* generator() {
               const value: string = yield signal2;
               return `-> ${value}`;
             });
           }
           function main(): Reactive<string> {
-            return createStatefulGenerator(hash(main.name), function* main() {
+            return createStateful(hash(main.name), function* main() {
               const value: string = yield signal1;
               return value.toUpperCase();
             });

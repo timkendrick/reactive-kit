@@ -1,15 +1,14 @@
-import { Effect, EFFECT, isEffect } from '@reactive-kit/effect';
-import { Enum, EnumVariant, VARIANT, nonNull } from '@reactive-kit/utils';
 import {
-  ConditionTree,
-  DependencyTree,
-  EvaluationResult,
+  EFFECT,
+  isEffect,
   isStateful,
-  Reactive,
-  Stateful,
-  StatefulGenerator,
-  StateValues,
-} from './types';
+  type Effect,
+  type Reactive,
+  type Stateful,
+  type StatefulGenerator,
+} from '@reactive-kit/types';
+import { Enum, EnumVariant, VARIANT, nonNull } from '@reactive-kit/utils';
+import { ConditionTree, DependencyTree, EvaluationResult, StateValues } from './types';
 import { collectConditionTree, flattenConditionTree } from './utils/condition';
 import { combineDependencies, EMPTY_DEPENDENCIES } from './utils/dependency';
 

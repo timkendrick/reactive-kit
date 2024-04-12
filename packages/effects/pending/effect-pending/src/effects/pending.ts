@@ -1,4 +1,4 @@
-import { createEffect, type Effect } from '@reactive-kit/effect';
+import { createEffect, type Effect } from '@reactive-kit/types';
 
 export const EFFECT_TYPE_PENDING = '@reactive-kit/effect-pending';
 

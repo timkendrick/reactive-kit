@@ -1,4 +1,4 @@
-import { type StateToken } from '@reactive-kit/effect';
+import { type StateToken } from '@reactive-kit/types';
 import { Enum } from '@reactive-kit/utils';
 
 const enum DependencyTreeType {

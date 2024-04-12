@@ -33,9 +33,10 @@
   },
   "devDependencies": {
     "@reactive-kit/build-config": "workspace:*",
-    "@reactive-kit/effect": "workspace:*",
     "@reactive-kit/effect-fetch": "workspace:*",
     "@reactive-kit/hash": "workspace:*",
+    "@reactive-kit/reactive-utils": "workspace:*",
+    "@reactive-kit/types": "workspace:*",
     "@reactive-kit/utils": "workspace:*"
   },
   "peerDependencies": {

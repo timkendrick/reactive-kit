@@ -1,4 +1,4 @@
-import { createEffect, type Effect } from '@reactive-kit/effect';
+import { createEffect, type Effect } from '@reactive-kit/types';
 import { type StateId } from '../types';
 
 export const EFFECT_TYPE_STATE = '@reactive-kit/effect-state';

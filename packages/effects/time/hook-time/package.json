@@ -33,8 +33,9 @@
   },
   "devDependencies": {
     "@reactive-kit/build-config": "workspace:*",
-    "@reactive-kit/effect": "workspace:*",
-    "@reactive-kit/effect-time": "workspace:*"
+    "@reactive-kit/effect-time": "workspace:*",
+    "@reactive-kit/reactive-utils": "workspace:*",
+    "@reactive-kit/types": "workspace:*"
   },
   "peerDependencies": {
     "eslint": "^8",

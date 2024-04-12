@@ -1,4 +1,4 @@
-import { createEffect, EFFECT, type Effect, type StateToken } from '@reactive-kit/effect';
+import { createEffect, EFFECT, type Effect, type StateToken } from '@reactive-kit/types';
 import { describe, expect, test } from 'vitest';
 import { ConditionTree } from '../types';
 import { flattenConditionTree } from './condition';

@@ -1,4 +1,4 @@
-import { type StateToken } from '@reactive-kit/effect';
+import { type StateToken } from '@reactive-kit/types';
 import { VARIANT } from '@reactive-kit/utils';
 import { DependencyTree, EvaluationResult, EvaluationResultType } from '../types';
 

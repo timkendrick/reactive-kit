@@ -33,8 +33,8 @@
   },
   "devDependencies": {
     "@reactive-kit/build-config": "workspace:*",
-    "@reactive-kit/effect": "workspace:*",
-    "@reactive-kit/hash": "workspace:*"
+    "@reactive-kit/hash": "workspace:*",
+    "@reactive-kit/types": "workspace:*"
   },
   "peerDependencies": {
     "eslint": "^8",

@@ -5,15 +5,8 @@ import {
   HandlerContext,
   HandlerResult,
 } from '@reactive-kit/actor';
-import {
-  Effect,
-  EFFECT,
-  EffectType,
-  getTypedEffects,
-  groupEffectsByType,
-  StateToken,
-} from '@reactive-kit/effect';
 import { EFFECT_TYPE_EVALUATE, EvaluateEffect } from '@reactive-kit/effect-evaluate';
+import { hash, type Hash, type Hashable } from '@reactive-kit/hash';
 import {
   DependencyTree,
   EMPTY_DEPENDENCIES,
@@ -21,13 +14,14 @@ import {
   EvaluationResult,
   flattenConditionTree,
   flattenDependencyTree,
-  Reactive,
   StateValues,
 } from '@reactive-kit/interpreter';
 import {
   createEmitEffectValuesMessage,
   createSubscribeEffectsMessage,
   createUnsubscribeEffectsMessage,
+  getTypedEffects,
+  groupEffectsByType,
   isEmitEffectValuesMessage,
   isSubscribeEffectsMessage,
   isUnsubscribeEffectsMessage,
@@ -39,7 +33,7 @@ import {
   type SubscribeEffectsMessage,
   type UnsubscribeEffectsMessage,
 } from '@reactive-kit/runtime-messages';
-import { hash, type Hash, type Hashable } from '@reactive-kit/hash';
+import { Effect, EFFECT, EffectType, Reactive, StateToken } from '@reactive-kit/types';
 import { nonNull } from '@reactive-kit/utils';
 
 type EvaluateHandlerInputMessage =

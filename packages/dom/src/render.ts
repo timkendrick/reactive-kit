@@ -8,8 +8,8 @@ import type {
 } from '@reactive-kit/component';
 import { handlers } from '@reactive-kit/handlers';
 import type { Hashable } from '@reactive-kit/hash';
-import type { Reactive } from '@reactive-kit/interpreter';
 import { Runtime } from '@reactive-kit/runtime';
+import type { Reactive } from '@reactive-kit/types';
 import { subscribeAsyncIterator } from '@reactive-kit/utils';
 
 export function render(root: Component<{}>, container: Element | DocumentFragment): Promise<null> {

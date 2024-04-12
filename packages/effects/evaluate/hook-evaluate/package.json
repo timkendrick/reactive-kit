@@ -33,10 +33,11 @@
   },
   "devDependencies": {
     "@reactive-kit/build-config": "workspace:*",
-    "@reactive-kit/effect": "workspace:*",
     "@reactive-kit/effect-evaluate": "workspace:*",
     "@reactive-kit/hash": "workspace:*",
-    "@reactive-kit/interpreter": "workspace:*"
+    "@reactive-kit/interpreter": "workspace:*",
+    "@reactive-kit/reactive-utils": "workspace:*",
+    "@reactive-kit/types": "workspace:*"
   },
   "peerDependencies": {
     "eslint": "^8",

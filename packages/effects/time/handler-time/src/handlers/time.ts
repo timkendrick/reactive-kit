@@ -8,10 +8,10 @@ import {
   AsyncTaskFactory,
 } from '@reactive-kit/actor';
 import { fromAsyncIteratorFactory } from '@reactive-kit/actor-utils';
-import { EFFECT, getTypedEffects, type StateToken } from '@reactive-kit/effect';
 import { EFFECT_TYPE_TIME, type TimeEffect } from '@reactive-kit/effect-time';
 import {
   createEmitEffectValuesMessage,
+  getTypedEffects,
   isSubscribeEffectsMessage,
   isUnsubscribeEffectsMessage,
   MESSAGE_SUBSCRIBE_EFFECTS,
@@ -21,6 +21,7 @@ import {
   type SubscribeEffectsMessage,
   type UnsubscribeEffectsMessage,
 } from '@reactive-kit/runtime-messages';
+import { EFFECT, type StateToken } from '@reactive-kit/types';
 import { createAsyncTrigger, nonNull, type AsyncTrigger } from '@reactive-kit/utils';
 import {
   MESSAGE_TIME_HANDLER_EMIT,

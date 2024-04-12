@@ -1,6 +1,6 @@
-import { createEffectHook } from '@reactive-kit/effect';
+import { useReactive } from '@reactive-kit/reactive-utils';
 import { createPendingEffect } from '@reactive-kit/effect-pending';
 
 export function usePending(): Promise<never> {
-  return createEffectHook<never>(createPendingEffect());
+  return useReactive<never>(createPendingEffect());
 }

@@ -10,6 +10,8 @@ test('module exports', () => {
     createEmitEffectValuesMessage: lib.createEmitEffectValuesMessage,
     createSubscribeEffectsMessage: lib.createSubscribeEffectsMessage,
     createUnsubscribeEffectsMessage: lib.createUnsubscribeEffectsMessage,
+    getTypedEffects: lib.getTypedEffects,
+    groupEffectsByType: lib.groupEffectsByType,
     isEmitEffectValuesMessage: lib.isEmitEffectValuesMessage,
     isSubscribeEffectsMessage: lib.isSubscribeEffectsMessage,
     isUnsubscribeEffectsMessage: lib.isUnsubscribeEffectsMessage,

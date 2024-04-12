@@ -7,7 +7,6 @@ test('module exports', () => {
     collectConditionTree: lib.collectConditionTree,
     combineDependencies: lib.combineDependencies,
     ConditionTree: lib.ConditionTree,
-    createStatefulGenerator: lib.createStatefulGenerator,
     DependencyTree: lib.DependencyTree,
     EMPTY_DEPENDENCIES: lib.EMPTY_DEPENDENCIES,
     evaluate: lib.evaluate,
@@ -15,7 +14,6 @@ test('module exports', () => {
     EvaluationResultType: lib.EvaluationResultType,
     flattenConditionTree: lib.flattenConditionTree,
     flattenDependencyTree: lib.flattenDependencyTree,
-    isStateful: lib.isStateful,
     StatefulValue: lib.StatefulValue,
     withDependencies: lib.withDependencies,
   });

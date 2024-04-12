@@ -36,8 +36,8 @@
     "@reactive-kit/component": "workspace:*",
     "@reactive-kit/handlers": "workspace:*",
     "@reactive-kit/hash": "workspace:*",
-    "@reactive-kit/interpreter": "workspace:*",
     "@reactive-kit/runtime": "workspace:*",
+    "@reactive-kit/types": "workspace:*",
     "@reactive-kit/utils": "workspace:*"
   },
   "peerDependencies": {

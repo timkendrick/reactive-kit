@@ -1,4 +1,4 @@
-import { type Effect, type EffectType } from '@reactive-kit/effect';
+import { type Effect, type EffectType } from '@reactive-kit/types';
 import { type Message } from '../message';
 
 export const MESSAGE_SUBSCRIBE_EFFECTS = 'core::subscribeEffects';

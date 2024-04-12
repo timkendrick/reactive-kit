@@ -331,12 +331,12 @@ importers:
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../hash
-      '@reactive-kit/interpreter':
-        specifier: workspace:*
-        version: link:../interpreter
       '@reactive-kit/runtime':
         specifier: workspace:*
         version: link:../runtime
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../types
       '@reactive-kit/utils':
         specifier: workspace:*
         version: link:../utils
@@ -436,37 +436,15 @@ importers:
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../hash
-      '@reactive-kit/interpreter':
-        specifier: workspace:*
-        version: link:../interpreter
       '@reactive-kit/runtime':
         specifier: workspace:*
         version: link:../runtime
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../types
       '@reactive-kit/utils':
         specifier: workspace:*
         version: link:../utils
-
-  packages/effect:
-    dependencies:
-      eslint:
-        specifier: ^8
-        version: 8.48.0
-      typedoc:
-        specifier: ^0.25
-        version: 0.25.1(typescript@5.2.2)
-      typescript:
-        specifier: ^5
-        version: 5.2.2
-      vite:
-        specifier: ^4
-        version: 4.4.9(@types/node@20.5.9)
-    devDependencies:
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../build-config
-      '@reactive-kit/hash':
-        specifier: workspace:*
-        version: link:../hash
 
   packages/effects/evaluate/effect-evaluate:
     dependencies:
@@ -489,15 +467,15 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../../../build-config
-      '@reactive-kit/effect':
-        specifier: workspace:*
-        version: link:../../../effect
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../../../hash
       '@reactive-kit/interpreter':
         specifier: workspace:*
         version: link:../../../interpreter
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../../../types
 
   packages/effects/evaluate/handler-evaluate:
     dependencies:
@@ -526,9 +504,6 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../../../build-config
-      '@reactive-kit/effect':
-        specifier: workspace:*
-        version: link:../../../effect
       '@reactive-kit/effect-evaluate':
         specifier: workspace:*
         version: link:../effect-evaluate
@@ -541,6 +516,9 @@ importers:
       '@reactive-kit/runtime-messages':
         specifier: workspace:*
         version: link:../../../runtime-messages
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../../../types
       '@reactive-kit/utils':
         specifier: workspace:*
         version: link:../../../utils
@@ -566,9 +544,6 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../../../build-config
-      '@reactive-kit/effect':
-        specifier: workspace:*
-        version: link:../../../effect
       '@reactive-kit/effect-evaluate':
         specifier: workspace:*
         version: link:../effect-evaluate
@@ -578,6 +553,12 @@ importers:
       '@reactive-kit/interpreter':
         specifier: workspace:*
         version: link:../../../interpreter
+      '@reactive-kit/reactive-utils':
+        specifier: workspace:*
+        version: link:../../../reactive-utils
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../../../types
 
   packages/effects/fetch/effect-fetch:
     dependencies:
@@ -600,12 +581,12 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../../../build-config
-      '@reactive-kit/effect':
-        specifier: workspace:*
-        version: link:../../../effect
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../../../hash
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../../../types
       '@reactive-kit/utils':
         specifier: workspace:*
         version: link:../../../utils
@@ -637,15 +618,15 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../../../build-config
-      '@reactive-kit/effect':
-        specifier: workspace:*
-        version: link:../../../effect
       '@reactive-kit/effect-fetch':
         specifier: workspace:*
         version: link:../effect-fetch
       '@reactive-kit/runtime-messages':
         specifier: workspace:*
         version: link:../../../runtime-messages
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../../../types
       '@reactive-kit/utils':
         specifier: workspace:*
         version: link:../../../utils
@@ -671,15 +652,18 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../../../build-config
-      '@reactive-kit/effect':
-        specifier: workspace:*
-        version: link:../../../effect
       '@reactive-kit/effect-fetch':
         specifier: workspace:*
         version: link:../effect-fetch
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../../../hash
+      '@reactive-kit/reactive-utils':
+        specifier: workspace:*
+        version: link:../../../reactive-utils
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../../../types
       '@reactive-kit/utils':
         specifier: workspace:*
         version: link:../../../utils
@@ -705,9 +689,9 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../../../build-config
-      '@reactive-kit/effect':
+      '@reactive-kit/types':
         specifier: workspace:*
-        version: link:../../../effect
+        version: link:../../../types
 
   packages/effects/pending/hook-pending:
     dependencies:
@@ -730,12 +714,15 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../../../build-config
-      '@reactive-kit/effect':
-        specifier: workspace:*
-        version: link:../../../effect
       '@reactive-kit/effect-pending':
         specifier: workspace:*
         version: link:../effect-pending
+      '@reactive-kit/reactive-utils':
+        specifier: workspace:*
+        version: link:../../../reactive-utils
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../../../types
 
   packages/effects/state/effect-state:
     dependencies:
@@ -758,12 +745,12 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../../../build-config
-      '@reactive-kit/effect':
-        specifier: workspace:*
-        version: link:../../../effect
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../../../hash
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../../../types
 
   packages/effects/state/hook-state:
     dependencies:
@@ -786,15 +773,18 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../../../build-config
-      '@reactive-kit/effect':
-        specifier: workspace:*
-        version: link:../../../effect
       '@reactive-kit/effect-state':
         specifier: workspace:*
         version: link:../effect-state
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../../../hash
+      '@reactive-kit/reactive-utils':
+        specifier: workspace:*
+        version: link:../../../reactive-utils
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../../../types
 
   packages/effects/time/effect-time:
     dependencies:
@@ -817,9 +807,9 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../../../build-config
-      '@reactive-kit/effect':
+      '@reactive-kit/types':
         specifier: workspace:*
-        version: link:../../../effect
+        version: link:../../../types
 
   packages/effects/time/handler-time:
     dependencies:
@@ -848,15 +838,15 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../../../build-config
-      '@reactive-kit/effect':
-        specifier: workspace:*
-        version: link:../../../effect
       '@reactive-kit/effect-time':
         specifier: workspace:*
         version: link:../effect-time
       '@reactive-kit/runtime-messages':
         specifier: workspace:*
         version: link:../../../runtime-messages
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../../../types
       '@reactive-kit/utils':
         specifier: workspace:*
         version: link:../../../utils
@@ -882,12 +872,15 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../../../build-config
-      '@reactive-kit/effect':
-        specifier: workspace:*
-        version: link:../../../effect
       '@reactive-kit/effect-time':
         specifier: workspace:*
         version: link:../effect-time
+      '@reactive-kit/reactive-utils':
+        specifier: workspace:*
+        version: link:../../../reactive-utils
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../../../types
 
   packages/handlers:
     dependencies:
@@ -1000,12 +993,12 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
-      '@reactive-kit/effect':
-        specifier: workspace:*
-        version: link:../effect
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../hash
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../types
       '@reactive-kit/utils':
         specifier: workspace:*
         version: link:../utils
@@ -1035,6 +1028,31 @@ importers:
         specifier: workspace:*
         version: link:../compiler
 
+  packages/reactive-utils:
+    dependencies:
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+      '@reactive-kit/hash':
+        specifier: workspace:*
+        version: link:../hash
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../types
+
   packages/runtime:
     dependencies:
       eslint:
@@ -1062,9 +1080,6 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
-      '@reactive-kit/effect':
-        specifier: workspace:*
-        version: link:../effect
       '@reactive-kit/effect-evaluate':
         specifier: workspace:*
         version: link:../effects/evaluate/effect-evaluate
@@ -1083,6 +1098,9 @@ importers:
       '@reactive-kit/scheduler':
         specifier: workspace:*
         version: link:../scheduler
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../types
       '@reactive-kit/utils':
         specifier: workspace:*
         version: link:../utils
@@ -1108,12 +1126,12 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
-      '@reactive-kit/effect':
-        specifier: workspace:*
-        version: link:../effect
       '@reactive-kit/interpreter':
         specifier: workspace:*
         version: link:../interpreter
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../types
       '@reactive-kit/utils':
         specifier: workspace:*
         version: link:../utils
@@ -1142,6 +1160,31 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
+
+  packages/types:
+    dependencies:
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+      '@reactive-kit/hash':
+        specifier: workspace:*
+        version: link:../hash
       '@reactive-kit/utils':
         specifier: workspace:*
         version: link:../utils
