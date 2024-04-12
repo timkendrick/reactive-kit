@@ -1,11 +1,15 @@
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+
 export default function (api: {}, opts: {}) {
   return {
     parserOpts: {
       plugins: ['jsx'],
     },
     plugins: [
-      '@reactive-kit/babel-plugin-reactive-jsx',
-      '@reactive-kit/babel-plugin-reactive-functions',
+      require.resolve('@reactive-kit/babel-plugin-reactive-jsx'),
+      require.resolve('@reactive-kit/babel-plugin-reactive-functions'),
     ],
   };
 }

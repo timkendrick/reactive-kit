@@ -138,6 +138,12 @@ importers:
 
   packages/babel-preset-reactive:
     dependencies:
+      '@reactive-kit/babel-plugin-reactive-functions':
+        specifier: workspace:*
+        version: link:../babel-plugin-reactive-functions
+      '@reactive-kit/babel-plugin-reactive-jsx':
+        specifier: workspace:*
+        version: link:../babel-plugin-reactive-jsx
       eslint:
         specifier: ^8
         version: 8.48.0
