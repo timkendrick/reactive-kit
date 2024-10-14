@@ -9,6 +9,7 @@ export type Hashable =
   | null
   | undefined
   | bigint
+  | Uint8Array
   | Array<Hashable>
   | { [key: string]: Hashable }
   | Date
@@ -73,13 +74,14 @@ export function writeValueHash(state: Hash, value: Hashable): Hash {
       return writeStringHash(writeByteHash(state, 4), value);
     case 'bigint':
       return writeBigintHash(writeByteHash(state, 5), value);
+    case 'function':
+      if (HASH in value) return writeCustomHash(writeByteHash(state, 6), value);
     case 'object':
       if (Array.isArray(value)) return writeArrayHash(writeByteHash(state, 6), value);
       if (value instanceof Date) return writeNumberHash(writeByteHash(state, 7), value.getTime());
-      if (HASH in value) return writeCustomHash(writeByteHash(state, 8), value);
-      return writeObjectHash(writeByteHash(state, 9), value);
-    case 'function':
-      if (HASH in value) return writeCustomHash(writeByteHash(state, 8), value);
+      if (value instanceof Uint8Array) return writeUint8ArrayHash(writeByteHash(state, 8), value);
+      if (HASH in value) return writeCustomHash(writeByteHash(state, 9), value);
+      return writeObjectHash(writeByteHash(state, 10), value);
     // Fall through to error case
     case 'symbol':
     default:

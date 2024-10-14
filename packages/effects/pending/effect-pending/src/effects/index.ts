@@ -1,1 +1,1 @@
-export * from './pending.ts';
+export * from './pending';

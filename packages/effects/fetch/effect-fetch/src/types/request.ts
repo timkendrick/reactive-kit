@@ -19,7 +19,7 @@ export interface FetchRequest
     method: string;
     url: string;
     headers: FetchHeaders | null;
-    body: string | null;
+    body: Uint8Array | null;
     token: Hash | null;
   }> {}
 
@@ -27,7 +27,7 @@ export interface FetchResponse
   extends HashableObject<{
     status: number;
     headers: FetchHeaders;
-    body: string | null;
+    body: Uint8Array | null;
     token: Uid;
   }> {}
 

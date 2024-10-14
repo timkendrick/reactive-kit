@@ -1,3 +1,4 @@
+export * from '@reactive-kit/hook-error';
 export * from '@reactive-kit/hook-evaluate';
 export * from '@reactive-kit/hook-fetch';
 export * from '@reactive-kit/hook-pending';

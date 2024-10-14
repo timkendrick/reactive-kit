@@ -6,5 +6,6 @@ test('module exports', () => {
   expect({ ...lib }).toEqual({
     EFFECT_TYPE_PENDING: lib.EFFECT_TYPE_PENDING,
     createPendingEffect: lib.createPendingEffect,
+    isPendingEffect: lib.isPendingEffect,
   });
 });

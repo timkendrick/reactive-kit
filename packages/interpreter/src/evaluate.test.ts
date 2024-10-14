@@ -23,7 +23,7 @@ describe(evaluate, () => {
 
   describe('signal root', () => {
     test('unresolved signal', () => {
-      const signal = createEffect('effect:foo', null);
+      const signal = createEffect<'effect:foo', null, string>('effect:foo', null);
       function main(): Reactive<string> {
         return signal;
       }
@@ -37,7 +37,7 @@ describe(evaluate, () => {
     });
 
     test('resolved signal', () => {
-      const signal = createEffect('effect:foo', null);
+      const signal = createEffect<'effect:foo', null, string>('effect:foo', null);
       function main(): Reactive<string> {
         return signal;
       }
@@ -63,7 +63,7 @@ describe(evaluate, () => {
 
     describe('single dependency', () => {
       test('unresolved dependency', () => {
-        const signal = createEffect('effect:foo', null);
+        const signal = createEffect<'effect:foo', null, string>('effect:foo', null);
         function main(): Reactive<string> {
           return createStateful(hash(main.name), function* main() {
             const value: string = yield signal;
@@ -80,7 +80,7 @@ describe(evaluate, () => {
       });
 
       test('resolved dependency', () => {
-        const signal = createEffect('effect:foo', null);
+        const signal = createEffect<'effect:foo', null, string>('effect:foo', null);
         function main(): Reactive<string> {
           return createStateful(hash(main.name), function* main() {
             const value: string = yield signal;
@@ -96,8 +96,8 @@ describe(evaluate, () => {
 
     describe('multiple dependencies', () => {
       test('unresolved dependencies', () => {
-        const signal1 = createEffect('effect:foo', null);
-        const signal2 = createEffect('effect:bar', null);
+        const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
+        const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
         function main(): Reactive<string> {
           return createStateful(hash(main.name), function* main() {
             const value1: string = yield signal1;
@@ -115,8 +115,8 @@ describe(evaluate, () => {
       });
 
       test('partially resolved dependencies', () => {
-        const signal1 = createEffect('effect:foo', null);
-        const signal2 = createEffect('effect:bar', null);
+        const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
+        const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
         function main(): Reactive<string> {
           return createStateful(hash(main.name), function* main() {
             const value1: string = yield signal1;
@@ -137,8 +137,8 @@ describe(evaluate, () => {
       });
 
       test('fully resolved dependencies', () => {
-        const signal1 = createEffect('effect:foo', null);
-        const signal2 = createEffect('effect:bar', null);
+        const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
+        const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
         function main(): Reactive<string> {
           return createStateful(hash(main.name), function* main() {
             const value1: string = yield signal1;
@@ -164,8 +164,8 @@ describe(evaluate, () => {
 
     describe('chained generators', () => {
       test('Immediately awaited values', () => {
-        const signal1 = createEffect('effect:foo', null);
-        const signal2 = createEffect('effect:bar', null);
+        const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
+        const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
         function left(): Reactive<string> {
           return createStateful(hash(left.name), function* left() {
             const foo: string = yield signal1;
@@ -236,8 +236,8 @@ describe(evaluate, () => {
     describe('chained effect values', () => {
       describe('aliased effect', () => {
         test('partially resolved dependencies', () => {
-          const signal1 = createEffect('effect:foo', null);
-          const signal2 = createEffect('effect:bar', null);
+          const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
+          const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
           function main(): Reactive<string> {
             return createStateful(hash(main.name), function* main() {
               const value: string = yield signal1;
@@ -257,8 +257,8 @@ describe(evaluate, () => {
         });
 
         test('fully resolved dependencies', () => {
-          const signal1 = createEffect('effect:foo', null);
-          const signal2 = createEffect('effect:bar', null);
+          const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
+          const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
           function main(): Reactive<string> {
             return createStateful(hash(main.name), function* main() {
               const value: string = yield signal1;
@@ -283,8 +283,8 @@ describe(evaluate, () => {
 
       describe('aliased generator', () => {
         test('partially resolved dependencies', () => {
-          const signal1 = createEffect('effect:foo', null);
-          const signal2 = createEffect('effect:bar', null);
+          const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
+          const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
           function generator(): Reactive<string> {
             return createStateful(hash(generator.name), function* generator() {
               const value: string = yield signal2;
@@ -310,8 +310,8 @@ describe(evaluate, () => {
         });
 
         test('fully resolved dependencies', () => {
-          const signal1 = createEffect('effect:foo', null);
-          const signal2 = createEffect('effect:bar', null);
+          const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
+          const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
           function generator(): Reactive<string> {
             return createStateful(hash(generator.name), function* generator() {
               const value: string = yield signal2;

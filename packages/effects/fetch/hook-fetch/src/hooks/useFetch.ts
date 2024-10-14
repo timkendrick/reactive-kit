@@ -9,8 +9,14 @@ import { map, useReactive } from '@reactive-kit/reactive-utils';
 import type { Uid } from '@reactive-kit/utils';
 
 type FetchRequestInit = Pick<FetchRequest, RequiredKeys> &
-  Partial<Omit<FetchRequest, RequiredKeys>>;
+  Partial<Omit<FetchRequest, RequiredKeys | keyof CoercedInitValues>> &
+  Partial<CoercedInitValues>;
+
 type RequiredKeys = Extract<keyof FetchRequest, 'url'>;
+
+interface CoercedInitValues {
+  body: string | Uint8Array | null;
+}
 
 interface FetchResult extends FetchResponse {
   text(): string;
@@ -25,7 +31,12 @@ export function useFetch(request: string | FetchRequestInit): Promise<FetchResul
         url: init.url,
         method: init.method ?? 'GET',
         headers: init.headers ?? {},
-        body: init.body ?? null,
+        body:
+          init.body != null
+            ? typeof init.body === 'string'
+              ? new TextEncoder().encode(init.body)
+              : init.body
+            : null,
         token: init.token ?? null,
       }),
       assignCustomHash(hash('@reactive-kit/hook-fetch/useFetch'), (response) => {
@@ -66,11 +77,12 @@ class FetchResult implements CustomHashable {
   }
 
   public text(): string {
-    return this.response.body ?? '';
+    return this.response.body ? new TextDecoder('utf-8').decode(this.response.body) : '';
   }
 
   public json(): unknown {
-    if (!this.response.body) return null;
-    return JSON.parse(this.response.body);
+    const text = this.text();
+    // FIXME: Determine JSON response error behavior
+    return JSON.parse(text);
   }
 }

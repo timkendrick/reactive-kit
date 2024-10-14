@@ -4,11 +4,11 @@ import { type Message } from '../message';
 export const MESSAGE_SUBSCRIBE_EFFECTS = 'core::subscribeEffects';
 
 export interface SubscribeEffectsMessage extends Message<typeof MESSAGE_SUBSCRIBE_EFFECTS> {
-  effects: Map<EffectType, Array<Effect>>;
+  effects: Map<EffectType, Array<Effect<unknown>>>;
 }
 
 export function createSubscribeEffectsMessage(
-  effects: Map<EffectType, Array<Effect>>,
+  effects: Map<EffectType, Array<Effect<unknown>>>,
 ): SubscribeEffectsMessage {
   return {
     type: MESSAGE_SUBSCRIBE_EFFECTS,

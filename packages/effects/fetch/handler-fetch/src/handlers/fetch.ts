@@ -182,13 +182,13 @@ function fetchRequest(request: FetchRequest, signal: AbortSignal): Promise<Fetch
       const headers = parseResponseHeaders(response.headers);
       const token = generateUid();
       if (response.ok) {
-        return response.text().then(
+        return response.arrayBuffer().then(
           (body): FetchResponseState => ({
             success: true,
             response: {
               status,
               headers,
-              body,
+              body: new Uint8Array(body),
               token,
             },
           }),
@@ -204,14 +204,14 @@ function fetchRequest(request: FetchRequest, signal: AbortSignal): Promise<Fetch
           }),
         );
       } else {
-        return response.text().then(
+        return response.arrayBuffer().then(
           (body): FetchResponseState => ({
             success: false,
             error: new Error(`HTTP error ${response.status}: ${response.statusText}`),
             response: {
               status,
               headers,
-              body,
+              body: new Uint8Array(body),
               token,
             },
           }),

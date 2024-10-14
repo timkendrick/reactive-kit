@@ -3,12 +3,19 @@ import { type StateId } from '../types';
 
 export const EFFECT_TYPE_STATE = '@reactive-kit/effect-state';
 
-export interface StateEffect extends Effect<StateEffectType, StateEffectPayload> {}
+export interface StateEffect<T> extends Effect<T> {
+  type: StateEffectType;
+  payload: StateEffectPayload;
+}
 
 export type StateEffectType = typeof EFFECT_TYPE_STATE;
 
 export type StateEffectPayload = StateId;
 
-export function createStateEffect(uid: string): StateEffect {
+export function createStateEffect<T = unknown>(uid: string): StateEffect<T> {
   return createEffect(EFFECT_TYPE_STATE, uid);
+}
+
+export function isStateEffect(error: Effect<unknown>): error is StateEffect<unknown> {
+  return error.type === EFFECT_TYPE_STATE;
 }

@@ -13,7 +13,7 @@ export type StatefulValue<T> = Enum<{
     value: Reactive<T>;
   };
   [StatefulValueType.Blocked]: {
-    condition: Effect | Array<Effect>;
+    condition: Effect<unknown> | Array<Effect<unknown>>;
   };
 }>;
 
@@ -36,7 +36,7 @@ export const StatefulValue = (() => {
     ),
     [StatefulValueType.Blocked]: Object.assign(
       function Blocked<T>(
-        condition: Effect,
+        condition: Effect<unknown>,
       ): EnumVariant<StatefulValue<T>, StatefulValueType.Blocked> {
         return instantiateEnum(StatefulValueType.Blocked, { condition });
       },
@@ -60,7 +60,7 @@ const enum ConditionTreeType {
 
 export type ConditionTree = Enum<{
   [ConditionTreeType.Unit]: {
-    condition: Effect;
+    condition: Effect<unknown>;
   };
   [ConditionTreeType.Pair]: {
     left: ConditionTree;

@@ -10,5 +10,8 @@ test('module exports', () => {
     createGetStateEffect: lib.createGetStateEffect,
     createSetStateEffect: lib.createSetStateEffect,
     createStateEffect: lib.createStateEffect,
+    isGetStateEffect: lib.isGetStateEffect,
+    isSetStateEffect: lib.isSetStateEffect,
+    isStateEffect: lib.isStateEffect,
   });
 });

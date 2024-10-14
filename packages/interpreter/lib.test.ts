@@ -6,6 +6,7 @@ test('module exports', () => {
   expect({ ...lib }).toEqual({
     collectConditionTree: lib.collectConditionTree,
     combineDependencies: lib.combineDependencies,
+    createEffectLookup: lib.createEffectLookup,
     ConditionTree: lib.ConditionTree,
     DependencyTree: lib.DependencyTree,
     EMPTY_DEPENDENCIES: lib.EMPTY_DEPENDENCIES,

@@ -6,5 +6,6 @@ test('module exports', () => {
   expect({ ...lib }).toEqual({
     EFFECT_TYPE_TIME: lib.EFFECT_TYPE_TIME,
     createTimeEffect: lib.createTimeEffect,
+    isTimeEffect: lib.isTimeEffect,
   });
 });

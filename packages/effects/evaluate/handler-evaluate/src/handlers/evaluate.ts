@@ -8,11 +8,11 @@ import {
 import { EFFECT_TYPE_EVALUATE, EvaluateEffect } from '@reactive-kit/effect-evaluate';
 import { hash, type Hash, type Hashable } from '@reactive-kit/hash';
 import {
+  createEffectLookup,
   DependencyTree,
   EMPTY_DEPENDENCIES,
   evaluate,
   EvaluationResult,
-  flattenConditionTree,
   flattenDependencyTree,
   StateValues,
 } from '@reactive-kit/interpreter';
@@ -49,7 +49,7 @@ type EvaluateHandlerInput = EvaluateHandlerInputMessage;
 type EvaluateHandlerOutput = HandlerResult<EvaluateHandlerOutputMessage>;
 
 interface QuerySubscription<T> {
-  effect: EvaluateEffect;
+  effect: EvaluateEffect<T>;
   result: EvaluationResult<T>;
 }
 
@@ -63,7 +63,7 @@ export class EvaluateHandler implements Actor<Message<unknown>> {
   private effectState: StateValues;
   // FIXME: Hash queries to prevent duplicate subscriptions
   private subscriptions: Map<Hash, QuerySubscription<any>> = new Map();
-  private activeEffects: Map<StateToken, Effect> = new Map();
+  private activeEffects: Map<StateToken, Effect<unknown>> = new Map();
 
   constructor(
     options: { state: StateValues | null },
@@ -101,7 +101,7 @@ export class EvaluateHandler implements Actor<Message<unknown>> {
     context: HandlerContext<EvaluateHandlerInput>,
   ): EvaluateHandlerOutput {
     const { effects } = message;
-    const evaluateEffects = getTypedEffects<EvaluateEffect>(EFFECT_TYPE_EVALUATE, effects);
+    const evaluateEffects = getTypedEffects<EvaluateEffect<unknown>>(EFFECT_TYPE_EVALUATE, effects);
     if (!evaluateEffects || evaluateEffects.length === 0) return null;
     const { results, subscribedEffects, unsubscribedEffects } = evaluateEffects.reduce(
       (combinedResults, effect) => {
@@ -125,8 +125,8 @@ export class EvaluateHandler implements Actor<Message<unknown>> {
       },
       {
         results: new Map<Hash, EvaluateEffectResult<unknown>>(),
-        subscribedEffects: new Array<Effect>(),
-        unsubscribedEffects: new Array<Effect>(),
+        subscribedEffects: new Array<Effect<unknown>>(),
+        unsubscribedEffects: new Array<Effect<unknown>>(),
       },
     );
     // FIXME: Purge any state values that are no longer needed
@@ -143,7 +143,7 @@ export class EvaluateHandler implements Actor<Message<unknown>> {
   ): EvaluateHandlerOutput {
     // FIXME: Ensure top-level evaluations are not unsubscribed due to a different query unsubscribing a sub-query for the same evaluation
     const { effects } = message;
-    const typedEffects = getTypedEffects<EvaluateEffect>(EFFECT_TYPE_EVALUATE, effects);
+    const typedEffects = getTypedEffects<EvaluateEffect<unknown>>(EFFECT_TYPE_EVALUATE, effects);
     if (!typedEffects || typedEffects.length === 0) return null;
     const { subscribedEffects, unsubscribedEffects } = typedEffects.reduce(
       (combinedResults, effect) => {
@@ -155,8 +155,8 @@ export class EvaluateHandler implements Actor<Message<unknown>> {
         return combinedResults;
       },
       {
-        subscribedEffects: new Array<Effect>(),
-        unsubscribedEffects: new Array<Effect>(),
+        subscribedEffects: new Array<Effect<unknown>>(),
+        unsubscribedEffects: new Array<Effect<unknown>>(),
       },
     );
     // FIXME: Purge any state values that are no longer needed
@@ -215,8 +215,8 @@ export class EvaluateHandler implements Actor<Message<unknown>> {
       },
       {
         results: new Map<Hash, EvaluateEffectResult<unknown>>(),
-        subscribedEffects: new Array<Effect>(),
-        unsubscribedEffects: new Array<Effect>(),
+        subscribedEffects: new Array<Effect<unknown>>(),
+        unsubscribedEffects: new Array<Effect<unknown>>(),
       },
     );
     // FIXME: Purge any state values that are no longer needed
@@ -229,8 +229,8 @@ export class EvaluateHandler implements Actor<Message<unknown>> {
 
   private createHandlerActions(options: {
     results: Map<Hash, EvaluateEffectResult<unknown>> | null;
-    subscribedEffects: Array<Effect>;
-    unsubscribedEffects: Array<Effect>;
+    subscribedEffects: Array<Effect<unknown>>;
+    unsubscribedEffects: Array<Effect<unknown>>;
   }): EvaluateHandlerOutput {
     const { results, subscribedEffects, unsubscribedEffects } = options;
     const subscribeEffectsAction =
@@ -261,10 +261,10 @@ export class EvaluateHandler implements Actor<Message<unknown>> {
     ];
   }
 
-  private subscribe(effect: EvaluateEffect): {
-    result: EvaluationResult<unknown>;
-    subscribed: Array<Effect>;
-    unsubscribed: Array<Effect>;
+  private subscribe<T>(effect: EvaluateEffect<T>): {
+    result: EvaluationResult<T>;
+    subscribed: Array<Effect<unknown>>;
+    unsubscribed: Array<Effect<unknown>>;
   } {
     const { expression } = effect.payload;
     const expressionId = hash(expression);
@@ -298,10 +298,10 @@ export class EvaluateHandler implements Actor<Message<unknown>> {
     };
   }
 
-  private unsubscribe(effect: EvaluateEffect): {
-    result: EvaluationResult<unknown> | null;
-    subscribedEffects: Array<Effect>;
-    unsubscribedEffects: Array<Effect>;
+  private unsubscribe<T>(effect: EvaluateEffect<T>): {
+    result: EvaluationResult<T> | null;
+    subscribedEffects: Array<Effect<unknown>>;
+    unsubscribedEffects: Array<Effect<unknown>>;
   } {
     const { expression } = effect.payload;
     const expressionId = hash(expression);
@@ -350,13 +350,13 @@ function getEvaluationResultEffectSubscriptionUpdates(
   subscription: QuerySubscription<any>,
   updatedDependencies: DependencyTree,
   previousDependencies: DependencyTree | null,
-  effectsLookup: Map<StateToken, Effect>,
+  effectsLookup: Map<StateToken, Effect<unknown>>,
   subscriptions: Map<any, QuerySubscription<any>>,
-): { subscribedEffects: Array<Effect>; unsubscribedEffects: Array<Effect> } {
+): { subscribedEffects: Array<Effect<unknown>>; unsubscribedEffects: Array<Effect<unknown>> } {
   // Determine the set of effects that have been subscribed or unsubscribed as a result of this evaluation
   const { result } = subscription;
   const unresolvedEffects = EvaluationResult.Pending.is(result)
-    ? flattenConditionTree(result.conditions)
+    ? createEffectLookup(result.conditions)
     : null;
   const { added: addedDependencies, removed: removedDependencies } = getUpdatedDependencies(
     subscription,

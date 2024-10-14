@@ -35,7 +35,8 @@
     "@reactive-kit/build-config": "workspace:*",
     "@reactive-kit/effect-pending": "workspace:*",
     "@reactive-kit/reactive-utils": "workspace:*",
-    "@reactive-kit/types": "workspace:*"
+    "@reactive-kit/types": "workspace:*",
+    "@reactive-kit/utils": "workspace:*"
   },
   "peerDependencies": {
     "eslint": "^8",

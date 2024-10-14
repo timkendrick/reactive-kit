@@ -440,6 +440,65 @@ importers:
         specifier: workspace:*
         version: link:../utils
 
+  packages/effects/error/effect-error:
+    dependencies:
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../../../build-config
+      '@reactive-kit/hash':
+        specifier: workspace:*
+        version: link:../../../hash
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../../../types
+
+  packages/effects/error/hook-error:
+    dependencies:
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.25
+        version: 0.25.1(typescript@5.2.2)
+      typescript:
+        specifier: ^5
+        version: 5.2.2
+      vite:
+        specifier: ^4
+        version: 4.4.9(@types/node@20.5.9)
+      vitest:
+        specifier: ^0.34
+        version: 0.34.3
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../../../build-config
+      '@reactive-kit/effect-error':
+        specifier: workspace:*
+        version: link:../effect-error
+      '@reactive-kit/reactive-utils':
+        specifier: workspace:*
+        version: link:../../../reactive-utils
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../../../types
+
   packages/effects/evaluate/effect-evaluate:
     dependencies:
       eslint:
@@ -717,6 +776,9 @@ importers:
       '@reactive-kit/types':
         specifier: workspace:*
         version: link:../../../types
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../../../utils
 
   packages/effects/state/effect-state:
     dependencies:
@@ -984,6 +1046,9 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
+      '@reactive-kit/hook-error':
+        specifier: workspace:*
+        version: link:../effects/error/hook-error
       '@reactive-kit/hook-evaluate':
         specifier: workspace:*
         version: link:../effects/evaluate/hook-evaluate

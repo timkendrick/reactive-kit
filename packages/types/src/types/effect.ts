@@ -2,40 +2,36 @@ import { hash, HASH, type Hashable, type CustomHashable } from '@reactive-kit/ha
 
 export type StateToken = bigint;
 
-export const EFFECT = Symbol.for('@reactive-kit/symbols/effect');
+const EFFECT_TYPE_ID = '@reactive-kit/symbols/effect';
+export const EFFECT = Symbol.for(EFFECT_TYPE_ID);
 
 export type EffectType = string;
 
-export interface Effect<T extends EffectType = EffectType, P extends Hashable = Hashable>
-  extends CustomHashable {
+declare const RESULT_TYPE: unique symbol;
+
+export interface Effect<T> extends CustomHashable {
+  [RESULT_TYPE]: T;
   [EFFECT]: StateToken;
-  type: T;
-  payload: P;
+  type: EffectType;
+  payload: unknown;
 }
 
-export function isEffect(value: unknown): value is Effect {
+export function isEffect(value: unknown): value is Effect<unknown> {
   return value != null && typeof value === 'object' && EFFECT in value;
 }
 
-export function createEffect<T extends EffectType, P extends Hashable>(
+export function createEffect<T extends EffectType, P extends Hashable, V>(
   type: T,
   payload: P,
-): Effect<T, P>;
-export function createEffect<T extends EffectType, P extends Hashable>(
-  id: StateToken,
-  type: T,
-  payload: P,
-): Effect<T, P>;
-export function createEffect<T extends EffectType, P extends Hashable>(
-  id: StateToken | T,
-  type: T | P,
-  payload?: P,
-): Effect<T, P> {
-  if (typeof id === 'string') return createEffect(hash(id, type as Hashable), id as T, type as P);
+): Effect<V> & { type: T; payload: P } {
+  const id = hash(EFFECT_TYPE_ID, type, payload);
   return {
     [HASH]: id,
     [EFFECT]: id,
-    type: type as T,
-    payload: payload as P,
-  };
+    type,
+    payload,
+  } satisfies Omit<
+    Effect<V> & { type: T; payload: P },
+    typeof RESULT_TYPE
+  > as unknown as Effect<V> & { type: T; payload: P };
 }
