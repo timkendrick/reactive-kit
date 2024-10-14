@@ -1,4 +1,4 @@
-async function main() {
+function main() {
   return 'Hello, world!';
 }
 
