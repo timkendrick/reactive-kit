@@ -452,5 +452,77 @@ describe(reactiveJsx, () => {
       });
       expect(actual?.code).toBe(printAst(expected));
     });
+
+    test('top-level JSX intrinsic elements', () => {
+      const input = template.program({
+        plugins: ['jsx'],
+      }).ast/* javascript */ `
+          <main id="foo" />
+        `;
+      const expected = template.program({
+        plugins: ['jsx'],
+      }).ast/* javascript */ `
+          ({
+            "type": "main",
+            "props": {
+              "id": "foo",
+            },
+          })
+        `;
+      const actual = transform(printAst(input), {
+        parserOpts: { plugins: ['jsx'] },
+        plugins: [reactiveJsx],
+        code: true,
+      });
+      expect(actual?.code).toBe(printAst(expected));
+    });
+
+    test('top-level JSX custom elements', () => {
+      const input = template.program({
+        plugins: ['jsx'],
+      }).ast/* javascript */ `
+          <Main id="foo" />
+        `;
+      const expected = template.program({
+        plugins: ['jsx'],
+      }).ast/* javascript */ `
+          Main({ "id": "foo" })
+        `;
+      const actual = transform(printAst(input), {
+        parserOpts: { plugins: ['jsx'] },
+        plugins: [reactiveJsx],
+        code: true,
+      });
+      expect(actual?.code).toBe(printAst(expected));
+    });
+
+    test('JSX custom elements in non-async functions', () => {
+      const input = template.program({
+        plugins: ['jsx'],
+      }).ast/* javascript */ `
+          function foo() {
+            return <Main id="foo" />;
+          }
+          async function bar() {
+            return (() => <Main id="bar" />)();
+          }
+        `;
+      const expected = template.program({
+        plugins: ['jsx'],
+      }).ast/* javascript */ `
+          function foo() {
+            return Main({ "id": "foo" });
+          }
+          async function bar() {
+            return (() => Main({ "id": "bar" }))();
+          }
+        `;
+      const actual = transform(printAst(input), {
+        parserOpts: { plugins: ['jsx'] },
+        plugins: [reactiveJsx],
+        code: true,
+      });
+      expect(actual?.code).toBe(printAst(expected));
+    });
   });
 });

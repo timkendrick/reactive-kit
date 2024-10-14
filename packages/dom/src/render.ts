@@ -1,5 +1,4 @@
 import type {
-  Component,
   Element as ElementNode,
   ElementProps,
   ElementType,
@@ -12,9 +11,9 @@ import { Runtime } from '@reactive-kit/runtime';
 import type { Reactive } from '@reactive-kit/types';
 import { subscribeAsyncIterator } from '@reactive-kit/utils';
 
-export function render(root: Component<{}>, container: Element | DocumentFragment): Promise<null> {
+export function render(root: TemplateNode, container: Element | DocumentFragment): Promise<null> {
   const runtime = new Runtime(handlers);
-  const results = runtime.subscribe(root({}) as unknown as Reactive<Hashable>);
+  const results = runtime.subscribe(root as unknown as Reactive<Hashable>);
   return subscribeAsyncIterator(
     results as AsyncIterator<TemplateNode, null, undefined>,
     (template) => {

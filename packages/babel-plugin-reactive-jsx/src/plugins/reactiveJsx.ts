@@ -1,4 +1,4 @@
-import type { BabelPlugin, Types } from '@reactive-kit/babel-types';
+import type { BabelPlugin, Scope, Types } from '@reactive-kit/babel-types';
 
 export const reactiveJsx: BabelPlugin = (babel) => {
   const { types: t } = babel;
@@ -6,7 +6,7 @@ export const reactiveJsx: BabelPlugin = (babel) => {
     name: 'reactive-jsx',
     visitor: {
       JSXElement(path) {
-        path.replaceWith(transformJsxElement(path.node));
+        path.replaceWith(transformJsxElement(path.node, path.scope));
       },
       JSXFragment(path) {
         path.replaceWith(transformJsxFragment(path.node));
@@ -17,17 +17,17 @@ export const reactiveJsx: BabelPlugin = (babel) => {
     },
   };
 
-  function transformJsxElement(node: Types.JSXElement): Types.Expression {
+  function transformJsxElement(node: Types.JSXElement, scope: Scope): Types.Expression {
     const elementIdentifier = node.openingElement.name;
     switch (elementIdentifier.type) {
       case 'JSXIdentifier':
         if (isIntrinsicElementIdentifier(elementIdentifier)) {
           return transformJsxIntrinsicElement(elementIdentifier, node);
         } else {
-          return transformJsxCustomElement(elementIdentifier, node);
+          return transformJsxCustomElement(elementIdentifier, node, scope);
         }
       case 'JSXMemberExpression':
-        return transformJsxCustomElement(elementIdentifier, node);
+        return transformJsxCustomElement(elementIdentifier, node, scope);
       case 'JSXNamespacedName':
       default:
         return node;
@@ -54,15 +54,19 @@ export const reactiveJsx: BabelPlugin = (babel) => {
   function transformJsxCustomElement(
     type: Types.JSXIdentifier | Types.JSXMemberExpression,
     element: Types.JSXElement,
+    scope: Scope,
   ): Types.Expression {
     const elementType = parseJsxCustomElementName(type);
     const { key, ref, props } = parseJsxElementAttributes(element);
-    const elementExpression = t.awaitExpression(t.callExpression(elementType, [props]));
-    if (!key && !ref) return elementExpression;
+    const elementExpression = t.callExpression(elementType, [props]);
+    const expression = isAsyncScope(scope)
+      ? t.awaitExpression(elementExpression)
+      : elementExpression;
+    if (!key && !ref) return expression;
     return t.objectExpression([
       ...(key ? [t.objectProperty(t.stringLiteral('key'), key)] : []),
       ...(ref ? [t.objectProperty(t.stringLiteral('ref'), ref)] : []),
-      t.spreadElement(elementExpression),
+      t.spreadElement(expression),
     ]);
   }
 
@@ -237,4 +241,12 @@ function findLastIndex<T>(items: Array<T>, predicate: (item: T) => boolean): num
     if (predicate(items[i])) return i;
   }
   return -1;
+}
+
+function isAsyncScope(scope: Scope): boolean {
+  const functionScope = scope.getFunctionParent();
+  if (!functionScope) return false;
+  const { path: fn } = functionScope;
+  if (!fn.isFunction()) return false;
+  return Boolean(fn.node.async);
 }

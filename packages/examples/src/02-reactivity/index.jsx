@@ -10,4 +10,4 @@ async function Main() {
   return <div>Current UNIX time: {Math.floor(millis / 1000)}</div>;
 }
 
-render(Main, document.body.getElementsByTagName('main')[0]);
+render(<Main />, document.body.getElementsByTagName('main')[0]);
