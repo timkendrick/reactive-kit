@@ -2,6 +2,7 @@ import {
   createSignal,
   EFFECT,
   isEffect,
+  isFork,
   isSignal,
   isStateful,
   Signal,
@@ -17,10 +18,7 @@ import { combineDependencies, EMPTY_DEPENDENCIES } from './utils/dependency';
 import { isCatcher } from '@reactive-kit/types/src/types/catcher';
 
 class MutableStack<T> {
-  private values: Array<T>;
-  public constructor(...values: Array<T>) {
-    this.values = values;
-  }
+  private values: Array<T> = [];
   public push(value: T): void {
     this.values.push(value);
   }
@@ -112,7 +110,8 @@ const STACK_FRAME_PLACEHOLDER = StackFrame.Noop({});
 export function evaluate<T>(expression: Reactive<T>, state: StateValues): EvaluationResult<T> {
   let combinedDependencies: DependencyTree = EMPTY_DEPENDENCIES;
   // Enqueue the initial stack frames necessary to evaluate the main thread
-  const stack = new MutableStack<StackFrame>(StackFrame.Terminate({}));
+  const stack = new MutableStack<StackFrame>();
+  stack.push(StackFrame.Terminate({}));
   executeExpression(expression, stack);
   stack.push(StackFrame.Spawn({}));
   // Create registers to keep track of the result of the current thread
@@ -338,6 +337,8 @@ function executeExpression(expression: Reactive<unknown>, stack: MutableStack<St
   } else if (isCatcher(expression)) {
     stack.push(StackFrame.Catch({ handler: expression.fallback }));
     executeExpression(expression.target, stack);
+  } else if (isFork(expression)) {
+    fork(expression.expressions, stack);
   } else {
     stack.push(StackFrame.Result({ value: expression }));
   }
@@ -348,13 +349,17 @@ function fork(expressions: Array<Reactive<unknown>>, stack: MutableStack<StackFr
     // If there are no threads to spawn, simulate joining an empty list of thread results
     // and continue evaluation on the current thread stack
     case 0: {
+      stack.push(StackFrame.Terminate({}));
       stack.push(StackFrame.Result({ value: [] }));
+      stack.push(StackFrame.Spawn({}));
       return;
     }
     // If there is only a single thread to spawn, evaluate it directly on the current thread stack
     case 1: {
       const [expression] = expressions;
+      stack.push(StackFrame.Terminate({}));
       executeExpression(expression, stack);
+      stack.push(StackFrame.Spawn({}));
       return;
     }
     // If there are multiple threads to spawn, evaluate each expression in its own thread
