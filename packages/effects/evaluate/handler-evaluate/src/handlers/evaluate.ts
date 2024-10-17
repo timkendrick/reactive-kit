@@ -415,7 +415,7 @@ function getUpdatedDependencies(
 
 function getAffectedSubscriptions(
   subscriptions: Map<bigint, QuerySubscription<any>>,
-  updates: Map<EffectType, Map<bigint, any>>,
+  updates: EmitEffectValuesMessage['updates'],
 ): Array<QuerySubscription<any>> {
   // FIXME: Optimize expensive dependency operations
   const affectedSubscriptions = new Array<QuerySubscription<any>>();
