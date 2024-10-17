@@ -29,6 +29,7 @@ import {
   type UnsubscribeEffectsMessage,
 } from '@reactive-kit/runtime-messages';
 import { nonNull, generateUid } from '@reactive-kit/utils';
+import { createPendingEffect, type PendingEffect } from '@reactive-kit/effect-pending';
 import { EFFECT, type StateToken } from '@reactive-kit/types';
 import {
   createFetchHandlerResponseMessage,
@@ -91,6 +92,15 @@ export class FetchHandler implements Actor<Message<unknown>> {
     const typedEffects = getTypedEffects<FetchEffect>(EFFECT_TYPE_FETCH, effects);
     if (!typedEffects || typedEffects.length === 0) return null;
     const self = context.self();
+    const pendingValues = new Map(
+      typedEffects
+        .map((effect): [StateToken, PendingEffect] | null => {
+          const stateToken = effect[EFFECT];
+          if (this.subscriptions.has(stateToken)) return null;
+          return [stateToken, createPendingEffect()];
+        })
+        .filter(nonNull),
+    );
     const actions = typedEffects
       .map((effect) => {
         const stateToken = effect[EFFECT];
@@ -108,8 +118,16 @@ export class FetchHandler implements Actor<Message<unknown>> {
         return HandlerAction.Spawn(handle);
       })
       .filter(nonNull);
-    if (actions.length === 0) return null;
-    return actions;
+    const pendingPlaceholdersMessage =
+      pendingValues.size === 0
+        ? null
+        : createEmitEffectValuesMessage(new Map([[EFFECT_TYPE_FETCH, pendingValues]]));
+    const pendingPlaceholderActions =
+      pendingPlaceholdersMessage != null
+        ? [HandlerAction.Send(this.next, pendingPlaceholdersMessage)]
+        : [];
+    const combinedActions = [...pendingPlaceholderActions, ...actions];
+    return combinedActions.length === 0 ? null : combinedActions;
   }
 
   private handleUnsubscribeEffects(

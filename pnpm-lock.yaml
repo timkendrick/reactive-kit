@@ -674,6 +674,9 @@ importers:
       '@reactive-kit/effect-fetch':
         specifier: workspace:*
         version: link:../effect-fetch
+      '@reactive-kit/effect-pending':
+        specifier: workspace:*
+        version: link:../../pending/effect-pending
       '@reactive-kit/runtime-messages':
         specifier: workspace:*
         version: link:../../../runtime-messages
