@@ -9,11 +9,11 @@ export const CATCHER_TYPE_PENDING_FALLBACK = '@reactive-kit/catcher-pending-fall
 
 export function useFallback<T, V extends Hashable>(
   fallback: (() => Reactive<V>) & Hashable,
-  value: Reactive<T>,
+  value: Reactive<T> & Hashable,
 ): Promise<T | V> {
   return useReactive<T | V>(
     createCatcher<T | V, typeof CATCHER_TYPE_PENDING_FALLBACK>(
-      hash(CATCHER_TYPE_PENDING_FALLBACK, fallback),
+      hash(CATCHER_TYPE_PENDING_FALLBACK, fallback, value),
       CATCHER_TYPE_PENDING_FALLBACK,
       value,
       (signal): Reactive<T | V> | Signal => {

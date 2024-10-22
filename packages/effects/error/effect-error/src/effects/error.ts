@@ -24,7 +24,7 @@ export class ReactiveError extends AggregateError implements CustomHashable {
   private readonly hash: Hash;
 
   public constructor(errors: Array<Error & Hashable>) {
-    super(errors);
+    super(errors, errors.map(({ message }) => message).join('\n'));
     this.hash = hash(errors);
   }
 

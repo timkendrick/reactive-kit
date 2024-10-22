@@ -11,11 +11,13 @@ import {
   type Stateful,
   type StatefulGenerator,
 } from '@reactive-kit/types';
-import { Enum, EnumVariant, VARIANT, nonNull } from '@reactive-kit/utils';
+import { createErrorEffect, ReactiveError } from '@reactive-kit/effect-error';
+import { Enum, EnumVariant, VARIANT } from '@reactive-kit/utils';
 import { ConditionTree, DependencyTree, EvaluationResult, StateValues } from './types';
-import { collectConditionTree, createEffectLookup, flattenConditionTree } from './utils/condition';
+import { collectConditionTree, flattenConditionTree } from './utils/condition';
 import { combineDependencies, EMPTY_DEPENDENCIES } from './utils/dependency';
 import { isCatcher } from '@reactive-kit/types/src/types/catcher';
+import { Hashable } from '@reactive-kit/hash';
 
 class MutableStack<T> {
   private values: Array<T> = [];
@@ -160,52 +162,44 @@ export function evaluate<T>(expression: Reactive<T>, state: StateValues): Evalua
         if (!StackFrame.Result.is(threadResultRegister)) {
           throw new Error('Invalid intermediate generator value');
         }
-        // Get the current resolved effect value from the result register
-        // Evaluate the next step of the expression, providing the retrieved continuation value
-        let result = evaluation.next(threadResultRegister.value);
+        // Get the current intermediate result from the result register
+        let result: IteratorResult<unknown, unknown> = {
+          value: threadResultRegister.value,
+          done: false,
+        };
         // Continue evaluating the expression, providing any fully-resolved effect values as required
         while (!result.done) {
+          // Evaluate the next step of the expression, providing the retrieved continuation value
+          try {
+            result = evaluation.next(result.value);
+          } catch (error) {
+            // The expression has reached an unrecoverable error condition
+            stack.push(
+              StackFrame.Halt({
+                conditions: ConditionTree.Unit({
+                  condition: createErrorEffect(
+                    new ReactiveError([
+                      // FIXME: Improve exception hashing
+                      error as Error & Hashable,
+                    ]),
+                  ),
+                }),
+              }),
+            );
+            continue loop;
+          }
           const { value: yieldedValue } = result;
           // TODO: allow pushing multiple unresolved expressions onto the stack simultaneously
-          if (isStateful(yieldedValue)) {
-            // The expression evaluation has emitted a chained stateful value, so queue up the current stack frame again
-            // to be resolved again once the inner generator has completed
+          if (isResult(yieldedValue)) {
+            // If the yielded value is fully resolved, provide it to the next iteration of the stateful expression
+            continue;
+          } else {
+            // The expression evaluation has emitted an inner reactive value,
+            // so queue up the current stack frame again to be resolved again once the inner expression has been resolved
             stack.push(stackFrame);
             // Initiate a new evaluation stack for evaluating the inner expression
-            stack.push(StackFrame.Evaluate({ expression: yieldedValue }));
-            continue loop;
-          } else if (isEffect(yieldedValue)) {
-            if (!state.has(yieldedValue[EFFECT])) {
-              // The expression evaluation has reached a halt condition, so queue up the current stack frame again
-              // to be resolved again once the condition has been handled
-              stack.push(stackFrame);
-              // Initiate a new evaluation stack for handling the condition
-              stack.push(StackFrame.Handle({ condition: yieldedValue }));
-              continue loop;
-            }
-            const condition = yieldedValue;
-            const stateToken = condition[EFFECT];
-            // Register the condition as a dependency of this evaluation
-            combinedDependencies = combineDependencies(
-              combinedDependencies,
-              DependencyTree.Unit({ value: stateToken }),
-            );
-            const stateValue = state.get(stateToken);
-            // Continue evaluating the stateful value
-            result = { done: false, value: stateValue };
-          } else if (isSignal(yieldedValue)) {
-            // The expression has reached an unresolvable halting condition
-            stack.push(StackFrame.Halt({ conditions: collectConditionTree(yieldedValue.effects) }));
-            continue loop;
-          } else if (isCatcher(yieldedValue)) {
-            // The expression evaluation has emitted a chained stateful value, so queue up the current stack frame again
-            // to be resolved again once the inner expression has been handled
-            stack.push(stackFrame);
             executeExpression(yieldedValue, stack);
             continue loop;
-          } else {
-            // Otherwise if the yielded value is fully resolved, provide the value to continue evaluation of the expression
-            result = evaluation.next(yieldedValue);
           }
         }
         // The stateful expression has completed successfully, so push the result onto the stack and continue execution
@@ -342,6 +336,15 @@ function executeExpression(expression: Reactive<unknown>, stack: MutableStack<St
   } else {
     stack.push(StackFrame.Result({ value: expression }));
   }
+}
+
+function isResult<T>(expression: Reactive<T>): expression is T {
+  if (isStateful(expression)) return false;
+  if (isEffect(expression)) return false;
+  if (isSignal(expression)) return false;
+  if (isCatcher(expression)) return false;
+  if (isFork(expression)) return false;
+  return true;
 }
 
 function fork(expressions: Array<Reactive<unknown>>, stack: MutableStack<StackFrame>): void {

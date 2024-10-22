@@ -39,7 +39,7 @@ export function useFetch(request: string | FetchRequestInit): Promise<FetchResul
             : null,
         token: init.token ?? null,
       }),
-      assignCustomHash(hash('@reactive-kit/hook-fetch/useFetch'), (response) => {
+      assignCustomHash(hash('@reactive-kit/hook-fetch/useFetch::map'), (response) => {
         if (!response.success) {
           // FIXME: Determine error throwing behavior
           throw response.error;

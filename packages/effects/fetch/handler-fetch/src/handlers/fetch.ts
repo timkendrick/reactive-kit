@@ -189,68 +189,76 @@ function createFetchTaskFactory(
 }
 
 function fetchRequest(request: FetchRequest, signal: AbortSignal): Promise<FetchResponseState> {
-  return fetch(request.url, {
-    method: request.method,
-    headers: parseRequestHeaders(request.headers),
-    body: request.body,
-    signal,
-  })
-    .then((response) => {
-      const { status } = response;
-      const headers = parseResponseHeaders(response.headers);
-      const token = generateUid();
-      if (response.ok) {
-        return response.arrayBuffer().then(
-          (body): FetchResponseState => ({
-            success: true,
-            response: {
-              status,
-              headers,
-              body: new Uint8Array(body),
-              token,
-            },
-          }),
-          (err): FetchResponseState => ({
-            success: false,
-            error: parseResponseError(err),
-            response: {
-              status,
-              headers,
-              body: null,
-              token,
-            },
-          }),
-        );
-      } else {
-        return response.arrayBuffer().then(
-          (body): FetchResponseState => ({
-            success: false,
-            error: new Error(`HTTP error ${response.status}: ${response.statusText}`),
-            response: {
-              status,
-              headers,
-              body: new Uint8Array(body),
-              token,
-            },
-          }),
-          (err): FetchResponseState => ({
-            success: false,
-            error: parseResponseError(err),
-            response: {
-              status,
-              headers,
-              body: null,
-              token,
-            },
-          }),
-        );
-      }
+  try {
+    return fetch(request.url, {
+      method: request.method,
+      headers: parseRequestHeaders(request.headers),
+      body: request.body,
+      signal,
     })
-    .catch((err) => ({
+      .then((response) => {
+        const { status } = response;
+        const headers = parseResponseHeaders(response.headers);
+        const token = generateUid();
+        if (response.ok) {
+          return response.arrayBuffer().then(
+            (body): FetchResponseState => ({
+              success: true,
+              response: {
+                status,
+                headers,
+                body: new Uint8Array(body),
+                token,
+              },
+            }),
+            (err): FetchResponseState => ({
+              success: false,
+              error: parseResponseError(err),
+              response: {
+                status,
+                headers,
+                body: null,
+                token,
+              },
+            }),
+          );
+        } else {
+          return response.arrayBuffer().then(
+            (body): FetchResponseState => ({
+              success: false,
+              error: new Error(`HTTP error ${response.status}: ${response.statusText}`),
+              response: {
+                status,
+                headers,
+                body: new Uint8Array(body),
+                token,
+              },
+            }),
+            (err): FetchResponseState => ({
+              success: false,
+              error: parseResponseError(err),
+              response: {
+                status,
+                headers,
+                body: null,
+                token,
+              },
+            }),
+          );
+        }
+      })
+      .catch((err) => ({
+        success: false,
+        error: parseResponseError(err),
+        response: null,
+      }));
+  } catch (error) {
+    return Promise.resolve({
       success: false,
-      error: parseResponseError(err),
+      error: error as Error,
       response: null,
-    }));
+    });
+  }
 }
 
 function parseRequestHeaders(headers: FetchHeaders | null | undefined): Headers {

@@ -708,9 +708,15 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../../../build-config
+      '@reactive-kit/effect-error':
+        specifier: workspace:*
+        version: link:../../error/effect-error
       '@reactive-kit/effect-fetch':
         specifier: workspace:*
         version: link:../effect-fetch
+      '@reactive-kit/effect-pending':
+        specifier: workspace:*
+        version: link:../../pending/effect-pending
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../../../hash
@@ -1089,6 +1095,9 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
+      '@reactive-kit/effect-error':
+        specifier: workspace:*
+        version: link:../effects/error/effect-error
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../hash
