@@ -1,4 +1,4 @@
-import type { BabelPlugin, Scope, Types } from '@reactive-kit/babel-types';
+import type { BabelPlugin, NodePath, Scope, types as t } from '@reactive-kit/babel-types';
 import { hashAstNode } from '../utils/ast';
 
 const SYMBOL_NAME_HASH = '@reactive-kit/symbols/hash';
@@ -10,7 +10,7 @@ export const reactiveFunctions: BabelPlugin = (babel) => {
     visitor: {
       Function(path) {
         if (!path.node.async) return;
-        path.replaceWith(transformFunction(path.node, path.scope));
+        path.replaceWith(transformAsyncFunction(path));
       },
       AwaitExpression(path) {
         const isTopLevelAwait = !path.getFunctionParent();
@@ -20,11 +20,11 @@ export const reactiveFunctions: BabelPlugin = (babel) => {
     },
   };
 
-  function transformFunction(node: Types.Function, scope: Scope): Types.Function {
-    const result = createStatefulGenerator(node, scope);
-    if (t.isArrowFunctionExpression(node)) {
+  function transformAsyncFunction(path: NodePath<t.Function>): t.Function {
+    const result = createStatefulGenerator(path.node, path.scope);
+    if (path.isArrowFunctionExpression()) {
       return {
-        ...node,
+        ...path.node,
         expression: true,
         generator: false,
         async: false,
@@ -33,7 +33,7 @@ export const reactiveFunctions: BabelPlugin = (babel) => {
       };
     } else {
       return {
-        ...node,
+        ...path.node,
         generator: false,
         async: false,
         returnType: undefined,
@@ -42,7 +42,7 @@ export const reactiveFunctions: BabelPlugin = (babel) => {
     }
   }
 
-  function createStatefulGenerator(node: Types.Function, scope: Scope): Types.Expression {
+  function createStatefulGenerator(node: t.Function, scope: Scope): t.Expression {
     const astHash = hashAstNode(node);
     return t.objectExpression([
       t.objectProperty(
@@ -77,7 +77,7 @@ export const reactiveFunctions: BabelPlugin = (babel) => {
     ]);
   }
 
-  function instantiateParam(param: Types.LVal): Types.Expression {
+  function instantiateParam(param: t.LVal): t.Expression {
     switch (param.type) {
       case 'Identifier':
         return param;
@@ -171,8 +171,8 @@ export const reactiveFunctions: BabelPlugin = (babel) => {
   }
 
   function transformAsyncFunctionReturnType(
-    returnType: NonNullable<Types.FunctionDeclaration['returnType']>,
-  ): NonNullable<Types.FunctionDeclaration['returnType']> {
+    returnType: NonNullable<t.FunctionDeclaration['returnType']>,
+  ): NonNullable<t.FunctionDeclaration['returnType']> {
     if (!t.isTSTypeAnnotation(returnType)) return returnType;
     const typeParameter = parsePromiseTypeAnnotation(returnType.typeAnnotation);
     const iteratorResultYieldType = t.tsAnyKeyword();
@@ -184,14 +184,14 @@ export const reactiveFunctions: BabelPlugin = (babel) => {
     };
   }
 
-  function createPromiseTypeAnnotation(typeParameter: Types.TSType): Types.TSTypeReference {
+  function createPromiseTypeAnnotation(typeParameter: t.TSType): t.TSTypeReference {
     return t.tsTypeReference(
       t.identifier('Promise'),
       t.tsTypeParameterInstantiation([typeParameter]),
     );
   }
 
-  function parsePromiseTypeAnnotation(typeAnnotation: Types.TSType): Types.TSType | null {
+  function parsePromiseTypeAnnotation(typeAnnotation: t.TSType): t.TSType | null {
     if (!t.isTSTypeReference(typeAnnotation)) return null;
     if (!isNamedTypeIdentifier('Promise', typeAnnotation.typeName)) return null;
     const typeParameters = typeAnnotation.typeParameters?.params;
@@ -199,7 +199,7 @@ export const reactiveFunctions: BabelPlugin = (babel) => {
     return typeParameters[0];
   }
 
-  function inferPromiseTypeAnnotation(typeAnnotation: Types.TSType): Types.TSType {
+  function inferPromiseTypeAnnotation(typeAnnotation: t.TSType): t.TSType {
     return t.tsConditionalType(
       typeAnnotation,
       createPromiseTypeAnnotation(t.tsInferType(t.tsTypeParameter(null, null, '$T'))),
@@ -208,25 +208,22 @@ export const reactiveFunctions: BabelPlugin = (babel) => {
     );
   }
 
-  function createIteratorResultType(
-    yieldType: Types.TSType,
-    returnType: Types.TSType,
-  ): Types.TSTypeReference {
+  function createIteratorResultType(yieldType: t.TSType, returnType: t.TSType): t.TSTypeReference {
     return t.tsTypeReference(
       t.identifier('IteratorResult'),
       t.tsTypeParameterInstantiation([yieldType, returnType]),
     );
   }
 
-  function isNamedTypeIdentifier(name: string, node: Types.TSEntityName): boolean {
+  function isNamedTypeIdentifier(name: string, node: t.TSEntityName): boolean {
     return t.isIdentifier(node) && node.name === name;
   }
 
-  function transformAwaitExpression(node: Types.AwaitExpression): Types.YieldExpression {
+  function transformAwaitExpression(node: t.AwaitExpression): t.YieldExpression {
     return t.yieldExpression(node.argument);
   }
 
-  function getFunctionIdentifier(node: Types.Function, scope: Scope): Types.Identifier | null {
+  function getFunctionIdentifier(node: t.Function, scope: Scope): t.Identifier | null {
     switch (node.type) {
       case 'FunctionDeclaration':
       case 'FunctionExpression':
@@ -245,13 +242,13 @@ export const reactiveFunctions: BabelPlugin = (babel) => {
     }
   }
 
-  function getStaticPropertyKey(key: Types.Expression, computed: boolean): string | null {
+  function getStaticPropertyKey(key: t.Expression, computed: boolean): string | null {
     if (t.isIdentifier(key)) return computed ? null : key.name;
     if (t.isLiteral(key)) return getLiteralPropertyKey(key);
     return null;
   }
 
-  function getLiteralPropertyKey(key: Types.Literal): string | null {
+  function getLiteralPropertyKey(key: t.Literal): string | null {
     switch (key.type) {
       case 'StringLiteral':
         return key.value;
@@ -271,7 +268,7 @@ export const reactiveFunctions: BabelPlugin = (babel) => {
     }
   }
 
-  function wellKnownSymbol(symbolName: string): Types.PrivateName | Types.Expression {
+  function wellKnownSymbol(symbolName: string): t.PrivateName | t.Expression {
     return t.callExpression(t.memberExpression(t.identifier('Symbol'), t.identifier('for')), [
       t.stringLiteral(symbolName),
     ]);

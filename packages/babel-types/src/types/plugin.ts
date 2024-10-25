@@ -1,8 +1,9 @@
 import type { PluginPass, PluginObj, PluginOptions } from '@babel/core';
-export type { Scope } from '@babel/traverse';
+export type { Scope, Binding, TraverseOptions } from '@babel/traverse';
+export type { PluginObj, PluginPass } from '@babel/core';
 import type * as BabelCore from '@babel/core';
 
-export type * as Types from '@babel/types';
+export type * as types from '@babel/types';
 
 export type Babel = typeof BabelCore;
 export type BabelPlugin<S = PluginPass> = (babel: Babel) => PluginObj<S>;
@@ -11,4 +12,5 @@ export type BabelPluginWithOptions<S = PluginPass, T extends PluginOptions = obj
   T,
 ];
 
-export type NodePath = BabelCore.NodePath;
+export type Node = BabelCore.Node;
+export type NodePath<T = Node> = BabelCore.NodePath<T>;

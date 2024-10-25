@@ -11,10 +11,10 @@ import {
   NODE_FIELDS,
   VISITOR_KEYS,
   type FieldOptions,
-  type Types,
+  type types as t,
 } from '@reactive-kit/babel-types';
 
-type AstNode = Types.Node;
+type AstNode = t.Node;
 type AstNodeType = AstNode['type'];
 type AstNodePropertyKey = keyof AstNode;
 
