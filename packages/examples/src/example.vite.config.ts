@@ -2,7 +2,7 @@ import { babel } from '@rollup/plugin-babel';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { defineConfig, mergeConfig, Plugin, PluginOption } from 'vite';
+import { defineConfig, mergeConfig, Plugin } from 'vite';
 
 import base from '../../build-config/templates/vite/base.vite.config';
 
@@ -45,7 +45,7 @@ export default mergeConfig(
         presets: ['@reactive-kit/babel-preset-reactive'],
         ignore: [/\bnode_modules\b/],
         babelHelpers: 'bundled',
-      }),
+      }) as Plugin,
     ],
   }),
 );

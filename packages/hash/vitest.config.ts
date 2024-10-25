@@ -1,7 +1,6 @@
-/// <reference types="vitest" />
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
-import { defineConfig, mergeConfig } from 'vite';
+import { defineConfig, mergeConfig } from 'vitest/config';
 
 import base from './vite.config';
 

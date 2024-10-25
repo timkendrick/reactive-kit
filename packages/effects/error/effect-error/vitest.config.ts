@@ -1,6 +1,5 @@
-/// <reference types="vitest" />
-import { join, resolve } from 'path';
-import { defineConfig, mergeConfig } from 'vite';
+import { join, resolve } from 'node:path';
+import { defineConfig, mergeConfig } from 'vitest/config';
 
 import base from './vite.config';
 

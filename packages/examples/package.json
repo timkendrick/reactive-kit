@@ -14,17 +14,17 @@
     "lint:typescript": "tsc --noEmit"
   },
   "devDependencies": {
+    "@reactive-kit/babel-preset-reactive": "link:../babel-preset-reactive/dist",
     "@reactive-kit/build-config": "workspace:*",
-    "@reactive-kit/babel-preset-reactive": "../babel-preset-reactive/dist",
-    "@reactive-kit/cli": "../cli/dist",
-    "@reactive-kit/hooks": "../hooks/dist",
-    "@reactive-kit/dom": "../dom/dist",
+    "@reactive-kit/cli": "link:../cli/dist",
+    "@reactive-kit/dom": "link:../dom/dist",
+    "@reactive-kit/hooks": "link:../hooks/dist",
     "@rollup/plugin-babel": "6.0.4",
     "@rollup/plugin-html": "1.0.3"
   },
   "peerDependencies": {
     "eslint": "^8",
     "typescript": "^5",
-    "vite": "^4"
+    "vite": "^6"
   }
 }
