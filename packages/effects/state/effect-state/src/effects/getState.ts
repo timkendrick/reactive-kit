@@ -1,9 +1,9 @@
-import { createEffect, type Effect } from '@reactive-kit/types';
+import { createEffect, type EffectExpression } from '@reactive-kit/types';
 import { type StateId } from '../types';
 
 export const EFFECT_TYPE_GET_STATE = '@reactive-kit/effect-state/get';
 
-export interface GetStateEffect<T> extends Effect<T> {
+export interface GetStateEffect<T> extends EffectExpression<T> {
   type: GetStateEffectType;
   payload: GetStateEffectPayload;
 }
@@ -16,6 +16,8 @@ export function createGetStateEffect<T extends unknown>(uid: string): GetStateEf
   return createEffect(EFFECT_TYPE_GET_STATE, uid);
 }
 
-export function isGetStateEffect(error: Effect<unknown>): error is GetStateEffect<unknown> {
+export function isGetStateEffect(
+  error: EffectExpression<unknown>,
+): error is GetStateEffect<unknown> {
   return error.type === EFFECT_TYPE_GET_STATE;
 }

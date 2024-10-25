@@ -1,8 +1,8 @@
-import { createEffect, type Effect } from '@reactive-kit/types';
+import { createEffect, type EffectExpression } from '@reactive-kit/types';
 
 export const EFFECT_TYPE_TIME = '@reactive-kit/effect-time';
 
-export interface TimeEffect extends Effect<Date> {
+export interface TimeEffect extends EffectExpression<Date> {
   type: TimeEffectType;
   payload: TimeEffectPayload;
 }
@@ -17,6 +17,6 @@ export function createTimeEffect(interval: number): TimeEffect {
   return createEffect(EFFECT_TYPE_TIME, interval);
 }
 
-export function isTimeEffect(error: Effect<unknown>): error is TimeEffect {
+export function isTimeEffect(error: EffectExpression<unknown>): error is TimeEffect {
   return error.type === EFFECT_TYPE_TIME;
 }

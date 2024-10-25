@@ -1,344 +1,534 @@
-import { hash } from '@reactive-kit/hash';
-import {
-  createEffect,
-  createStateful,
-  EFFECT,
-  type StateToken,
-  type Reactive,
-} from '@reactive-kit/types';
 import { describe, expect, test } from 'vitest';
-import { ConditionTree, StateValues, EvaluationResult, DependencyTree } from './types';
+import { CustomHashable, hash, HASH } from '@reactive-kit/hash';
+import {
+  createAsync,
+  createEffect,
+  createFallback,
+  createPending,
+  createResult,
+  EffectExpression,
+  Expression,
+  TYPE,
+  CONTINUE,
+  GeneratorContext,
+  TYPE_GENERATOR,
+  FallbackExpression,
+  isEffectExpression,
+  createEvaluationPendingResult,
+  createEvaluationSuccessResult,
+} from '@reactive-kit/types';
+
+import { EvaluationCache, EvaluationCacheValue } from './types';
 import { evaluate } from './evaluate';
+import { DependencyGraph } from '@reactive-kit/cache';
+import { gc } from './gc';
+
+function withNonceHash<T extends object>(value: T): T & CustomHashable {
+  return Object.assign(value, {
+    [HASH]: BigInt(Math.round(Math.random() * Number.MAX_SAFE_INTEGER)),
+  });
+}
+
+function isEvaluationCacheEffectResult<T>(
+  result: EvaluationCacheValue<T>,
+): result is EvaluationCacheValue<T> & {
+  expression: EffectExpression<T>;
+} {
+  return isEffectExpression(result.expression);
+}
 
 describe(evaluate, () => {
-  test('static root', () => {
-    function main(): Reactive<string> {
-      return 'foo';
-    }
-    const state: StateValues = new Map();
-    expect(evaluate(main(), state)).toEqual(
-      EvaluationResult.Ready('foo', DependencyTree.Empty({})),
+  test('evaluates result expressions', () => {
+    const expression = createResult('foo');
+    const cache: EvaluationCache = new DependencyGraph();
+    const interpreter = evaluate(expression, cache);
+    const result = interpreter.next();
+    expect(result).toEqual({
+      done: true,
+      value: createEvaluationSuccessResult(createResult('foo')),
+    });
+    expect(gc(cache, [expression], { major: true })).toEqual(new Set([]));
+    expect(gc(cache, [], { major: true })).toEqual(new Set([]));
+  });
+
+  test('evaluates pending expressions', () => {
+    const expression = createPending();
+    const cache: EvaluationCache = new DependencyGraph();
+    const interpreter = evaluate(expression, cache);
+    const result = interpreter.next();
+    expect(result).toEqual({
+      done: true,
+      value: createEvaluationPendingResult(),
+    });
+    expect(gc(cache, [expression], { major: true })).toEqual(new Set([]));
+    expect(gc(cache, [], { major: true })).toEqual(new Set([]));
+  });
+
+  test('evaluates effect expressions', () => {
+    const expression = createEffect<'foo', string, string>('foo', 'bar');
+    const cache: EvaluationCache = new DependencyGraph();
+    const interpreter = evaluate(expression, cache);
+    const initialResult = interpreter.next();
+    expect(initialResult).toEqual({
+      done: false,
+      value: createEffect<'foo', string, string>('foo', 'bar'),
+    });
+    const effectValue = createResult('baz');
+    const result = interpreter.next(effectValue);
+    expect(result).toEqual({
+      done: true,
+      value: createEvaluationSuccessResult(createResult('baz')),
+    });
+    expect(gc(cache, [expression], { major: true })).toEqual(new Set([]));
+    expect(gc(cache, [], { major: true })).toEqual(
+      new Set([createEffect<'foo', string, string>('foo', 'bar')]),
     );
   });
 
-  describe('signal root', () => {
-    test('unresolved signal', () => {
-      const signal = createEffect<'effect:foo', null, string>('effect:foo', null);
-      function main(): Reactive<string> {
-        return signal;
-      }
-      const state: StateValues = new Map();
-      expect(evaluate(main(), state)).toEqual(
-        EvaluationResult.Pending(
-          ConditionTree.Unit({ condition: signal }),
-          DependencyTree.Unit({ value: signal[EFFECT] }),
-        ),
-      );
+  test('evaluates chained effect expressions', () => {
+    const expression = createEffect<'foo', string, string>('foo', 'bar');
+    const cache: EvaluationCache = new DependencyGraph();
+    const interpreter = evaluate(expression, cache);
+    const initialResult = interpreter.next();
+    expect(initialResult).toEqual({
+      done: false,
+      value: createEffect<'foo', string, string>('foo', 'bar'),
     });
-
-    test('resolved signal', () => {
-      const signal = createEffect<'effect:foo', null, string>('effect:foo', null);
-      function main(): Reactive<string> {
-        return signal;
-      }
-      const state: StateValues = new Map([[signal[EFFECT], 'foo']]);
-      expect(evaluate(main(), state)).toEqual(
-        EvaluationResult.Ready('foo', DependencyTree.Unit({ value: signal[EFFECT] })),
-      );
+    const intermediateEffectValue = createEffect<'foo', string, string>('foo', 'baz');
+    const intermediateResult = interpreter.next(intermediateEffectValue);
+    expect(intermediateResult).toEqual({
+      done: false,
+      value: createEffect<'foo', string, string>('foo', 'baz'),
     });
+    const effectValue = createResult('qux');
+    const result = interpreter.next(effectValue);
+    expect(result).toEqual({
+      done: true,
+      value: createEvaluationSuccessResult(createResult('qux')),
+    });
+    expect(gc(cache, [expression], { major: true })).toEqual(new Set([]));
+    expect(gc(cache, [], { major: true })).toEqual(
+      new Set([
+        createEffect<'foo', string, string>('foo', 'bar'),
+        createEffect<'foo', string, string>('foo', 'baz'),
+      ]),
+    );
   });
 
-  describe('stateful root', () => {
-    test('no dependencies', () => {
-      function main(): Reactive<string> {
-        return createStateful(hash(main.name), function* main() {
-          return 'foo';
-        });
-      }
-      const state: StateValues = new Map();
-      expect(evaluate(main(), state)).toEqual(
-        EvaluationResult.Ready('foo', DependencyTree.Empty({})),
-      );
+  test('evaluates stateless async expressions', () => {
+    const fn = Object.assign(
+      withNonceHash(
+        (
+          context: GeneratorContext<
+            { foo: string; bar: string },
+            {},
+            {},
+            never,
+            never,
+            never,
+            string
+          >,
+        ): Expression<string> => {
+          const { foo, bar } = context.state.args;
+          return createResult(foo + bar);
+        },
+      ),
+      {
+        [TYPE]: TYPE_GENERATOR as TYPE_GENERATOR,
+        [TYPE_GENERATOR]: {
+          params: ['foo' as const, 'bar' as const],
+          locals: [],
+          intermediates: [],
+          tryLocsList: [],
+        },
+      },
+    );
+    const expression = createAsync(fn, ['foo', 'bar']);
+    const cache: EvaluationCache = new DependencyGraph();
+    const interpreter = evaluate(expression, cache);
+    const result = interpreter.next();
+    expect(result).toEqual({
+      done: true,
+      value: createEvaluationSuccessResult(createResult('foobar')),
     });
+    expect(gc(cache, [expression], { major: true })).toEqual(new Set([]));
+    expect(gc(cache, [], { major: true })).toEqual(new Set([]));
+  });
 
-    describe('single dependency', () => {
-      test('unresolved dependency', () => {
-        const signal = createEffect<'effect:foo', null, string>('effect:foo', null);
-        function main(): Reactive<string> {
-          return createStateful(hash(main.name), function* main() {
-            const value: string = yield signal;
-            return value.toUpperCase();
-          });
-        }
-        const state: StateValues = new Map();
-        expect(evaluate(main(), state)).toEqual(
-          EvaluationResult.Pending(
-            ConditionTree.Unit({ condition: signal }),
-            DependencyTree.Unit({ value: signal[EFFECT] }),
-          ),
-        );
-      });
-
-      test('resolved dependency', () => {
-        const signal = createEffect<'effect:foo', null, string>('effect:foo', null);
-        function main(): Reactive<string> {
-          return createStateful(hash(main.name), function* main() {
-            const value: string = yield signal;
-            return value.toUpperCase();
-          });
-        }
-        const state: StateValues = new Map([[signal[EFFECT], 'foo']]);
-        expect(evaluate(main(), state)).toEqual(
-          EvaluationResult.Ready('FOO', DependencyTree.Unit({ value: signal[EFFECT] })),
-        );
-      });
+  test('evaluates stateful async expressions with pending effects', () => {
+    const fn = Object.assign(
+      withNonceHash(
+        (
+          context: GeneratorContext<
+            { foo: string; bar: string },
+            {},
+            {},
+            EffectExpression<string>,
+            string,
+            never,
+            string
+          >,
+        ): Expression<string> | CONTINUE => {
+          const { foo, bar } = context.state.args;
+          switch (context.state.next) {
+            case 0: {
+              context.state.prev = 0;
+              context.state.next = 1;
+              return context.yield(createEffect<'fetch', string, string>('fetch', 'baz'));
+            }
+            case 1: {
+              context.state.prev = 1;
+              const baz = context.sent;
+              return context.abrupt('return', foo + bar + baz);
+            }
+            case 0x1fffffffffffff:
+              return context.stop();
+            default: {
+              throw new Error(`Invalid state: ${context.state.next}`);
+            }
+          }
+        },
+      ),
+      {
+        [TYPE]: TYPE_GENERATOR as TYPE_GENERATOR,
+        [TYPE_GENERATOR]: {
+          params: ['foo' as const, 'bar' as const],
+          locals: [],
+          intermediates: [],
+          tryLocsList: [],
+        },
+      },
+    );
+    const expression = createAsync(fn, ['foo', 'bar']);
+    const cache: EvaluationCache = new DependencyGraph();
+    const interpreter = evaluate(expression, cache);
+    const initialResult = interpreter.next();
+    expect(initialResult).toEqual({
+      done: false,
+      value: createEffect<'fetch', string, string>('fetch', 'baz'),
     });
-
-    describe('multiple dependencies', () => {
-      test('unresolved dependencies', () => {
-        const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
-        const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
-        function main(): Reactive<string> {
-          return createStateful(hash(main.name), function* main() {
-            const value1: string = yield signal1;
-            const value2: string = yield signal2;
-            return `${value1}.${value2}`;
-          });
-        }
-        const state: StateValues = new Map();
-        expect(evaluate(main(), state)).toEqual(
-          EvaluationResult.Pending(
-            ConditionTree.Unit({ condition: signal1 }),
-            DependencyTree.Unit({ value: signal1[EFFECT] }),
-          ),
-        );
-      });
-
-      test('partially resolved dependencies', () => {
-        const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
-        const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
-        function main(): Reactive<string> {
-          return createStateful(hash(main.name), function* main() {
-            const value1: string = yield signal1;
-            const value2: string = yield signal2;
-            return `${value1}.${value2}`;
-          });
-        }
-        const state: StateValues = new Map([[signal1[EFFECT], 'foo']]);
-        expect(evaluate(main(), state)).toEqual(
-          EvaluationResult.Pending(
-            ConditionTree.Unit({ condition: signal2 }),
-            DependencyTree.Pair({
-              left: DependencyTree.Unit({ value: signal1[EFFECT] }),
-              right: DependencyTree.Unit({ value: signal2[EFFECT] }),
-            }),
-          ),
-        );
-      });
-
-      test('fully resolved dependencies', () => {
-        const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
-        const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
-        function main(): Reactive<string> {
-          return createStateful(hash(main.name), function* main() {
-            const value1: string = yield signal1;
-            const value2: string = yield signal2;
-            return `${value1}.${value2}`;
-          });
-        }
-        const state: StateValues = new Map([
-          [signal1[EFFECT], 'foo'],
-          [signal2[EFFECT], 'bar'],
-        ]);
-        expect(evaluate(main(), state)).toEqual(
-          EvaluationResult.Ready(
-            'foo.bar',
-            DependencyTree.Pair({
-              left: DependencyTree.Unit({ value: signal1[EFFECT] }),
-              right: DependencyTree.Unit({ value: signal2[EFFECT] }),
-            }),
-          ),
-        );
-      });
+    const effectValue = createPending();
+    const result = interpreter.next(effectValue);
+    expect(result).toEqual({
+      done: true,
+      value: createEvaluationPendingResult(),
     });
+    expect(gc(cache, [expression], { major: true })).toEqual(new Set([]));
+    expect(gc(cache, [], { major: true })).toEqual(
+      new Set([createEffect<'fetch', string, string>('fetch', 'baz')]),
+    );
+  });
 
-    describe('chained generators', () => {
-      test('Immediately awaited values', () => {
-        const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
-        const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
-        function left(): Reactive<string> {
-          return createStateful(hash(left.name), function* left() {
-            const foo: string = yield signal1;
-            return `left: ${foo}`;
-          });
-        }
-        function right(): Reactive<string> {
-          return createStateful(hash(right.name), function* right() {
-            const bar: string = yield signal2;
-            return `right: ${bar}`;
-          });
-        }
-        function main(): Reactive<string> {
-          return createStateful(hash(main.name), function* main() {
-            const leftValue: string = yield left();
-            const rightValue: string = yield right();
-            return `${leftValue}, ${rightValue}`;
-          });
-        }
-        {
-          const state: StateValues = new Map();
-          expect(evaluate(main(), state)).toEqual(
-            EvaluationResult.Pending(
-              ConditionTree.Unit({ condition: signal1 }),
-              DependencyTree.Unit({ value: signal1[EFFECT] }),
-            ),
-          );
-        }
-        {
-          const state: StateValues = new Map([[signal1[EFFECT], 'foo']]);
-          expect(evaluate(main(), state)).toEqual(
-            EvaluationResult.Pending(
-              ConditionTree.Unit({ condition: signal2 }),
-              DependencyTree.Pair({
-                left: DependencyTree.Unit({ value: signal1[EFFECT] }),
-                right: DependencyTree.Unit({ value: signal2[EFFECT] }),
-              }),
-            ),
-          );
-        }
-        {
-          const state: StateValues = new Map([[signal2[EFFECT], 'bar']]);
-          expect(evaluate(main(), state)).toEqual(
-            EvaluationResult.Pending(
-              ConditionTree.Unit({ condition: signal1 }),
-              DependencyTree.Unit({ value: signal1[EFFECT] }),
-            ),
-          );
-        }
-        {
-          const state: StateValues = new Map([
-            [signal1[EFFECT], 'foo'],
-            [signal2[EFFECT], 'bar'],
-          ]);
-          expect(evaluate(main(), state)).toEqual(
-            EvaluationResult.Ready(
-              'left: foo, right: bar',
-              DependencyTree.Pair({
-                left: DependencyTree.Unit({ value: signal1[EFFECT] }),
-                right: DependencyTree.Unit({ value: signal2[EFFECT] }),
-              }),
-            ),
-          );
-        }
-      });
+  test('evaluates stateful async expressions with resolved effects', () => {
+    const fn = Object.assign(
+      withNonceHash(
+        (
+          context: GeneratorContext<
+            { foo: string; bar: string },
+            {},
+            {},
+            EffectExpression<string>,
+            string,
+            never,
+            string
+          >,
+        ): Expression<string> | CONTINUE => {
+          const { foo, bar } = context.state.args;
+          switch (context.state.next) {
+            case 0: {
+              context.state.prev = 0;
+              context.state.next = 1;
+              return context.yield(createEffect<'fetch', string, string>('fetch', 'baz'));
+            }
+            case 1: {
+              context.state.prev = 1;
+              const baz = context.sent;
+              return context.abrupt('return', foo + bar + baz);
+            }
+            case 0x1fffffffffffff:
+              return context.stop();
+            default: {
+              throw new Error(`Invalid state: ${context.state.next}`);
+            }
+          }
+        },
+      ),
+      {
+        [TYPE]: TYPE_GENERATOR as TYPE_GENERATOR,
+        [TYPE_GENERATOR]: {
+          params: ['foo' as const, 'bar' as const],
+          locals: [],
+          intermediates: [],
+          tryLocsList: [],
+        },
+      },
+    );
+    const expression = createAsync(fn, ['foo', 'bar']);
+    const cache: EvaluationCache = new DependencyGraph();
+    const interpreter = evaluate(expression, cache);
+    const initialResult = interpreter.next();
+    expect(initialResult).toEqual({
+      done: false,
+      value: createEffect<'fetch', string, string>('fetch', 'baz'),
     });
-
-    describe('chained effect values', () => {
-      describe('aliased effect', () => {
-        test('partially resolved dependencies', () => {
-          const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
-          const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
-          function main(): Reactive<string> {
-            return createStateful(hash(main.name), function* main() {
-              const value: string = yield signal1;
-              return value.toUpperCase();
-            });
-          }
-          const state: StateValues = new Map([[signal1[EFFECT], signal2]]);
-          expect(evaluate(main(), state)).toEqual(
-            EvaluationResult.Pending(
-              ConditionTree.Unit({ condition: signal2 }),
-              DependencyTree.Pair({
-                left: DependencyTree.Unit({ value: signal1[EFFECT] }),
-                right: DependencyTree.Unit({ value: signal2[EFFECT] }),
-              }),
-            ),
-          );
-        });
-
-        test('fully resolved dependencies', () => {
-          const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
-          const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
-          function main(): Reactive<string> {
-            return createStateful(hash(main.name), function* main() {
-              const value: string = yield signal1;
-              return value.toUpperCase();
-            });
-          }
-          const state: StateValues = new Map<StateToken, Reactive<string>>([
-            [signal1[EFFECT], signal2],
-            [signal2[EFFECT], 'foo'],
-          ]);
-          expect(evaluate(main(), state)).toEqual(
-            EvaluationResult.Ready(
-              'FOO',
-              DependencyTree.Pair({
-                left: DependencyTree.Unit({ value: signal1[EFFECT] }),
-                right: DependencyTree.Unit({ value: signal2[EFFECT] }),
-              }),
-            ),
-          );
-        });
-      });
-
-      describe('aliased generator', () => {
-        test('partially resolved dependencies', () => {
-          const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
-          const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
-          function generator(): Reactive<string> {
-            return createStateful(hash(generator.name), function* generator() {
-              const value: string = yield signal2;
-              return `-> ${value}`;
-            });
-          }
-          function main(): Reactive<string> {
-            return createStateful(hash(main.name), function* main() {
-              const value: string = yield signal1;
-              return value.toUpperCase();
-            });
-          }
-          const state: StateValues = new Map([[signal1[EFFECT], generator()]]);
-          expect(evaluate(main(), state)).toEqual(
-            EvaluationResult.Pending(
-              ConditionTree.Unit({ condition: signal2 }),
-              DependencyTree.Pair({
-                left: DependencyTree.Unit({ value: signal1[EFFECT] }),
-                right: DependencyTree.Unit({ value: signal2[EFFECT] }),
-              }),
-            ),
-          );
-        });
-
-        test('fully resolved dependencies', () => {
-          const signal1 = createEffect<'effect:foo', null, string>('effect:foo', null);
-          const signal2 = createEffect<'effect:bar', null, string>('effect:bar', null);
-          function generator(): Reactive<string> {
-            return createStateful(hash(generator.name), function* generator() {
-              const value: string = yield signal2;
-              return `-> ${value}`;
-            });
-          }
-          function main(): Reactive<string> {
-            return createStateful(hash(main.name), function* main() {
-              const value: string = yield signal1;
-              return value.toUpperCase();
-            });
-          }
-          const state: StateValues = new Map<StateToken, Reactive<string>>([
-            [signal1[EFFECT], generator()],
-            [signal2[EFFECT], 'foo'],
-          ]);
-          expect(evaluate(main(), state)).toEqual(
-            EvaluationResult.Ready(
-              '-> FOO',
-              DependencyTree.Pair({
-                left: DependencyTree.Unit({ value: signal1[EFFECT] }),
-                right: DependencyTree.Unit({ value: signal2[EFFECT] }),
-              }),
-            ),
-          );
-        });
-      });
+    const effectValue = createResult('BAZ');
+    const result = interpreter.next(effectValue);
+    expect(result).toEqual({
+      done: true,
+      value: createEvaluationSuccessResult(createResult('foobarBAZ')),
     });
+    expect(gc(cache, [expression], { major: true })).toEqual(new Set([]));
+    expect(gc(cache, [], { major: true })).toEqual(
+      new Set([createEffect<'fetch', string, string>('fetch', 'baz')]),
+    );
+  });
+
+  test('evaluates stateful async expressions with pending effect fallback', () => {
+    const fn = Object.assign(
+      withNonceHash(
+        (
+          context: GeneratorContext<
+            { foo: string; bar: string },
+            {},
+            {},
+            EffectExpression<string>,
+            string,
+            never,
+            string
+          >,
+        ): Expression<string> | CONTINUE => {
+          const { foo, bar } = context.state.args;
+          switch (context.state.next) {
+            case 0: {
+              context.state.prev = 0;
+              context.state.next = 1;
+              return context.yield(createEffect<'fetch', string, string>('fetch', 'baz'));
+            }
+            case 1: {
+              context.state.prev = 1;
+              const baz = context.sent;
+              return context.abrupt('return', foo + bar + baz);
+            }
+            case 0x1fffffffffffff:
+              return context.stop();
+            default: {
+              throw new Error(`Invalid state: ${context.state.next}`);
+            }
+          }
+        },
+      ),
+      {
+        [TYPE]: TYPE_GENERATOR as TYPE_GENERATOR,
+        [TYPE_GENERATOR]: {
+          params: ['foo' as const, 'bar' as const],
+          locals: [],
+          intermediates: [],
+          tryLocsList: [],
+        },
+      },
+    );
+    const expression = createFallback(createAsync(fn, ['foo', 'bar']), createResult<string>('qux'));
+    const cache: EvaluationCache = new DependencyGraph();
+    const interpreter = evaluate(expression, cache);
+    const initialResult = interpreter.next();
+    expect(initialResult).toEqual({
+      done: false,
+      value: createEffect<'fetch', string, string>('fetch', 'baz'),
+    });
+    const effectValue = createPending();
+    const result = interpreter.next(effectValue);
+    expect(result).toEqual({
+      done: true,
+      value: createEvaluationSuccessResult(createResult('qux')),
+    });
+    expect(gc(cache, [expression], { major: true })).toEqual(new Set([]));
+    expect(gc(cache, [], { major: true })).toEqual(
+      new Set([createEffect<'fetch', string, string>('fetch', 'baz')]),
+    );
+  });
+
+  test('evaluates stateful async expressions with delegated pending effect fallback', () => {
+    const fn = Object.assign(
+      withNonceHash(
+        (
+          context: GeneratorContext<
+            { foo: string; bar: string },
+            {},
+            {},
+            FallbackExpression<string, string>,
+            string,
+            never,
+            string
+          >,
+        ): Expression<string> | CONTINUE => {
+          const { foo, bar } = context.state.args;
+          switch (context.state.next) {
+            case 0: {
+              context.state.prev = 0;
+              context.state.next = 1;
+              return context.yield(
+                createFallback(
+                  createEffect<'fetch', string, string>('fetch', 'first'),
+                  createFallback(
+                    createEffect<'fetch', string, string>('fetch', 'second'),
+                    createResult<string>('qux'),
+                  ),
+                ),
+              );
+            }
+            case 1: {
+              context.state.prev = 1;
+              const baz = context.sent;
+              return context.abrupt('return', foo + bar + baz);
+            }
+            case 0x1fffffffffffff:
+              return context.stop();
+            default: {
+              throw new Error(`Invalid state: ${context.state.next}`);
+            }
+          }
+        },
+      ),
+      {
+        [TYPE]: TYPE_GENERATOR as TYPE_GENERATOR,
+        [TYPE_GENERATOR]: {
+          params: ['foo' as const, 'bar' as const],
+          locals: [],
+          intermediates: [],
+          tryLocsList: [],
+        },
+      },
+    );
+    const expression = createAsync(fn, ['foo', 'bar']);
+    const cache: EvaluationCache = new DependencyGraph();
+    const interpreter = evaluate(expression, cache);
+    const initialResult = interpreter.next();
+    expect(initialResult).toEqual({
+      done: false,
+      value: createEffect<'fetch', string, string>('fetch', 'first'),
+    });
+    const initialEffectValue = createPending();
+    const intermediateResult = interpreter.next(initialEffectValue);
+    expect(intermediateResult).toEqual({
+      done: false,
+      value: createEffect<'fetch', string, string>('fetch', 'second'),
+    });
+    const intermediateEffectValue = createPending();
+    const result = interpreter.next(intermediateEffectValue);
+    expect(result).toEqual({
+      done: true,
+      value: createEvaluationSuccessResult(createResult('foobarqux')),
+    });
+    expect(gc(cache, [expression], { major: true })).toEqual(new Set([]));
+    expect(gc(cache, [], { major: true })).toEqual(
+      new Set([
+        createEffect<'fetch', string, string>('fetch', 'first'),
+        createEffect<'fetch', string, string>('fetch', 'second'),
+      ]),
+    );
+  });
+
+  test('evaluates stateless async expressions with unused pending fallback', () => {
+    const fn = Object.assign(
+      withNonceHash(
+        (
+          context: GeneratorContext<
+            { foo: string; bar: string },
+            {},
+            {},
+            never,
+            never,
+            never,
+            string
+          >,
+        ): Expression<string> => {
+          const { foo, bar } = context.state.args;
+          return createResult(foo + bar);
+        },
+      ),
+      {
+        [TYPE]: TYPE_GENERATOR as TYPE_GENERATOR,
+        [TYPE_GENERATOR]: {
+          params: ['foo' as const, 'bar' as const],
+          locals: [],
+          intermediates: [],
+          tryLocsList: [],
+        },
+      },
+    );
+    const expression = createFallback(createAsync(fn, ['foo', 'bar']), createResult<string>('qux'));
+    const cache: EvaluationCache = new DependencyGraph();
+    const interpreter = evaluate(expression, cache);
+    const result = interpreter.next();
+    expect(result).toEqual({
+      done: true,
+      value: createEvaluationSuccessResult(createResult('foobar')),
+    });
+    expect(gc(cache, [expression], { major: true })).toEqual(new Set([]));
+    expect(gc(cache, [], { major: true })).toEqual(new Set([]));
+  });
+
+  test('evaluates stateful async expressions with unused pending fallback', () => {
+    const fn = Object.assign(
+      withNonceHash(
+        (
+          context: GeneratorContext<
+            { foo: string; bar: string },
+            {},
+            {},
+            EffectExpression<string>,
+            string,
+            never,
+            string
+          >,
+        ): Expression<string> | CONTINUE => {
+          const { foo, bar } = context.state.args;
+          switch (context.state.next) {
+            case 0: {
+              context.state.prev = 0;
+              context.state.next = 1;
+              return context.yield(createEffect<'fetch', string, string>('fetch', 'baz'));
+            }
+            case 1: {
+              context.state.prev = 1;
+              const baz = context.sent;
+              return context.abrupt('return', foo + bar + baz);
+            }
+            case 0x1fffffffffffff:
+              return context.stop();
+            default: {
+              throw new Error(`Invalid state: ${context.state.next}`);
+            }
+          }
+        },
+      ),
+      {
+        [TYPE]: TYPE_GENERATOR as TYPE_GENERATOR,
+        [TYPE_GENERATOR]: {
+          params: ['foo' as const, 'bar' as const],
+          locals: [],
+          intermediates: [],
+          tryLocsList: [],
+        },
+      },
+    );
+    const expression = createFallback(createAsync(fn, ['foo', 'bar']), createResult<string>('qux'));
+    const cache: EvaluationCache = new DependencyGraph();
+    const interpreter = evaluate(expression, cache);
+    const initialResult = interpreter.next();
+    expect(initialResult).toEqual({
+      done: false,
+      value: createEffect<'fetch', string, string>('fetch', 'baz'),
+    });
+    const effectValue = createResult('BAZ');
+    const result = interpreter.next(effectValue);
+    expect(result).toEqual({
+      done: true,
+      value: createEvaluationSuccessResult(createResult('foobarBAZ')),
+    });
+    expect(gc(cache, [expression], { major: true })).toEqual(new Set([]));
+    expect(gc(cache, [], { major: true })).toEqual(
+      new Set([createEffect<'fetch', string, string>('fetch', 'baz')]),
+    );
   });
 });

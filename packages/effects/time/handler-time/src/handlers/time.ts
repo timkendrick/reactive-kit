@@ -21,7 +21,7 @@ import {
   type SubscribeEffectsMessage,
   type UnsubscribeEffectsMessage,
 } from '@reactive-kit/runtime-messages';
-import { EFFECT, type StateToken } from '@reactive-kit/types';
+import { createResult, type EffectId } from '@reactive-kit/types';
 import { createAsyncTrigger, nonNull, type AsyncTrigger } from '@reactive-kit/utils';
 import {
   MESSAGE_TIME_HANDLER_EMIT,
@@ -45,7 +45,7 @@ interface TimeSubscription {
 
 export class TimeHandler implements Actor<Message<unknown>> {
   private readonly next: ActorHandle<TimeHandlerOutputMessage>;
-  private subscriptions: Map<StateToken, TaskId> = new Map();
+  private subscriptions: Map<EffectId, TaskId> = new Map();
   private requests: Map<TaskId, TimeSubscription> = new Map();
   private nextTaskId: TaskId = 1;
 
@@ -85,7 +85,7 @@ export class TimeHandler implements Actor<Message<unknown>> {
     const self = context.self();
     const actions = typedEffects
       .map((effect) => {
-        const stateToken = effect[EFFECT];
+        const stateToken = effect.id;
         if (this.subscriptions.has(stateToken)) return null;
         const taskId = ++this.nextTaskId;
         this.subscriptions.set(stateToken, taskId);
@@ -111,7 +111,7 @@ export class TimeHandler implements Actor<Message<unknown>> {
     if (!typedEffects || typedEffects.length === 0) return null;
     const actions = typedEffects
       .map((effect) => {
-        const stateToken = effect[EFFECT];
+        const stateToken = effect.id;
         const taskId = this.subscriptions.get(stateToken);
         if (taskId === undefined) return null;
         this.subscriptions.delete(stateToken);
@@ -134,8 +134,9 @@ export class TimeHandler implements Actor<Message<unknown>> {
     const subscription = this.requests.get(taskId);
     if (!subscription) return null;
     const effect = subscription.effect;
-    const stateToken = effect[EFFECT];
-    const effectValues = new Map([[EFFECT_TYPE_TIME, new Map([[stateToken, time]])]]);
+    const stateToken = effect.id;
+    const effectValue = createResult(time);
+    const effectValues = new Map([[EFFECT_TYPE_TIME, new Map([[stateToken, effectValue]])]]);
     const emitMessage = createEmitEffectValuesMessage(effectValues);
     const action = HandlerAction.Send(this.next, emitMessage);
     return [action];

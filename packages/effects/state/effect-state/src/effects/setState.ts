@@ -1,10 +1,10 @@
 import { type Hashable } from '@reactive-kit/hash';
-import { createEffect, type Effect } from '@reactive-kit/types';
+import { createEffect, type EffectExpression } from '@reactive-kit/types';
 import { type StateId } from '../types';
 
 export const EFFECT_TYPE_SET_STATE = '@reactive-kit/effect-state/set';
 
-export interface SetStateEffect<T> extends Effect<null> {
+export interface SetStateEffect<T> extends EffectExpression<null> {
   type: SetStateEffectType;
   payload: SetStateEffectPayload<T>;
 }
@@ -17,6 +17,8 @@ export function createSetStateEffect<T extends Hashable>(uid: string, value: T):
   return createEffect(EFFECT_TYPE_SET_STATE, [uid, value]);
 }
 
-export function isSetStateEffect(error: Effect<unknown>): error is SetStateEffect<unknown> {
+export function isSetStateEffect(
+  error: EffectExpression<unknown>,
+): error is SetStateEffect<unknown> {
   return error.type === EFFECT_TYPE_SET_STATE;
 }

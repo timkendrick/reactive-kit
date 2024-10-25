@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { handlers } from '@reactive-kit/handlers';
 import { type Hashable } from '@reactive-kit/hash';
 import { Runtime } from '@reactive-kit/runtime';
-import type { Reactive } from '@reactive-kit/types';
+import type { Expression } from '@reactive-kit/types';
 import { subscribeAsyncIterator } from '@reactive-kit/utils';
 
 declare module 'node:module' {
@@ -24,10 +24,10 @@ export function main(): Promise<void> {
   const [inputPath] = args;
   const modulePath = join(process.cwd(), inputPath);
   const loadModule = registerModuleLoader('@reactive-kit/loader');
-  return loadModule<{ default: Reactive<Hashable> }>(modulePath).then((module) => {
+  return loadModule<{ default: Expression<Hashable> }>(modulePath).then((module) => {
     const { default: expression } = module;
     const runtime = new Runtime(handlers);
-    const results = runtime.subscribe(expression as Reactive<Hashable>);
+    const results = runtime.subscribe(expression);
     subscribeAsyncIterator(
       results,
       (value) =>

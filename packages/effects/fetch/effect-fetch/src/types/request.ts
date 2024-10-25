@@ -1,18 +1,20 @@
-import type { Hash, HashableObject } from '@reactive-kit/hash';
+import type { Hash, Hashable, HashableObject } from '@reactive-kit/hash';
 import type { Uid } from '@reactive-kit/utils';
 
 export type FetchResponseState = FetchResponseSuccessState | FetchResponseErrorState;
 
-export interface FetchResponseSuccessState {
-  success: true;
-  response: FetchResponse;
-}
+export interface FetchResponseSuccessState
+  extends HashableObject<{
+    success: true;
+    response: FetchResponse;
+  }> {}
 
-export interface FetchResponseErrorState {
-  success: false;
-  error: Error;
-  response: FetchResponse | null;
-}
+export interface FetchResponseErrorState
+  extends HashableObject<{
+    success: false;
+    error: Hashable;
+    response: FetchResponse | null;
+  }> {}
 
 export interface FetchRequest
   extends HashableObject<{

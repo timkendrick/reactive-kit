@@ -8,12 +8,12 @@ import type {
 import { handlers } from '@reactive-kit/handlers';
 import type { Hashable } from '@reactive-kit/hash';
 import { Runtime } from '@reactive-kit/runtime';
-import type { Reactive } from '@reactive-kit/types';
+import type { Expression } from '@reactive-kit/types';
 import { subscribeAsyncIterator } from '@reactive-kit/utils';
 
 export function render(root: TemplateNode, container: Element | DocumentFragment): Promise<null> {
   const runtime = new Runtime(handlers);
-  const results = runtime.subscribe(root as unknown as Reactive<Hashable>);
+  const results = runtime.subscribe(root as unknown as Expression<Hashable>);
   return subscribeAsyncIterator(
     results as AsyncIterator<TemplateNode, null, undefined>,
     (template) => {

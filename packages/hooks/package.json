@@ -33,7 +33,6 @@
   },
   "devDependencies": {
     "@reactive-kit/build-config": "workspace:*",
-    "@reactive-kit/hook-error": "workspace:*",
     "@reactive-kit/hook-evaluate": "workspace:*",
     "@reactive-kit/hook-fetch": "workspace:*",
     "@reactive-kit/hook-pending": "workspace:*",

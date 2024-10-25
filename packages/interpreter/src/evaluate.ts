@@ -1,424 +1,550 @@
+import { Hash, hash, Hashable, HashableError, isHashable } from '@reactive-kit/hash';
 import {
-  createSignal,
-  EFFECT,
-  isEffect,
-  isFork,
-  isSignal,
-  isStateful,
-  Signal,
-  type Effect,
-  type Reactive,
-  type Stateful,
-  type StatefulGenerator,
+  createEvaluationErrorResult,
+  createEvaluationPendingResult,
+  createEvaluationSuccessResult,
+  EffectExpression,
+  EvaluationResult,
+  EvaluationResultType,
+  EXPRESSION_TYPE_ASYNC,
+  EXPRESSION_TYPE_EFFECT,
+  EXPRESSION_TYPE_FALLBACK,
+  EXPRESSION_TYPE_PENDING,
+  EXPRESSION_TYPE_RESULT,
+  EXPRESSION_TYPE_SUSPENSE,
+  EXPRESSION_TYPE,
+  Expression,
+  GeneratorContinuation,
+  ResultExpression,
+  createResult,
+  EvaluationErrorResult,
+  SuspenseExpression,
+  createSuspense,
 } from '@reactive-kit/types';
-import { Enum, EnumVariant, VARIANT, nonNull } from '@reactive-kit/utils';
-import { ConditionTree, DependencyTree, EvaluationResult, StateValues } from './types';
-import { collectConditionTree, createEffectLookup, flattenConditionTree } from './utils/condition';
-import { combineDependencies, EMPTY_DEPENDENCIES } from './utils/dependency';
-import { isCatcher } from '@reactive-kit/types/src/types/catcher';
+import { EvaluationCache, EvaluationCacheNode } from './types';
+import { createAsyncState, updateAsyncState, next } from './generator';
 
-class MutableStack<T> {
-  private values: Array<T> = [];
-  public push(value: T): void {
-    this.values.push(value);
-  }
-  public pop(): T | undefined {
-    return this.values.pop();
-  }
-  public overwrite(value: T, depth: number): void {
-    if (depth > this.values.length - 1) throw new Error('Stack underflow');
-    this.values[this.values.length - 1 - depth] = value;
-  }
-  public size(): number {
-    return this.values.length;
-  }
-}
+/*
+A simple TypeScript interpreter / evaluation engine implementation for an asynchronous fiber-based task scheduling system.
 
-/**
- * A stack frame represents a single step in the execution of a stateful expression
+The interpreter is implemented as a generator function that accepts two mandatory arguments: the expression to be evaluated, and a cache of intermediate results from the previous evaluation
+
+The generator function body will evaluate the input expression, until it encounters an Effect value representing a side-effect that must be resolved before evaluation can continue. At this point the generator blocks, yielding the Effect to the caller, which must provide the result of the side-effect via the generator's `next()` method, allowing the generator to resume evaluation.
+
+Once all necessary Effect values have been resolved, the generator will return its final Result value (or an Error value if an exception was encountered).
+
+Internally, the interpreter evaluates each expression in its own fiber. Multiple fibers can be evaluated concurrently via a fork/join model, whereby results of each child fiber are aggregated into a single list, which is then passed to the parent fiber to continue evaluation.
+
+If an exception is thrown when evaluating a child fiber, the interpreter will unwind the stack, allowing the exception to be caught by a parent fiber. If an exception is thrown within a forked child fiber, all sibling fibers will run to completion and the first error result from the list of sibling fibers will be used to assign an Error result for the overall fiber (which can be caught in a parent fiber).
+
+The interpreter keeps track of concurrent fibers by maintaining a stack of in-progress fiber evaluations, with each stack frame representing evaluation of a single expression. The fiber stack frame contains a reference to the fiber's root expression, a reference to the parent fiber that spawned it (for non-root fibers), a list of intermediate results from in child fibers spawned by this fiber, and whether the fiber is on the critical path of evaluation or a fork point for a child fiber. The result of the fiber evaluation is stored in the result cache, keyed by the hash of the fiber's root expression, allowing the interpreter to quickly retrieve results for a previously-encountered expression by reusing the existing fiber's cache node.
+
+This result cache is retained across multiple evaluations, allowing the interpreter to avoid recomputing results for any fibers whose results are unaffected by changes since the previous evaluation. Between evaluations, nodes in the result cache can be invalidated, causing the results to be re-computed on the next evaluation. The interpreter will re-evaluate all affected fibers, updating the cache with the new results. If during the re-evaluation the interpreter encounters a fiber whose result is identical to that of a previous evaluation as determined by the hash, it will reuse the cached result, avoiding unnecessary recomputation. The result cache can also be garbage-collected between evaluations to remove any nodes that are no longer relevant to the overall computation of the root expression.
+
+All expression types can be cheaply hashed via an imported `hash(expression)` function. Hash equality is taken as an indication that two expressions are equivalent: hash collisions are considered unlikely and are not handled in favour of performance.
+
+See the `Expression` type for a list of expressions supported by the interpreter.
  */
-type StackFrame = Enum<{
-  // Initiate evaluation of a stateful expression
-  Evaluate: {
-    expression: Stateful<unknown>;
-  };
-  // Resume an in-progress stateful expression evaluation
-  Resume: {
-    evaluation: StatefulGenerator<unknown>;
-  };
-  // Handle a condition
-  Handle: {
-    condition: Effect<unknown>;
-  };
-  // Record the fully-resolved evaluation result for the current thread
-  Result: {
-    value: unknown;
-  };
-  // Copy the contents of the result register to a position lower down the stack,
-  // overwriting the stack frame at the target position
-  Copy: {
-    // A depth of 0 refers to the frame immediately below the Copy frame
-    depth: number;
-  };
-  // Block the current thread with an unhandled condition
-  Halt: {
-    conditions: ConditionTree;
-  };
-  // Prevent the current thread from unwinding any further upon encountering an unhandled condition
-  Catch: {
-    // If there is no handler function specified, any halt stack frame will remain in the result register,
-    // but no further stack unwinding will take place, allowing execution to continue with the preceding stack frame.
-    // If there is a handler function specified, if the value returned by the handler function is a condition tree it
-    // will be re-thrown, otherwise the result will be immediately executed
-    handler: (condition: Signal) => Reactive<unknown> | Signal;
-  };
-  // Marker frame that indicates the start of a new thread
-  Spawn: void;
-  // Marker frame that indicates the end of the active thread
-  Terminate: void;
-  // Collect the preceding `count` thread result stack frames into a single frame
-  // All of the stack frames must be either Halt or Result frames
-  // If all of the stack frames are Result frames, they will be replaced with a single Result frame whose value is an array of all the result values
-  // If any of the stack frames are Halt frames, they will be replaced with a single Halt frame containing all the combined conditions
-  Join: {
-    count: number;
-  };
-  // Placeholder stack frame (typically overwritten by later Copy frames)
-  Noop: void;
-}>;
 
-const StackFrame = Enum.create<StackFrame>({
-  Evaluate: true,
-  Resume: true,
-  Handle: true,
-  Result: true,
-  Copy: true,
-  Halt: true,
-  Catch: true,
-  Spawn: true,
-  Terminate: true,
-  Join: true,
-  Noop: true,
-});
+interface Fiber {
+  expression: Expression<any>;
+  expressionHash: Hash;
+  // Fiber that spawned this fiber, either via a fork or a tail call
+  parent: Fiber | null;
+  // Whether this is the root of the current fiber unwind stack
+  // (this will be true when forking a new fiber, and false when evaluating a tail call)
+  root: boolean;
+  // Depth of the current fiber within the overall tail call stack
+  depth: number;
+  // List of intermediate results encountered during evaluation of child fibers
+  intermediateResults: Array<EvaluationCacheNode<Hashable>>;
+  // State of a fiber that is currently awaiting the results of a set of forked child fibers
+  suspended: SuspenseResults | null;
+}
 
-type ThreadResultStackFrame = EnumVariant<StackFrame, 'Result'> | EnumVariant<StackFrame, 'Halt'>;
-const THREAD_RESULT_UNDEFINED_PLACEHOLDER = StackFrame.Result({ value: undefined });
+type SuspenseResults = PendingSuspenseResults | ErrorSuspenseResults;
 
-const STACK_FRAME_PLACEHOLDER = StackFrame.Noop({});
+const enum SuspenseResultsType {
+  Pending,
+  Error,
+}
 
-// TODO: consider passing newly-updated state values to evaluate method
-export function evaluate<T>(expression: Reactive<T>, state: StateValues): EvaluationResult<T> {
-  let combinedDependencies: DependencyTree = EMPTY_DEPENDENCIES;
-  // Enqueue the initial stack frames necessary to evaluate the main thread
-  const stack = new MutableStack<StackFrame>();
-  stack.push(StackFrame.Terminate({}));
-  executeExpression(expression, stack);
-  stack.push(StackFrame.Spawn({}));
-  // Create registers to keep track of the result of the current thread
-  let numActiveThreads = 0;
-  let threadResultRegister: ThreadResultStackFrame = THREAD_RESULT_UNDEFINED_PLACEHOLDER;
-  // Stack interpreter main loop
-  let stackFrame: StackFrame | undefined;
-  loop: while ((stackFrame = stack.pop())) {
-    switch (stackFrame[VARIANT]) {
-      case 'Spawn': {
-        numActiveThreads++;
-        continue loop;
+interface PendingSuspenseResults {
+  type: SuspenseResultsType.Pending;
+  results: Array<EvaluationCacheNode<Hashable>>;
+}
+
+interface ErrorSuspenseResults {
+  type: SuspenseResultsType.Error;
+  error: EvaluationErrorResult;
+}
+
+export class InterpreterError extends Error {
+  name = 'InterpreterError';
+}
+
+export const DEFAULT_SUSPENDED_FIBER_LIMIT = 1024;
+export const DEFAULT_TAIL_CALL_LIMIT = 65536;
+
+export function* evaluate<T>(
+  expression: Expression<T> & Hashable,
+  cache: EvaluationCache,
+  options?: {
+    maxSuspendedFibers?: number;
+    maxTailCallDepth?: number;
+  },
+): Generator<EffectExpression<unknown>, EvaluationResult<T>, Expression<unknown>> {
+  const {
+    maxSuspendedFibers = DEFAULT_SUSPENDED_FIBER_LIMIT,
+    maxTailCallDepth = DEFAULT_TAIL_CALL_LIMIT,
+  } = options ?? {};
+  // Begin a new cache tick
+  // (this allows the garbage collector to track which nodes have been visited during the current evaluation)
+  cache.advance();
+  // The stack represents the backlog of suspended fibers awaiting evaluation,
+  // with the currently active fiber on top of the stack.
+  // Tail calls cause the currently active stack frame to be replaced with a new stack frame representing the tail call.
+  // (tail call fibers contain a reference to the parent fiber that spawned the tail call)
+  const stack = new Array<Fiber>();
+  // Push the root expression onto the stack to begin evaluation
+  pushStackFrame(createRootStackFrame(expression), stack);
+  loop: while (true) {
+    const currentFiber = stack.pop();
+    if (currentFiber === undefined) throw new InterpreterError('Thread stack underflow');
+    if (stack.length > maxSuspendedFibers) throw new InterpreterError('Thread stack overflow');
+    if (currentFiber.depth > maxTailCallDepth) {
+      throw new InterpreterError('Tail call limit exceeded');
+    }
+
+    let fiberResult: EvaluationCacheNode<Hashable>;
+    const { expressionHash, expression } = currentFiber;
+    // Determine whether the current expression has already been evaluated,
+    // either in a preceding branch of the current evaluation, or in a previous evaluation
+    const cachedResult = cache.get(expressionHash);
+    result: {
+      // If the cached fiber originates from the current evaluation, we can safely reuse the result
+      // Otherwise if it originates from a previous evaluation, we can only reuse results that are still valid
+      if (cachedResult && !cachedResult.isDirty) {
+        fiberResult = cachedResult;
+        // Mark the cached node and all its active dependencies as having been visited in this tick
+        cache.visitAll(cachedResult, cachedResult.visited);
+        break result;
       }
-      case 'Terminate': {
-        if (numActiveThreads === 0) {
-          throw new Error('Thread underflow');
-        }
-        // If this is the final thread, break out of the execution loop
-        if (--numActiveThreads === 0) {
-          break loop;
-        }
-        // Otherwise continue executing the next thread
-        continue loop;
-      }
-      case 'Result': {
-        // The thread has resolved to a concrete value, so store the value in the result register
-        // and continue execution the next thread
-        threadResultRegister = stackFrame;
-        continue loop;
-      }
-      case 'Evaluate': {
-        const { expression } = stackFrame;
-        // Instantiate a new stateful iteration
-        const evaluation = expression[Symbol.iterator]();
-        // TODO: determine whether to reuse cached stateful values based on updated state values
-        // Store an undefined result in the result register to initialize the evaluation iterator
-        threadResultRegister = THREAD_RESULT_UNDEFINED_PLACEHOLDER;
-        // Proceed with the evaluation iteration
-        stack.push(StackFrame.Resume({ evaluation }));
-        continue loop;
-      }
-      case 'Resume': {
-        const { evaluation } = stackFrame;
-        // If we are resuming an in-progress evaluation, there must be an intermediate result in the result register
-        // (if this is the first step of the generator, the result register will contain the undefined result)
-        if (!StackFrame.Result.is(threadResultRegister)) {
-          throw new Error('Invalid intermediate generator value');
-        }
-        // Get the current resolved effect value from the result register
-        // Evaluate the next step of the expression, providing the retrieved continuation value
-        let result = evaluation.next(threadResultRegister.value);
-        // Continue evaluating the expression, providing any fully-resolved effect values as required
-        while (!result.done) {
-          const { value: yieldedValue } = result;
-          // TODO: allow pushing multiple unresolved expressions onto the stack simultaneously
-          if (isStateful(yieldedValue)) {
-            // The expression evaluation has emitted a chained stateful value, so queue up the current stack frame again
-            // to be resolved again once the inner generator has completed
-            stack.push(stackFrame);
-            // Initiate a new evaluation stack for evaluating the inner expression
-            stack.push(StackFrame.Evaluate({ expression: yieldedValue }));
+
+      // Resolve the current expression to a value
+      try {
+        switch (expression[EXPRESSION_TYPE]) {
+          case EXPRESSION_TYPE_RESULT:
+          case EXPRESSION_TYPE_PENDING: {
+            // If the current expression is an atomic expression, we can return the result immediately
+            const result: EvaluationResult<unknown> =
+              expression[EXPRESSION_TYPE] === EXPRESSION_TYPE_PENDING
+                ? createEvaluationPendingResult()
+                : createEvaluationSuccessResult(expression);
+            fiberResult = cache.createNode({
+              id: expressionHash,
+              expression,
+              result,
+            });
+            break result;
+          }
+
+          case EXPRESSION_TYPE_EFFECT: {
+            // Yield the effect to the caller, halting execution until a corresponding value is provided by the caller
+            const effectValue = yield expression;
+            // Evaluate the tail expression
+            pushStackFrame(createTailCallStackFrame(effectValue, currentFiber), stack);
             continue loop;
-          } else if (isEffect(yieldedValue)) {
-            if (!state.has(yieldedValue[EFFECT])) {
-              // The expression evaluation has reached a halt condition, so queue up the current stack frame again
-              // to be resolved again once the condition has been handled
-              stack.push(stackFrame);
-              // Initiate a new evaluation stack for handling the condition
-              stack.push(StackFrame.Handle({ condition: yieldedValue }));
-              continue loop;
+          }
+
+          case EXPRESSION_TYPE_ASYNC: {
+            // Initialize the async generator to generate the first result
+            const asyncState = createAsyncState(expression);
+            const resultValue = next(expression, asyncState, null);
+            // Evaluate the tail expression
+            pushStackFrame(createTailCallStackFrame(resultValue, currentFiber), stack);
+            continue loop;
+          }
+
+          case EXPRESSION_TYPE_SUSPENSE: {
+            const childExpressions = expression.dependencies;
+            const suspendedFiberState = currentFiber.suspended;
+            switch (suspendedFiberState?.type) {
+              // If this is the first time we're encountering the suspense expression,
+              // we need to evaluate the child expressions before we can continue
+              case undefined: {
+                if (childExpressions.length === 0) {
+                  // If there are no child expressions to evaluate, we can continue evaluation immediately with an empty list of results
+                  const childValues = new Array<Hashable>();
+                  // TODO: Allow resolving multiple generator values simultaneously
+                  const [arg] = childValues;
+                  const continuation: GeneratorContinuation<Hashable, Hashable> = {
+                    throw: false,
+                    value: arg,
+                  };
+                  const resultValue = next(expression.parent, expression.state, continuation);
+                  // Evaluate the tail expression
+                  pushStackFrame(createTailCallStackFrame(resultValue, currentFiber), stack);
+                  continue loop;
+                } else {
+                  // Otherwise re-queue a clone of the current fiber in an awaiting state,
+                  // to be resumed after all child fibers have been evaluated
+                  const continuationFiber = pushStackFrame(
+                    createSuspendedStackFrame(currentFiber),
+                    stack,
+                  );
+                  // Evaluate each child expression in its own fiber
+                  for (const childExpression of childExpressions) {
+                    const childStackFrame = createFiberRootStackFrame(
+                      childExpression,
+                      continuationFiber,
+                    );
+                    pushStackFrame(childStackFrame, stack);
+                  }
+                  // Abandon the current fiber, continuing with evaluation of the child fibers
+                  // (the clone of the current fiber will be revisited once all child fibers have been evaluated)
+                  continue loop;
+                }
+              }
+              // Otherwise if we are revisiting a suspended expression, its child results have now been resolved,
+              // so we can pop the child results from the continuation stack and resume evaluation
+              case SuspenseResultsType.Pending: {
+                const { results: yieldedResults } = suspendedFiberState;
+                if (yieldedResults.length !== childExpressions.length) {
+                  throw new InterpreterError('Invalid continuation stack frame');
+                }
+                currentFiber.intermediateResults.push(...yieldedResults);
+                // Determine whether any of the child fibers threw an exception or are still pending
+                // (in which case we need to propagate the result appropriately)
+                const childResults = new Array<ResultExpression<Hashable>>();
+                let pendingResult: EvaluationResult<never> | null = null;
+                for (const yieldedResult of yieldedResults.reverse()) {
+                  const {
+                    value: { result },
+                  } = yieldedResult;
+                  switch (result.type) {
+                    case EvaluationResultType.Success: {
+                      childResults.push(result.result);
+                      break;
+                    }
+                    case EvaluationResultType.Error: {
+                      // Only the first encountered error will be propagated
+                      throw result.error.value;
+                    }
+                    case EvaluationResultType.Pending: {
+                      pendingResult = result;
+                      break;
+                    }
+                  }
+                }
+                // If any of the child fibers are pending, the overall result will be pending
+                if (pendingResult != null) {
+                  // Cache node children will be populated during the unwinding process
+                  fiberResult = cache.createNode({
+                    id: expressionHash,
+                    expression,
+                    result: pendingResult,
+                  });
+                  break result;
+                }
+                // Otherwise if all child fibers have resolved successfully,
+                // we can continue evaluating the async expression
+                const childValues = childResults.map(({ value }) => value);
+                // TODO: Allow resolving multiple generator values simultaneously
+                const [arg] = childValues;
+                const continuation: GeneratorContinuation<Hashable, Hashable> = {
+                  throw: false,
+                  value: arg,
+                };
+                const resultValue = next(expression.parent, expression.state, continuation);
+                // Evaluate the tail expression
+                pushStackFrame(createTailCallStackFrame(resultValue, currentFiber), stack);
+                continue loop;
+              }
+              case SuspenseResultsType.Error: {
+                const { error } = suspendedFiberState;
+                const continuation: GeneratorContinuation<Hashable, Hashable> = {
+                  throw: true,
+                  error: error.error.value,
+                };
+                const resultValue = next(expression.parent, expression.state, continuation);
+                // Evaluate the tail expression
+                pushStackFrame(createTailCallStackFrame(resultValue, currentFiber), stack);
+                continue loop;
+              }
             }
-            const condition = yieldedValue;
-            const stateToken = condition[EFFECT];
-            // Register the condition as a dependency of this evaluation
-            combinedDependencies = combineDependencies(
-              combinedDependencies,
-              DependencyTree.Unit({ value: stateToken }),
-            );
-            const stateValue = state.get(stateToken);
-            // Continue evaluating the stateful value
-            result = { done: false, value: stateValue };
-          } else if (isSignal(yieldedValue)) {
-            // The expression has reached an unresolvable halting condition
-            stack.push(StackFrame.Halt({ conditions: collectConditionTree(yieldedValue.effects) }));
+          }
+
+          case EXPRESSION_TYPE_FALLBACK: {
+            const { attempt: attemptedExpression } = expression;
+            // Evaluate the inner expression (the fallback expression will be evaluated during stack unwinding
+            // only if the inner expression evaluates to a Pending value)
+            pushStackFrame(createTailCallStackFrame(attemptedExpression, currentFiber), stack);
             continue loop;
-          } else if (isCatcher(yieldedValue)) {
-            // The expression evaluation has emitted a chained stateful value, so queue up the current stack frame again
-            // to be resolved again once the inner expression has been handled
-            stack.push(stackFrame);
-            executeExpression(yieldedValue, stack);
-            continue loop;
-          } else {
-            // Otherwise if the yielded value is fully resolved, provide the value to continue evaluation of the expression
-            result = evaluation.next(yieldedValue);
           }
         }
-        // The stateful expression has completed successfully, so push the result onto the stack and continue execution
-        stack.push(StackFrame.Result({ value: result.value }));
+      } catch (error) {
+        const result = createEvaluationErrorResult(createResult(createHashableError(error)));
+        // Cache node children will be populated during the unwinding process
+        fiberResult = cache.createNode({
+          id: expressionHash,
+          expression,
+          result,
+        });
+      }
+    }
+
+    // Now that we have reached a fully-resolved result, we can update the cached result for the current expression
+    // If we arrived at the same result as an existing invalidated cached state, the invalidated state can still be reused,
+    // so clear any invalidations attributed to the input expression further up the result chain
+    if (
+      cachedResult &&
+      cachedResult.isDirty &&
+      fiberResultsAreEqual(cachedResult.value.result, fiberResult.value.result)
+    ) {
+      // Mark the re-evaluated result as a dependency of the cached result
+      cache.addEdge(cachedResult, fiberResult);
+      // Mark the cached node (but not its dependencies) as having been visited in this tick
+      // The dependencies as not marked as visited as they might contain stale results from previous evaluations
+      // that happened to produce the same result via a different unrelated path
+      cache.visit(cachedResult);
+      // Mark the cached node (and potentially its ancestors) as valid
+      cache.revalidate(cachedResult);
+    } else if (cachedResult === undefined || fiberResult !== cachedResult) {
+      cache.set(expressionHash, fiberResult);
+    }
+
+    // Unwind the tail call stack, updating any parent fibers with the result of the current fiber
+    // Each fiber gets its own result cache node, which is updated with the result of the fiber and any linked dependencies
+    let stackUnwindFiber = currentFiber;
+    let currentResult = fiberResult;
+    const {
+      value: { result },
+    } = currentResult;
+    const isPendingResult = result.type === EvaluationResultType.Pending;
+    const isErrorResult = result.type === EvaluationResultType.Error;
+    unwind: while (true) {
+      const { intermediateResults } = stackUnwindFiber;
+      // If we encounter any intermediate results while unwinding the tail call stack,
+      // mark them as dependencies of the cache node
+      for (const intermediateResult of intermediateResults) {
+        cache.addEdge(currentResult, intermediateResult);
+      }
+      const parentFiber = stackUnwindFiber.parent;
+      // If the result of the current fiber is a pending value, and we have reached a fallback expression,
+      // reattempt evaluation with the fallback value instead of the original fallback expression
+      if (
+        isPendingResult &&
+        stackUnwindFiber.expression[EXPRESSION_TYPE] === EXPRESSION_TYPE_FALLBACK
+      ) {
+        const { fallback } = stackUnwindFiber.expression;
+        const fallbackFiber = createFallbackStackFrame(stackUnwindFiber, fallback);
+        // Ensure the attempted fiber result is marked as a dependency of the fallback fiber
+        // Note that we can't mark the result as a dependency of the parent fiber, as the parent fiber's cache node
+        // may not yet exist, so we add it as an intermediate result instead
+        // (the dependency will eventually be registered during tail call stack unwinding by picking up the results
+        // from the list of intermediate dependencies)
+        fallbackFiber.intermediateResults.push(currentResult);
+        pushStackFrame(fallbackFiber, stack);
         continue loop;
       }
-      case 'Handle': {
-        const condition = stackFrame.condition;
-        const stateToken = condition[EFFECT];
-        // Register the signal as a dependency of this evaluation
-        combinedDependencies = combineDependencies(
-          combinedDependencies,
-          DependencyTree.Unit({ value: stateToken }),
+      // If the result of the current fiber is an error value, and we have reached a suspense expression,
+      // throw the error into the suspense continuation so that it can potentially be caught in a try/catch block
+      if (
+        isErrorResult &&
+        stackUnwindFiber.expression[EXPRESSION_TYPE] === EXPRESSION_TYPE_SUSPENSE &&
+        !(
+          stackUnwindFiber.suspended?.type === SuspenseResultsType.Error &&
+          hash(stackUnwindFiber.suspended.error.error) === hash(result.error)
+        )
+      ) {
+        // Re-attempt evaluation of the suspense expression with the thrown error
+        const throwFiber = createThrowStackFrame(
+          stackUnwindFiber,
+          stackUnwindFiber.expression,
+          result,
         );
-        if (state.has(stateToken)) {
-          // A value has been resolved for the signal, so push the value onto the stack and continue execution
-          const value = state.get(stateToken);
-          executeExpression(value, stack);
-          continue loop;
+        pushStackFrame(throwFiber, stack);
+        continue loop;
+      }
+      // If the tail call stack has been unwound as far as the root fiber, we can return the final result
+      if (!parentFiber) return result as EvaluationResult<T>;
+      if (stackUnwindFiber.root) {
+        // If the current fiber represents a forked thread root, store the result in the current continuation stack frame
+        // Note that we can't mark the result as a dependency of the parent fiber that spawned the thread, as the parent
+        // fiber's cache node may not yet exist, so we add it as an intermediate result instead
+        // (the dependency will eventually be registered during tail call stack unwinding by picking up the results
+        // from the list of intermediate dependencies)
+        if (parentFiber.suspended?.type !== SuspenseResultsType.Pending) {
+          throw new InterpreterError('Invalid fork/join parent thread');
+        }
+        parentFiber.suspended.results.push(currentResult);
+        parentFiber.intermediateResults.push(currentResult);
+        // Continue execution of the next suspended stack frame (which will be either another awaited expression or
+        // the parent suspense expression's 'join' frame, depending on whether this is the final awaited expression
+        // of its sibling group)
+        continue loop;
+      }
+      // Otherwise if the current fiber represents a tail call for a parent fiber, update the result cache for the parent fiber,
+      // attempting to reuse any existing parent result node if it is still valid (either from the current evaluation or a previous evaluation)
+      const existingParentResult = cache.get(parentFiber.expressionHash);
+      const existingValidParentResult =
+        existingParentResult &&
+        (!existingParentResult.isDirty ||
+          fiberResultsAreEqual(existingParentResult.value.result, result))
+          ? existingParentResult
+          : null;
+      const parentResult =
+        existingValidParentResult ??
+        cache.set(
+          parentFiber.expressionHash,
+          cache.createNode({
+            id: parentFiber.expressionHash,
+            expression: parentFiber.expression,
+            result,
+          }),
+        );
+      // If the existing parent result is still valid, mark its ancestors as valid
+      if (existingValidParentResult) {
+        if (existingValidParentResult.isDirty) {
+          // Mark the re-evaluated result as a dependency of the cached result
+          cache.addEdge(existingValidParentResult, currentResult);
+          // TODO: determine whether this path is ever taken, given that all ancestors of the leaf node should have already been revalidated
+          // Mark the cached node (but not its dependencies) as having been visited in this tick
+          // The dependencies as not marked as visited as they might contain stale results from previous evaluations
+          // that happened to produce the same result via a different unrelated path
+          cache.visit(existingValidParentResult);
+          // Mark the parent node (and potentially its ancestors) as valid
+          cache.revalidate(existingValidParentResult);
         } else {
-          // The current execution thread is blocked, so push the halting condition onto the stack
-          // and continue executing the next thread
-          stack.push(StackFrame.Halt({ conditions: ConditionTree.Unit({ condition }) }));
-          continue loop;
+          // Mark the cached node and all its active dependencies as having been visited in this tick
+          cache.visitAll(existingValidParentResult, existingValidParentResult.visited);
         }
       }
-      case 'Copy': {
-        // Copy the result register into the specified stack frame further down the stack
-        stack.overwrite(threadResultRegister, stackFrame.depth);
-        continue loop;
-      }
-      case 'Join': {
-        // Collect the results of the preceding threads
-        const completedThreads = new Array<EnumVariant<StackFrame, 'Result'>>();
-        const blockedThreads = new Array<EnumVariant<StackFrame, 'Halt'>>();
-        for (let i = 0; i < stackFrame.count; i++) {
-          const threadResult = stack.pop();
-          if (!threadResult) throw new Error('Insufficient thread results on execution stack');
-          switch (threadResult[VARIANT]) {
-            case 'Result': {
-              completedThreads.push(threadResult);
-              break;
-            }
-            case 'Halt': {
-              blockedThreads.push(threadResult);
-              break;
-            }
-            default:
-              throw new Error('Invalid thread result');
-          }
-        }
-        // Push the combined result onto the stack
-        switch (blockedThreads.length) {
-          case 0: {
-            stack.push(StackFrame.Result({ value: completedThreads.reverse() }));
-            break;
-          }
-          case 1: {
-            const [result] = blockedThreads;
-            stack.push(result);
-          }
-          case 2: {
-            const [left, right] = blockedThreads;
-            stack.push(
-              StackFrame.Halt({
-                conditions: ConditionTree.Pair({ left: left.conditions, right: right.conditions }),
-              }),
-            );
-            break;
-          }
-          default: {
-            stack.push(
-              StackFrame.Halt({
-                conditions: ConditionTree.Multiple({
-                  children: blockedThreads.map(({ conditions }) => conditions),
-                }),
-              }),
-            );
-            break;
-          }
-        }
-        // Continue execution with the combined result
-        continue loop;
-      }
-      case 'Halt': {
-        // Unwind the stack until one of the following control flow frames is encountered:
-        // - a Catch frame, in which case the current thread will resume executing
-        // - a Terminate frame, in which case evaluation will start on the next thread
-        let next: StackFrame | undefined;
-        while ((next = stack.pop())) {
-          switch (next[VARIANT]) {
-            case 'Catch': {
-              const { handler } = next;
-              // Handle the condition, resuming evaluation with the handler result
-              const { conditions } = stackFrame;
-              const signal = createSignal(flattenConditionTree(conditions));
-              const handlerResult = handler(signal);
-              executeExpression(handlerResult, stack);
-              continue loop;
-            }
-            case 'Terminate': {
-              // The current thread has unwound its stack completely,
-              // so store the halt condition in the thread result register and process the terminate instruction
-              threadResultRegister = stackFrame;
-              stack.push(next);
-              continue loop;
-            }
-            default:
-              // For all other intermediate frames, continue unwinding the stack
-              continue;
-          }
-        }
-      }
-    }
-  }
-  return StackFrame.Halt.is(threadResultRegister)
-    ? EvaluationResult.Pending(threadResultRegister.conditions, combinedDependencies)
-    : EvaluationResult.Ready(threadResultRegister.value as T, combinedDependencies);
-}
-
-function executeExpression(expression: Reactive<unknown>, stack: MutableStack<StackFrame>) {
-  // Append the relevant sequence of stack frames to evaluate the given expression
-  if (isStateful(expression)) {
-    stack.push(StackFrame.Evaluate({ expression }));
-  } else if (isEffect(expression)) {
-    stack.push(StackFrame.Handle({ condition: expression }));
-  } else if (isSignal(expression)) {
-    stack.push(StackFrame.Halt({ conditions: collectConditionTree(expression.effects) }));
-  } else if (isCatcher(expression)) {
-    stack.push(StackFrame.Catch({ handler: expression.fallback }));
-    executeExpression(expression.target, stack);
-  } else if (isFork(expression)) {
-    fork(expression.expressions, stack);
-  } else {
-    stack.push(StackFrame.Result({ value: expression }));
-  }
-}
-
-function fork(expressions: Array<Reactive<unknown>>, stack: MutableStack<StackFrame>): void {
-  switch (expressions.length) {
-    // If there are no threads to spawn, simulate joining an empty list of thread results
-    // and continue evaluation on the current thread stack
-    case 0: {
-      stack.push(StackFrame.Terminate({}));
-      stack.push(StackFrame.Result({ value: [] }));
-      stack.push(StackFrame.Spawn({}));
-      return;
-    }
-    // If there is only a single thread to spawn, evaluate it directly on the current thread stack
-    case 1: {
-      const [expression] = expressions;
-      stack.push(StackFrame.Terminate({}));
-      executeExpression(expression, stack);
-      stack.push(StackFrame.Spawn({}));
-      return;
-    }
-    // If there are multiple threads to spawn, evaluate each expression in its own thread
-    // and join the results into a single result stack frame
-    default: {
-      // Keep track of the desired stack offset at which to store the evaluation results
-      const resultStackOffset = stack.size();
-      // Insert placeholder cells to store copies of the fully-evaluated expression results
-      for (let i = 0; i < expressions.length; i++) stack.push(STACK_FRAME_PLACEHOLDER);
-      // Push an instruction onto the stack that will collect the resolved values from
-      // the preceding result placeholder stack frames into a single stack frame
-      stack.push(StackFrame.Join({ count: expressions.length }));
-      // Evaluate each expression in its own thread, copying the result into the corresponding placeholder stack frame
-      for (let i = 0; i < expressions.length; i++) {
-        const expression = expressions[i];
-        // Determine the target placeholder stack frame offset to store the result of the evaluation
-        const targetStackOffset = resultStackOffset + i;
-        // Insert an instruction to copy the expression result into the preassigned placeholder once it has been handled
-        stack.push(StackFrame.Copy({ depth: stack.size() - targetStackOffset }));
-        // Evaluate the expression in its own thread
-        stack.push(StackFrame.Terminate({}));
-        executeExpression(expression, stack);
-        stack.push(StackFrame.Spawn({}));
-      }
-      return;
+      // Mark the current node as a dependency of the parent node
+      cache.addEdge(parentResult, currentResult);
+      // Continue unwinding the tail call stack
+      currentResult = parentResult;
+      stackUnwindFiber = parentFiber;
+      continue unwind;
     }
   }
 }
 
-function hasUnmetCondition(
-  condition: Effect<unknown> | Array<Effect<unknown>>,
-  state: StateValues,
-): boolean {
-  if (Array.isArray(condition)) {
-    return condition.some((condition) => hasUnmetCondition(condition, state));
-  }
-  const stateToken = condition[EFFECT];
-  return !state.has(stateToken);
+function createRootStackFrame<T>(expression: Expression<T>): Fiber {
+  return {
+    expressionHash: hash(expression),
+    expression,
+    parent: null,
+    root: true,
+    depth: 0,
+    intermediateResults: [],
+    suspended: null,
+  };
 }
 
-function getResolvedConditionValues(
-  condition: Effect<unknown>,
-  state: StateValues,
-): unknown | undefined;
-function getResolvedConditionValues(
-  condition: Array<Effect<unknown>>,
-  state: StateValues,
-): Array<unknown | undefined>;
-function getResolvedConditionValues(
-  condition: Effect<unknown> | Array<Effect<unknown>>,
-  state: StateValues,
-): unknown | undefined | Array<unknown | undefined>;
-function getResolvedConditionValues(
-  condition: Effect<unknown> | Array<Effect<unknown>>,
-  state: StateValues,
-): unknown | undefined | Array<unknown | undefined> {
-  if (Array.isArray(condition)) {
-    return condition.map((condition) => getResolvedConditionValues(condition, state));
+function createTailCallStackFrame<T>(expression: Expression<T>, parentFiber: Fiber): Fiber {
+  return {
+    expressionHash: hash(expression),
+    expression,
+    parent: parentFiber,
+    root: false,
+    depth: parentFiber ? parentFiber.depth + 1 : 0,
+    intermediateResults: [],
+    suspended: null,
+  };
+}
+
+function createFiberRootStackFrame<T>(expression: Expression<T>, parentFiber: Fiber): Fiber {
+  return {
+    expressionHash: hash(expression),
+    expression,
+    parent: parentFiber,
+    root: true,
+    depth: parentFiber ? parentFiber.depth + 1 : 0,
+    intermediateResults: [],
+    suspended: null,
+  };
+}
+
+function createSuspendedStackFrame(existingFiber: Fiber): Fiber {
+  return {
+    expressionHash: existingFiber.expressionHash,
+    expression: existingFiber.expression,
+    parent: existingFiber.parent,
+    root: existingFiber.root,
+    depth: existingFiber.depth,
+    intermediateResults: existingFiber.intermediateResults,
+    suspended: { type: SuspenseResultsType.Pending, results: [] },
+  };
+}
+
+function createFallbackStackFrame(existingFiber: Fiber, fallback: Expression<any>): Fiber {
+  return {
+    expressionHash: hash(fallback),
+    expression: fallback,
+    parent: existingFiber.parent,
+    root: existingFiber.root,
+    depth: existingFiber.depth,
+    intermediateResults: existingFiber.intermediateResults,
+    suspended: existingFiber.suspended,
+  };
+}
+
+function createThrowStackFrame<T>(
+  existingFiber: Fiber,
+  expression: SuspenseExpression<T>,
+  error: EvaluationErrorResult,
+): Fiber {
+  const updatedExpression = createSuspense(
+    expression.dependencies,
+    expression.parent,
+    updateAsyncState(expression.state, { throw: true, error: error.error.value }),
+  );
+  return {
+    expressionHash: hash(updatedExpression),
+    expression: updatedExpression,
+    parent: existingFiber.parent,
+    root: existingFiber.root,
+    depth: existingFiber.depth,
+    intermediateResults: existingFiber.intermediateResults,
+    suspended: { type: SuspenseResultsType.Error, error },
+  };
+}
+
+function pushStackFrame<T>(fiber: T, stack: Array<T>): T {
+  stack.push(fiber);
+  return fiber;
+}
+
+function createHashableError(exception: unknown): Hashable {
+  if (isHashable(exception)) return exception;
+  if (exception instanceof Error) return new HashableError(exception);
+  throw new InterpreterError('Exception is not hashable', {
+    cause: exception,
+  });
+}
+
+function fiberResultsAreEqual<T>(left: EvaluationResult<T>, right: EvaluationResult<T>): boolean {
+  if (left === right) return true;
+  switch (left.type) {
+    case EvaluationResultType.Pending:
+      return right.type === EvaluationResultType.Pending;
+    case EvaluationResultType.Success:
+      return (
+        right.type === EvaluationResultType.Success && resultsAreEqual(left.result, right.result)
+      );
+    case EvaluationResultType.Error:
+      return right.type === EvaluationResultType.Error && errorsAreEqual(left.error, right.error);
   }
-  const stateToken = condition[EFFECT];
-  return state.get(stateToken);
+}
+
+function resultsAreEqual<T>(left: ResultExpression<T>, right: ResultExpression<T>): boolean {
+  if (left === right) return true;
+  return hash(left) === hash(right);
+}
+
+function errorsAreEqual(left: Hashable, right: Hashable): boolean {
+  if (left === right) return true;
+  return hash(left) === hash(right);
 }

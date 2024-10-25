@@ -36,7 +36,7 @@
     "@reactive-kit/actor-utils": "workspace:*",
     "@reactive-kit/build-config": "workspace:*",
     "@reactive-kit/effect-fetch": "workspace:*",
-    "@reactive-kit/effect-pending": "workspace:*",
+    "@reactive-kit/hash": "workspace:*",
     "@reactive-kit/runtime-messages": "workspace:*",
     "@reactive-kit/types": "workspace:*",
     "@reactive-kit/utils": "workspace:*"

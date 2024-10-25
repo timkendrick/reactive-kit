@@ -11,6 +11,7 @@ import {
 import { fromCancelablePromiseFactory } from '@reactive-kit/actor-utils';
 import {
   EFFECT_TYPE_FETCH,
+  FetchResponse,
   type FetchEffect,
   type FetchHeaders,
   type FetchRequest,
@@ -28,9 +29,22 @@ import {
   type SubscribeEffectsMessage,
   type UnsubscribeEffectsMessage,
 } from '@reactive-kit/runtime-messages';
+import { createPending, createResult, EffectId, PendingExpression } from '@reactive-kit/types';
 import { nonNull, generateUid } from '@reactive-kit/utils';
-import { createPendingEffect, type PendingEffect } from '@reactive-kit/effect-pending';
-import { EFFECT, type StateToken } from '@reactive-kit/types';
+import { CustomHashable, hash, HASH, Hash, HashableError } from '@reactive-kit/hash';
+
+class FetchResponseError extends Error implements CustomHashable {
+  public readonly response: FetchResponse;
+  public [HASH]: Hash;
+
+  constructor(response: FetchResponse) {
+    super(`HTTP error ${response.status}`);
+    this.name = 'FetchResponseError';
+    this.response = response;
+    this[HASH] = hash(this.name, this.response);
+  }
+}
+
 import {
   createFetchHandlerResponseMessage,
   isFetchHandlerResponseMessage,
@@ -54,7 +68,7 @@ interface FetchSubscription {
 
 export class FetchHandler implements Actor<Message<unknown>> {
   private readonly next: ActorHandle<FetchHandlerOutputMessage>;
-  private subscriptions: Map<StateToken, TaskId> = new Map();
+  private subscriptions: Map<EffectId, TaskId> = new Map();
   private requests: Map<TaskId, FetchSubscription> = new Map();
   private nextTaskId: TaskId = 1;
 
@@ -94,16 +108,16 @@ export class FetchHandler implements Actor<Message<unknown>> {
     const self = context.self();
     const pendingValues = new Map(
       typedEffects
-        .map((effect): [StateToken, PendingEffect] | null => {
-          const stateToken = effect[EFFECT];
+        .map((effect): [EffectId, PendingExpression] | null => {
+          const stateToken = effect.id;
           if (this.subscriptions.has(stateToken)) return null;
-          return [stateToken, createPendingEffect()];
+          return [stateToken, createPending()];
         })
         .filter(nonNull),
     );
     const actions = typedEffects
       .map((effect) => {
-        const stateToken = effect[EFFECT];
+        const stateToken = effect.id;
         if (this.subscriptions.has(stateToken)) return null;
         const taskId = ++this.nextTaskId;
         this.subscriptions.set(stateToken, taskId);
@@ -139,7 +153,7 @@ export class FetchHandler implements Actor<Message<unknown>> {
     if (!typedEffects || typedEffects.length === 0) return null;
     const actions = typedEffects
       .map((effect) => {
-        const stateToken = effect[EFFECT];
+        const stateToken = effect.id;
         const taskId = this.subscriptions.get(stateToken);
         if (taskId === undefined) return null;
         this.subscriptions.delete(stateToken);
@@ -163,10 +177,11 @@ export class FetchHandler implements Actor<Message<unknown>> {
     const subscription = this.requests.get(taskId);
     if (!subscription) return null;
     const effect = subscription.effect;
-    const stateToken = effect[EFFECT];
+    const stateToken = effect.id;
     this.requests.delete(taskId);
     this.subscriptions.delete(stateToken);
-    const effectValues = new Map([[EFFECT_TYPE_FETCH, new Map([[stateToken, response]])]]);
+    const effectValue = createResult(response);
+    const effectValues = new Map([[EFFECT_TYPE_FETCH, new Map([[stateToken, effectValue]])]]);
     const emitMessage = createEmitEffectValuesMessage(effectValues);
     const action = HandlerAction.Send(this.next, emitMessage);
     return [action];
@@ -223,16 +238,19 @@ function fetchRequest(request: FetchRequest, signal: AbortSignal): Promise<Fetch
         );
       } else {
         return response.arrayBuffer().then(
-          (body): FetchResponseState => ({
-            success: false,
-            error: new Error(`HTTP error ${response.status}: ${response.statusText}`),
-            response: {
+          (body): FetchResponseState => {
+            const response: FetchResponse = {
               status,
               headers,
               body: new Uint8Array(body),
               token,
-            },
-          }),
+            };
+            return {
+              success: false,
+              error: new FetchResponseError(response),
+              response: response,
+            };
+          },
           (err): FetchResponseState => ({
             success: false,
             error: parseResponseError(err),
@@ -271,7 +289,6 @@ function parseResponseHeaders(headers: Headers): Record<string, string> {
   return result;
 }
 
-function parseResponseError(err: any): Error {
-  if (err instanceof Error) return err;
-  return new Error(String(err), { cause: err });
+function parseResponseError(err: unknown): HashableError {
+  return new HashableError(err instanceof Error ? err : new Error(String(err), { cause: err }));
 }

@@ -23,32 +23,33 @@ interface FetchResult extends FetchResponse {
   json(): unknown;
 }
 
+const handleFetchResponse = assignCustomHash(
+  hash('@reactive-kit/hook-fetch/useFetch/handleFetchResponse'),
+  (response: FetchResponseState): FetchResult => {
+    if (!response.success) {
+      // FIXME: Determine error throwing behavior
+      throw response.error;
+    } else {
+      return new FetchResult(response.response);
+    }
+  },
+);
+
 export function useFetch(request: string | FetchRequestInit): Promise<FetchResult> {
   const init = typeof request === 'string' ? { url: request } : request;
-  return useReactive<FetchResult>(
-    map<FetchResponseState, FetchResult>(
-      createFetchEffect({
-        url: init.url,
-        method: init.method ?? 'GET',
-        headers: init.headers ?? {},
-        body:
-          init.body != null
-            ? typeof init.body === 'string'
-              ? new TextEncoder().encode(init.body)
-              : init.body
-            : null,
-        token: init.token ?? null,
-      }),
-      assignCustomHash(hash('@reactive-kit/hook-fetch/useFetch'), (response) => {
-        if (!response.success) {
-          // FIXME: Determine error throwing behavior
-          throw response.error;
-        } else {
-          return new FetchResult(response.response);
-        }
-      }),
-    ),
-  );
+  const effect = createFetchEffect({
+    url: init.url,
+    method: init.method ?? 'GET',
+    headers: init.headers ?? {},
+    body:
+      init.body != null
+        ? typeof init.body === 'string'
+          ? new TextEncoder().encode(init.body)
+          : init.body
+        : null,
+    token: init.token ?? null,
+  });
+  return useReactive(map(effect, handleFetchResponse));
 }
 
 class FetchResult implements CustomHashable {

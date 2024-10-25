@@ -1,5 +1,5 @@
-import type { Reactive } from '@reactive-kit/types';
+import type { Expression } from '@reactive-kit/types';
 
-export function useReactive<T>(expression: Reactive<T>): Promise<T> {
+export function useReactive<T>(expression: Expression<T>): Promise<T> {
   return expression as unknown as Promise<T>;
 }

@@ -1,4 +1,4 @@
-import type { BabelPlugin, Scope, Types } from '@reactive-kit/babel-types';
+import type { BabelPlugin, Scope, types as t } from '@reactive-kit/babel-types';
 
 export const reactiveJsx: BabelPlugin = (babel) => {
   const { types: t } = babel;
@@ -17,7 +17,7 @@ export const reactiveJsx: BabelPlugin = (babel) => {
     },
   };
 
-  function transformJsxElement(node: Types.JSXElement, scope: Scope): Types.Expression {
+  function transformJsxElement(node: t.JSXElement, scope: Scope): t.Expression {
     const elementIdentifier = node.openingElement.name;
     switch (elementIdentifier.type) {
       case 'JSXIdentifier':
@@ -34,14 +34,14 @@ export const reactiveJsx: BabelPlugin = (babel) => {
     }
   }
 
-  function isIntrinsicElementIdentifier(elementName: Types.JSXIdentifier) {
+  function isIntrinsicElementIdentifier(elementName: t.JSXIdentifier) {
     return /^[a-z]/.test(elementName.name);
   }
 
   function transformJsxIntrinsicElement(
-    elementName: Types.JSXIdentifier,
-    element: Types.JSXElement,
-  ): Types.Expression {
+    elementName: t.JSXIdentifier,
+    element: t.JSXElement,
+  ): t.Expression {
     const { key, ref, props } = parseJsxElementAttributes(element);
     return t.objectExpression([
       t.objectProperty(t.stringLiteral('type'), t.stringLiteral(elementName.name)),
@@ -52,10 +52,10 @@ export const reactiveJsx: BabelPlugin = (babel) => {
   }
 
   function transformJsxCustomElement(
-    type: Types.JSXIdentifier | Types.JSXMemberExpression,
-    element: Types.JSXElement,
+    type: t.JSXIdentifier | t.JSXMemberExpression,
+    element: t.JSXElement,
     scope: Scope,
-  ): Types.Expression {
+  ): t.Expression {
     const elementType = parseJsxCustomElementName(type);
     const { key, ref, props } = parseJsxElementAttributes(element);
     const elementExpression = t.callExpression(elementType, [props]);
@@ -71,8 +71,8 @@ export const reactiveJsx: BabelPlugin = (babel) => {
   }
 
   function parseJsxCustomElementName(
-    identifier: Types.JSXIdentifier | Types.JSXMemberExpression,
-  ): Types.Expression {
+    identifier: t.JSXIdentifier | t.JSXMemberExpression,
+  ): t.Expression {
     switch (identifier.type) {
       case 'JSXIdentifier':
         return t.identifier(identifier.name);
@@ -84,7 +84,7 @@ export const reactiveJsx: BabelPlugin = (babel) => {
     }
   }
 
-  function transformJsxFragment(node: Types.JSXFragment): Types.Expression {
+  function transformJsxFragment(node: t.JSXFragment): t.Expression {
     return t.arrayExpression(
       node.children.map((child) => {
         switch (child.type) {
@@ -104,20 +104,20 @@ export const reactiveJsx: BabelPlugin = (babel) => {
     );
   }
 
-  function transformJsxText(node: Types.JSXText): Types.Expression {
+  function transformJsxText(node: t.JSXText): t.Expression {
     return t.stringLiteral(node.value);
   }
 
-  function transformJsxExpressionContainer(node: Types.JSXExpressionContainer): Types.Expression {
+  function transformJsxExpressionContainer(node: t.JSXExpressionContainer): t.Expression {
     const { expression } = node;
     if (t.isJSXEmptyExpression(expression)) return t.nullLiteral();
     return expression;
   }
 
-  function parseJsxElementAttributes(element: Types.JSXElement): {
-    key: Types.Expression | null;
-    ref: Types.Expression | null;
-    props: Types.ObjectExpression;
+  function parseJsxElementAttributes(element: t.JSXElement): {
+    key: t.Expression | null;
+    ref: t.Expression | null;
+    props: t.ObjectExpression;
   } {
     const {
       openingElement: { attributes },
@@ -161,9 +161,9 @@ export const reactiveJsx: BabelPlugin = (babel) => {
         }
       },
       {
-        key: null as Types.Expression | null,
-        ref: null as Types.Expression | null,
-        props: new Array<Types.ObjectProperty | Types.SpreadElement>(),
+        key: null as t.Expression | null,
+        ref: null as t.Expression | null,
+        props: new Array<t.ObjectProperty | t.SpreadElement>(),
       },
     );
     const childrenProp = element.closingElement ? parseJsxElementChildren(children) : null;
@@ -178,7 +178,7 @@ export const reactiveJsx: BabelPlugin = (babel) => {
     };
   }
 
-  function parseJsxAttributeValue(value: Types.JSXAttribute['value']): Types.Expression {
+  function parseJsxAttributeValue(value: t.JSXAttribute['value']): t.Expression {
     if (!value) return t.nullLiteral();
     switch (value.type) {
       case 'JSXExpressionContainer':
@@ -188,7 +188,7 @@ export const reactiveJsx: BabelPlugin = (babel) => {
     }
   }
 
-  function parseJsxElementChildren(children: Types.JSXElement['children']): Types.Expression {
+  function parseJsxElementChildren(children: t.JSXElement['children']): t.Expression {
     const elements = stripJsxWhitespaceChildren(children).map((child) => {
       switch (child.type) {
         case 'JSXElement':
@@ -218,8 +218,8 @@ export const reactiveJsx: BabelPlugin = (babel) => {
   }
 
   function stripJsxWhitespaceChildren(
-    children: Types.JSXElement['children'],
-  ): Types.JSXElement['children'] {
+    children: t.JSXElement['children'],
+  ): t.JSXElement['children'] {
     const startIndex = children.findIndex(
       (element) => !(t.isJSXText(element) && isJsxWhitespaceElement(element)),
     );
@@ -231,7 +231,7 @@ export const reactiveJsx: BabelPlugin = (babel) => {
     return children.slice(startIndex, endIndex + 1);
   }
 
-  function isJsxWhitespaceElement(element: Types.JSXText): boolean {
+  function isJsxWhitespaceElement(element: t.JSXText): boolean {
     return /^\s*$/.test(element.value);
   }
 };

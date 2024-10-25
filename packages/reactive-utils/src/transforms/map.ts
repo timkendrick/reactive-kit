@@ -1,15 +1,81 @@
-import { HASH, hash, type CustomHashable } from '@reactive-kit/hash';
-import type { Effect, Reactive, Stateful } from '@reactive-kit/types';
+import { assignCustomHash, hash, Hashable, type CustomHashable } from '@reactive-kit/hash';
+import {
+  type Expression,
+  createAsync,
+  createGeneratorStateMachine,
+  GeneratorStateMachine,
+} from '@reactive-kit/types';
 
-export function map<T, V>(
-  expression: Effect<T> | Stateful<T>,
-  transform: ((result: T) => V) & CustomHashable,
-): Reactive<V> {
-  return {
-    [HASH]: hash('@reactive-kit/transform/map', expression, transform),
-    [Symbol.iterator]: function* () {
-      const value = (yield expression) as T;
+interface MapGeneratorStateMachine<T extends Hashable, V extends Hashable>
+  extends GeneratorStateMachine<
+      MapGeneratorArgs<T, V>,
+      MapGeneratorLocals<T>,
+      MapGeneratorIntermediates,
+      Expression<T>,
+      T,
+      Hashable,
+      V
+    >,
+    CustomHashable {}
+
+interface MapGeneratorArgs<T extends Hashable, V extends Hashable>
+  extends Record<string, Hashable> {
+  expression: Expression<T>;
+  transform: ((result: T) => V) & Hashable;
+}
+
+interface MapGeneratorLocals<T extends Hashable> extends Record<string, Hashable> {
+  value: T;
+}
+
+interface MapGeneratorIntermediates extends Record<string, Hashable> {}
+
+const MAP_GENERATOR: MapGeneratorStateMachine<any, any> = assignCustomHash(
+  hash('@reactive-kit/symbols/transform/map'),
+  createGeneratorStateMachine<
+    MapGeneratorArgs<Hashable, Hashable>,
+    MapGeneratorLocals<Hashable>,
+    MapGeneratorIntermediates,
+    Hashable,
+    Hashable,
+    Hashable,
+    Hashable
+  >(
+    /*
+    async function map(expression, transform) {
+      const value = await expression;
       return transform(value);
+    }
+    */
+    function (_context) {
+      switch ((_context.state.prev = _context.state.next)) {
+        case 0:
+          _context.state.next = 2;
+          return _context['yield'](_context.state.args.expression);
+        case 2:
+          _context.state.locals.value = _context.sent;
+          return _context.abrupt(
+            'return',
+            _context.state.args.transform(_context.state.locals.value),
+          );
+        case 4:
+        case 0x1fffffffffffff:
+        default:
+          return _context.stop();
+      }
     },
-  };
+    {
+      params: ['expression', 'transform'],
+      locals: ['value'],
+      intermediates: [],
+      tryLocsList: null,
+    },
+  ),
+);
+
+export function map<T extends Hashable, V extends Hashable>(
+  expression: Expression<T>,
+  transform: ((result: T) => V) & Hashable,
+): Expression<V> {
+  return createAsync(MAP_GENERATOR as MapGeneratorStateMachine<T, V>, [expression, transform]);
 }

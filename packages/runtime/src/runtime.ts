@@ -1,9 +1,12 @@
 import type { Actor, ActorHandle } from '@reactive-kit/actor';
 import { BroadcastActor } from '@reactive-kit/actor-utils';
 import { createEvaluateEffect, EFFECT_TYPE_EVALUATE } from '@reactive-kit/effect-evaluate';
-import { EvaluateHandler } from '@reactive-kit/handler-evaluate';
+import {
+  EvaluateHandler,
+  type ReadyEvaluationResult,
+  type StateValues,
+} from '@reactive-kit/handler-evaluate';
 import { type Hashable } from '@reactive-kit/hash';
-import { type ReadyEvaluationResult, type StateValues } from '@reactive-kit/interpreter';
 import {
   MESSAGE_EMIT_EFFECT_VALUES,
   createSubscribeEffectsMessage,
@@ -11,7 +14,7 @@ import {
   type RuntimeMessage,
 } from '@reactive-kit/runtime-messages';
 import { AsyncScheduler } from '@reactive-kit/scheduler';
-import { EFFECT, type Reactive, type StateToken } from '@reactive-kit/types';
+import { type Expression, type EffectId, isResultExpression } from '@reactive-kit/types';
 import { createAsyncTrigger, type AsyncTrigger } from '@reactive-kit/utils';
 
 export type RuntimeEffectHandlers = Iterable<(next: ActorHandle<unknown>) => Actor<unknown>>;
@@ -32,7 +35,7 @@ type SubscriptionStatus<T> =
 
 export class Runtime {
   private scheduler: AsyncScheduler<RuntimeMessage>;
-  private subscriptionResults = new Map<StateToken, Subscription<any>>();
+  private subscriptionResults = new Map<EffectId, Subscription<any>>();
   private unsubscribeTrigger: AsyncTrigger<IteratorReturnResult<null>> | undefined;
 
   public constructor(
@@ -51,13 +54,13 @@ export class Runtime {
     });
   }
 
-  public subscribe<T extends Hashable>(expression: Reactive<T>): AsyncIterator<T, null> {
+  public subscribe<T extends Hashable>(expression: Expression<T>): AsyncIterator<T, null> {
     const { scheduler, subscriptionResults, unsubscribeTrigger: existingUnsubscribeTrigger } = this;
     const unsubscribeTrigger = existingUnsubscribeTrigger ?? createAsyncTrigger();
     if (!existingUnsubscribeTrigger) this.unsubscribeTrigger = unsubscribeTrigger;
     const isFirstSubscription = !existingUnsubscribeTrigger;
     const effect = createEvaluateEffect(expression);
-    const effectId = effect[EFFECT];
+    const effectId = effect.id;
     const existingResult = subscriptionResults.get(effectId);
     const subscriptionResult: Subscription<T> = existingResult ?? {
       status: { emitted: false },
@@ -132,7 +135,7 @@ export class Runtime {
 
 function awaitEvaluationResults(
   scheduler: AsyncScheduler<RuntimeMessage>,
-  subscriptionResults: Map<StateToken, Subscription<unknown>>,
+  subscriptionResults: Map<EffectId, Subscription<unknown>>,
   unsubscribeTrigger: AsyncTrigger<IteratorReturnResult<null>>,
 ): Promise<void> {
   return Promise.race([unsubscribeTrigger.signal, scheduler.next()]).then(
@@ -145,6 +148,8 @@ function awaitEvaluationResults(
           : undefined;
       if (evaluationResults) {
         for (const [stateToken, value] of evaluationResults) {
+          // FIXME: determine whether to handle non-result effect values
+          if (!isResultExpression(value)) continue;
           const subscription = subscriptionResults.get(stateToken);
           if (!subscription) continue;
           for (const callback of subscription.callbacks) {
