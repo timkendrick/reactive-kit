@@ -9,6 +9,7 @@ test('module exports', () => {
     hash: lib.hash,
     HASH: lib.HASH,
     hashSeed: lib.hashSeed,
+    isHashable: lib.isHashable,
     writeArrayHash: lib.writeArrayHash,
     writeBigintHash: lib.writeBigintHash,
     writeBooleanHash: lib.writeBooleanHash,

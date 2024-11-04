@@ -61,6 +61,41 @@ export function writeUint8ArrayHash(state: Hash, value: Uint8Array): Hash {
   return state;
 }
 
+export function isHashable(value: unknown): value is Hashable {
+  if (value === null) return true;
+  switch (typeof value) {
+    case 'undefined':
+      return true;
+    case 'boolean':
+      return true;
+    case 'number':
+      return true;
+    case 'string':
+      return true;
+    case 'bigint':
+      return true;
+    case 'object': {
+      if (HASH in value) return true;
+      if (Array.isArray(value)) return value.every(isHashable);
+      if (value instanceof Date) return true;
+      if (value instanceof Uint8Array) return true;
+      return (
+        value.constructor === Object &&
+        Object.keys(value).every(isHashable) &&
+        Object.values(value).every(isHashable)
+      );
+    }
+    case 'function': {
+      if (HASH in value) return true;
+      return false;
+    }
+    case 'symbol':
+    default: {
+      return false;
+    }
+  }
+}
+
 export function writeValueHash(state: Hash, value: Hashable): Hash {
   if (value === null) return writeNullHash(writeByteHash(state, 0));
   switch (typeof value) {
