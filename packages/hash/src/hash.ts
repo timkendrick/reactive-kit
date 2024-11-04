@@ -62,7 +62,7 @@ export function writeUint8ArrayHash(state: Hash, value: Uint8Array): Hash {
 }
 
 export function writeValueHash(state: Hash, value: Hashable): Hash {
-  if (value == null) return writeNullHash(writeByteHash(state, 0));
+  if (value === null) return writeNullHash(writeByteHash(state, 0));
   switch (typeof value) {
     case 'undefined':
       return writeUndefinedHash(writeByteHash(state, 1));
@@ -74,19 +74,23 @@ export function writeValueHash(state: Hash, value: Hashable): Hash {
       return writeStringHash(writeByteHash(state, 4), value);
     case 'bigint':
       return writeBigintHash(writeByteHash(state, 5), value);
-    case 'function':
-      if (HASH in value) return writeCustomHash(writeByteHash(state, 6), value);
     case 'object':
-      if (Array.isArray(value)) return writeArrayHash(writeByteHash(state, 6), value);
-      if (value instanceof Date) return writeNumberHash(writeByteHash(state, 7), value.getTime());
-      if (value instanceof Uint8Array) return writeUint8ArrayHash(writeByteHash(state, 8), value);
-      if (HASH in value) return writeCustomHash(writeByteHash(state, 9), value);
+      if (HASH in value) return writeCustomHash(writeByteHash(state, 6), value);
+      if (Array.isArray(value)) return writeArrayHash(writeByteHash(state, 7), value);
+      if (value instanceof Date) return writeNumberHash(writeByteHash(state, 8), value.getTime());
+      if (value instanceof Uint8Array) return writeUint8ArrayHash(writeByteHash(state, 9), value);
       return writeObjectHash(writeByteHash(state, 10), value);
-    // Fall through to error case
+    case 'function':
+      if (HASH in value) return writeCustomHash(writeByteHash(state, 11), value);
+      // Fall back to error case
+      break;
     case 'symbol':
-    default:
-      throw new Error(`Unable to hash value: ${value}`);
+    default: {
+      // Fall back to error case
+      break;
+    }
   }
+  throw new Error(`Unable to hash value: ${value}`);
 }
 
 function writeCustomHash(state: Hash, value: CustomHashable): Hash {
