@@ -1,6 +1,6 @@
 import { render } from '@reactive-kit/dom';
 
-function Main() {
+async function Main() {
   return <h1>Hello, world!</h1>;
 }
 
