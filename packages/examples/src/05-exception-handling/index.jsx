@@ -7,7 +7,7 @@ async function Main() {
     const user = await response.json();
     return <h1>Hello, ${user.name}!</h1>;
   } catch (error) {
-    return <h2>Failed to load remote data ({error.message})</h2>;
+    return [<h2>Failed to load remote data</h2>, <pre>{error.message}</pre>];
   }
 }
 
