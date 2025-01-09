@@ -31,10 +31,13 @@
       }
     }
   },
+  "dependencies": {
+    "regenerator-transform": "0.15.2"
+  },
   "devDependencies": {
-    "@reactive-kit/build-config": "workspace:*",
-    "@reactive-kit/babel-types": "workspace:*",
     "@reactive-kit/babel-test-utils": "workspace:*",
+    "@reactive-kit/babel-types": "workspace:*",
+    "@reactive-kit/build-config": "workspace:*",
     "@reactive-kit/hash": "workspace:*"
   },
   "peerDependencies": {
