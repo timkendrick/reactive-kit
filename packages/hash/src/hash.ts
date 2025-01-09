@@ -30,6 +30,16 @@ export function assignCustomHash<T extends object | Function>(
 
 export type HashableObject<T extends { [K in keyof T]: Hashable }> = T;
 
+export class HashError extends Error {
+  public value: unknown;
+
+  constructor(message: string, value: unknown) {
+    super(message);
+    this.name = 'HashError';
+    this.value = value;
+  }
+}
+
 const HASH_BITS = 64;
 const HASH_SEED = 14_695_981_039_346_656_037n;
 const HASH_STEP = 1_099_511_628_211n;
@@ -125,7 +135,7 @@ export function writeValueHash(state: Hash, value: Hashable): Hash {
       break;
     }
   }
-  throw new Error(`Unable to hash value: ${value}`);
+  throw new HashError(`Unable to hash value: ${value}`, value);
 }
 
 function writeCustomHash(state: Hash, value: CustomHashable): Hash {
