@@ -8,6 +8,7 @@ test('module exports', () => {
     createHasher: lib.createHasher,
     hash: lib.hash,
     HASH: lib.HASH,
+    HashableError: lib.HashableError,
     HashError: lib.HashError,
     hashSeed: lib.hashSeed,
     isHashable: lib.isHashable,
