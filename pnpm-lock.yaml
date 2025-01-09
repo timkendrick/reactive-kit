@@ -900,6 +900,9 @@ importers:
       '@reactive-kit/dom':
         specifier: link:../dom/dist
         version: link:../dom/dist
+      '@reactive-kit/hash':
+        specifier: link:../hash/dist
+        version: link:../hash/dist
       '@reactive-kit/hooks':
         specifier: link:../hooks/dist
         version: link:../hooks/dist
