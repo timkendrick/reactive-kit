@@ -5,9 +5,9 @@ async function Main() {
   try {
     const response = await useFetch('http://@@@');
     const user = await response.json();
-    return `Hello, ${user.name}!`;
+    return <h1>Hello, ${user.name}!</h1>;
   } catch (error) {
-    return `Failed to load remote data (${error.message})`;
+    return <h2>Failed to load remote data ({error.message})</h2>;
   }
 }
 

@@ -9,7 +9,7 @@ async function Main() {
   if (response === null) return 'Loading...';
 
   const user = await response.json();
-  return `Hello, ${user.name}!`;
+  return <h1>Hello, {user.name}!</h1>;
 }
 
 render(<Main />, document.body.getElementsByTagName('main')[0]);
