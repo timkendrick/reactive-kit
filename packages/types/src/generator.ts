@@ -12,13 +12,23 @@ export interface GeneratorStateMachineImpl<
   TArgs extends GeneratorArgs,
   TLocals extends GeneratorLocals,
   TIntermediates extends GeneratorIntermediates,
+  TStatics extends GeneratorStatics,
   TYield extends Hashable,
   TNext extends Hashable,
   TError extends Hashable,
   TResult,
 > {
   (
-    context: GeneratorContext<TArgs, TLocals, TIntermediates, TYield, TNext, TError, TResult>,
+    context: GeneratorContext<
+      TArgs,
+      TLocals,
+      TIntermediates,
+      TStatics,
+      TYield,
+      TNext,
+      TError,
+      TResult
+    >,
   ): Expression<TResult> | SuspenseExpression<TResult> | CONTINUE;
 }
 
@@ -26,6 +36,7 @@ export interface GeneratorStateMachine<
   TArgs extends GeneratorArgs,
   TLocals extends GeneratorLocals,
   TIntermediates extends GeneratorIntermediates,
+  TStatics extends GeneratorStatics,
   TYield extends Hashable,
   TNext extends Hashable,
   TError extends Hashable,
@@ -34,18 +45,20 @@ export interface GeneratorStateMachine<
     TArgs,
     TLocals,
     TIntermediates,
+    TStatics,
     TYield,
     TNext,
     TError,
     TResult
   > {
   [TYPE]: TYPE_GENERATOR;
-  [TYPE_GENERATOR]: GeneratorMetadata<TArgs, TLocals, TIntermediates>;
+  [TYPE_GENERATOR]: GeneratorMetadata<TArgs, TLocals, TIntermediates, TStatics>;
 }
 export function createGeneratorStateMachine<
   TArgs extends GeneratorArgs,
   TLocals extends GeneratorLocals,
   TIntermediates extends GeneratorIntermediates,
+  TStatics extends GeneratorStatics,
   TYield extends Hashable,
   TNext extends Hashable,
   TError extends Hashable,
@@ -55,17 +68,19 @@ export function createGeneratorStateMachine<
     TArgs,
     TLocals,
     TIntermediates,
+    TStatics,
     TYield,
     TNext,
     TError,
     TResult
   >,
-  metadata: GeneratorMetadata<TArgs, TLocals, TIntermediates>,
-): GeneratorStateMachine<TArgs, TLocals, TIntermediates, TYield, TNext, TError, TResult> {
+  metadata: GeneratorMetadata<TArgs, TLocals, TIntermediates, TStatics>,
+): GeneratorStateMachine<TArgs, TLocals, TIntermediates, TStatics, TYield, TNext, TError, TResult> {
   const result = generator as GeneratorStateMachine<
     TArgs,
     TLocals,
     TIntermediates,
+    TStatics,
     TYield,
     TNext,
     TError,
@@ -80,12 +95,13 @@ export interface GeneratorContext<
   TArgs extends GeneratorArgs,
   TLocals extends GeneratorLocals,
   TIntermediates extends GeneratorIntermediates,
+  TStatics extends GeneratorStatics,
   TYield extends Hashable,
   TNext extends Hashable,
   TError extends Hashable,
   TResult,
 > {
-  state: GeneratorState<TArgs, TLocals, TIntermediates>;
+  state: GeneratorState<TArgs, TLocals, TIntermediates, TStatics>;
   sent: TNext;
   next(
     sent: GeneratorContinuation<TNext, TError> | null,
@@ -105,10 +121,12 @@ export interface GeneratorState<
   TArgs extends GeneratorArgs,
   TLocals extends GeneratorLocals,
   TIntermediates extends GeneratorIntermediates,
+  TStatics extends GeneratorStatics,
 > {
   args: TArgs;
   locals: TLocals;
   intermediates: TIntermediates;
+  statics: TStatics;
   prev: number;
   next: number;
 }
@@ -139,13 +157,19 @@ export interface GeneratorIntermediates {
   [key: string]: Hashable;
 }
 
+export interface GeneratorStatics {
+  [key: string]: unknown;
+}
+
 export interface GeneratorMetadata<
   TArgs extends GeneratorArgs,
   TLocals extends GeneratorLocals,
   TIntermediates extends GeneratorIntermediates,
+  TStatics extends GeneratorStatics,
 > {
   params: Array<Extract<keyof TArgs, string>>;
   locals: Array<Extract<keyof TLocals, string>>;
   intermediates: Array<Extract<keyof TIntermediates, string>>;
+  statics: Array<Extract<keyof TStatics, string>>;
   tryLocsList: Array<[number, number?, number?, number?]> | null;
 }

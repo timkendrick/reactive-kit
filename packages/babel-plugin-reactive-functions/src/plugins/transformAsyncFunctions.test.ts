@@ -111,6 +111,7 @@ describe(transformAsyncFunctions, () => {
         params: ["bar", "baz"],
         locals: ["result", "x", "y", "z", "a", "b"],
         intermediates: ["t0", "t1", "t2", "t3", "t4", "t5", "t6"],
+        statics: [],
         tryLocsList: [[19, 33, 36, 39]],
       }
 
@@ -124,7 +125,6 @@ describe(transformAsyncFunctions, () => {
         };
       }
     `;
-
     const actual = transform(printAst(input), {
       plugins: [transformAsyncFunctions],
       code: true,
@@ -162,6 +162,7 @@ describe(transformAsyncFunctions, () => {
         params: [],
         locals: ["_await$bar", "bar"],
         intermediates: [],
+        statics: [],
         tryLocsList: null
       };
       function foo() {
@@ -174,7 +175,55 @@ describe(transformAsyncFunctions, () => {
         };
       }
     `;
+    const actual = transform(printAst(input), {
+      plugins: [transformAsyncFunctions],
+      code: true,
+    });
+    expect(actual?.code).toBe(printAst(expected));
+  });
 
+  test('allows non-serializable static values', () => {
+    const input = template.program.ast/* javascript */ `
+      async function foo() {
+        return Number(await 3);
+      }
+    `;
+    const functionHash = t.bigIntLiteral(String(hashAstNode(input.body[0])));
+    const expected = template.program.ast/* javascript */ `
+      function foo$(_context) {
+        while (1) switch (_context.state.prev = _context.state.next) {
+          case 0:
+            _context.state.statics.t0 = Number;
+            _context.state.next = 3;
+            return _context["yield"](3);
+          case 3:
+            _context.state.intermediates.t1 = _context.sent;
+            return _context.abrupt("return", (0, _context.state.statics.t0)(_context.state.intermediates.t1));
+          case 5:
+          case 0x1fffffffffffff:
+          default:
+            return _context.stop();
+        }
+      }
+      foo$[Symbol.for("@reactive-kit/symbols/hash")] = _hash => _hash("@reactive-kit/symbols/type/generator", ${functionHash});
+      foo$[Symbol.for("@reactive-kit/symbols/type")] = Symbol.for("@reactive-kit/symbols/type/generator");
+      foo$[Symbol.for("@reactive-kit/symbols/generator")] = {
+        params: [],
+        locals: [],
+        intermediates: ["t1"],
+        statics: ["t0"],
+        tryLocsList: null
+      };
+      function foo() {
+        return {
+          [Symbol.for("@reactive-kit/symbols/hash")]: _hash => _hash("@reactive-kit/symbols/expression/type/async", ${functionHash}),
+          [Symbol.for("@reactive-kit/symbols/type")]: Symbol.for("@reactive-kit/symbols/type/expression"),
+          [Symbol.for("@reactive-kit/symbols/expression/type")]: Symbol.for("@reactive-kit/symbols/expression/type/async"),
+          target: foo$,
+          args: []
+        };
+      }
+    `;
     const actual = transform(printAst(input), {
       plugins: [transformAsyncFunctions],
       code: true,

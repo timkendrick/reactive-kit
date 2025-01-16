@@ -13,6 +13,7 @@ import type {
   GeneratorIntermediates,
   GeneratorLocals,
   GeneratorStateMachine,
+  GeneratorStatics,
 } from './generator';
 
 /*
@@ -111,6 +112,7 @@ export interface AsyncExpression<T> extends CustomHashable {
     GeneratorArgs,
     GeneratorLocals,
     GeneratorIntermediates,
+    GeneratorStatics,
     Hashable,
     Hashable,
     Hashable,
@@ -126,12 +128,22 @@ export function createAsync<
   TArgs extends GeneratorArgs,
   TLocals extends GeneratorLocals,
   TIntermediates extends GeneratorIntermediates,
+  TStatics extends GeneratorStatics,
   TYield extends Hashable,
   TNext extends Hashable,
   TError extends Hashable,
   TResult extends Hashable,
 >(
-  target: GeneratorStateMachine<TArgs, TLocals, TIntermediates, TYield, TNext, TError, TResult> &
+  target: GeneratorStateMachine<
+    TArgs,
+    TLocals,
+    TIntermediates,
+    TStatics,
+    TYield,
+    TNext,
+    TError,
+    TResult
+  > &
     Hashable,
   args: Array<TArgs[Extract<keyof TArgs, string>]>,
 ): AsyncExpression<TResult> & {
@@ -234,6 +246,7 @@ export interface SuspenseState extends CustomHashable {
   args: Record<string, Hashable>;
   locals: Record<string, Hashable>;
   intermediates: Record<string, Hashable>;
+  statics: Record<string, unknown>;
   prev: number;
   next: number;
   sent: GeneratorContinuation<Hashable, Hashable> | null;

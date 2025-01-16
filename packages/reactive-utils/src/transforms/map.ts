@@ -11,6 +11,7 @@ interface MapGeneratorStateMachine<T extends Hashable, V extends Hashable>
       MapGeneratorArgs<T, V>,
       MapGeneratorLocals<T>,
       MapGeneratorIntermediates,
+      MapGeneratorStatics,
       Expression<T>,
       T,
       Hashable,
@@ -30,12 +31,15 @@ interface MapGeneratorLocals<T extends Hashable> extends Record<string, Hashable
 
 interface MapGeneratorIntermediates extends Record<string, Hashable> {}
 
+interface MapGeneratorStatics extends Record<string, unknown> {}
+
 const MAP_GENERATOR: MapGeneratorStateMachine<any, any> = assignCustomHash(
   hash('@reactive-kit/symbols/transform/map'),
   createGeneratorStateMachine<
     MapGeneratorArgs<Hashable, Hashable>,
     MapGeneratorLocals<Hashable>,
     MapGeneratorIntermediates,
+    MapGeneratorStatics,
     Hashable,
     Hashable,
     Hashable,
@@ -68,6 +72,7 @@ const MAP_GENERATOR: MapGeneratorStateMachine<any, any> = assignCustomHash(
       params: ['expression', 'transform'],
       locals: ['value'],
       intermediates: [],
+      statics: [],
       tryLocsList: null,
     },
   ),

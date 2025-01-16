@@ -209,7 +209,12 @@ export const transformAsyncFunctions: BabelPlugin = (babel): PluginObj<PluginPas
       (generatorFn.node.id = outerFn.parentPath.scope.generateUidIdentifier());
     const generatorBody = generatorFn.get('body');
 
-    const intermediateIdentifiers = rewriteGeneratorIntermediateValueIdentifiers(contextBinding);
+    const [staticDeclarations, intermediateDeclarations] = partition(
+      rewriteGeneratorIntermediateValueIdentifiers(contextBinding, path.scope),
+      ({ isStaticAssignment }) => isStaticAssignment,
+    );
+    const staticIdentifiers = staticDeclarations.map(({ identifier }) => identifier);
+    const intermediateIdentifiers = intermediateDeclarations.map(({ identifier }) => identifier);
     for (const param of functionParamIdentifiers) {
       rewriteGeneratorArgReferences(generatorBody, param, contextParam);
     }
@@ -303,6 +308,12 @@ export const transformAsyncFunctions: BabelPlugin = (babel): PluginObj<PluginPas
                 intermediateIdentifiers.map((identifier) => t.stringLiteral(identifier.name)),
               ),
             ),
+            t.objectProperty(
+              t.identifier('statics'),
+              t.arrayExpression(
+                staticIdentifiers.map((identifier) => t.stringLiteral(identifier.name)),
+              ),
+            ),
             t.objectProperty(t.identifier('tryLocsList'), tryLocsList.node),
           ]),
         ),
@@ -318,36 +329,75 @@ export const transformAsyncFunctions: BabelPlugin = (babel): PluginObj<PluginPas
 
   function rewriteGeneratorIntermediateValueIdentifiers(
     contextBinding: Binding,
-  ): Array<t.Identifier> {
+    scope: Scope,
+  ): {
+    identifier: Array<t.Identifier>;
+    isStaticAssignment: boolean;
+  } {
     const contextReferences = contextBinding.referencePaths;
     const contextMemberReferences = contextReferences
-      .map((contextReference): [NodePath<t.Expression>, NodePath<t.Identifier>] | null => {
-        if (!contextReference.parentPath || !contextReference.parentPath.isMemberExpression())
-          return null;
-        if (contextReference.key !== 'object') return null;
-        const memberExpression = contextReference.parentPath;
-        const object = memberExpression.get('object');
-        const property = memberExpression.get('property');
-        if (!property.isIdentifier()) return null;
-        const isIntermediateReference = /^t\d+$/.test(property.node.name);
-        if (!isIntermediateReference) return null;
-        return [object, property];
-      })
+      .map(
+        (
+          contextReference,
+        ): {
+          object: NodePath<t.Expression>;
+          property: NodePath<t.Identifier>;
+          isStaticAssignment: boolean;
+        } | null => {
+          if (!contextReference.parentPath || !contextReference.parentPath.isMemberExpression())
+            return null;
+          if (contextReference.key !== 'object') return null;
+          const memberExpression = contextReference.parentPath;
+          const object = memberExpression.get('object');
+          const property = memberExpression.get('property');
+          if (!property.isIdentifier()) return null;
+          const isIntermediateReference = /^t\d+$/.test(property.node.name);
+          if (!isIntermediateReference) return null;
+          const assignmentExpression = memberExpression.parentPath?.isAssignmentExpression()
+            ? memberExpression.parentPath
+            : null;
+          const assignmentTarget =
+            assignmentExpression != null &&
+            memberExpression.key === 'left' &&
+            assignmentExpression.node.operator === '='
+              ? assignmentExpression.get('right')
+              : null;
+          const boundAlias =
+            assignmentTarget != null && assignmentTarget.isIdentifier()
+              ? assignmentTarget.scope.getBinding(assignmentTarget.node.name)
+              : null;
+          const isStaticAssignment =
+            boundAlias === undefined ||
+            (boundAlias != null &&
+              boundAlias.scope !== scope &&
+              !containsScope(scope, boundAlias.scope));
+          return { object, property, isStaticAssignment };
+        },
+      )
       .filter(isNonNull);
-    for (const [object] of contextMemberReferences) {
+    const staticPropertyNames = new Set(
+      contextMemberReferences
+        .map(({ property, isStaticAssignment }) => (isStaticAssignment ? property.node.name : null))
+        .filter(isNonNull),
+    );
+    for (const { object, property } of contextMemberReferences) {
       object.replaceWith(
         t.memberExpression(
           t.memberExpression(object.node, t.identifier('state')),
-          t.identifier('intermediates'),
+          t.identifier(staticPropertyNames.has(property.node.name) ? 'statics' : 'intermediates'),
         ),
       );
     }
     return uniqBy(
-      contextMemberReferences.map(([, property]) => property),
+      contextMemberReferences.map(({ property }) => property),
       (property) => property.node.name,
     )
       .map((property) => property.node)
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((identifier) => ({
+        identifier,
+        isStaticAssignment: staticPropertyNames.has(identifier.name),
+      }));
   }
 
   function rewriteGeneratorArgReferences(
@@ -548,6 +598,15 @@ export const transformAsyncFunctions: BabelPlugin = (babel): PluginObj<PluginPas
   }
 };
 
+function containsScope(parent: Scope, child: Scope): boolean {
+  let current: Scope | undefined = child;
+  while (current != null) {
+    if (current === parent) return true;
+    current = current.parent;
+  }
+  return false;
+}
+
 function isNonNull<T>(value: T): value is NonNullable<T> {
   return value != null;
 }
@@ -559,6 +618,21 @@ function zip<L, R>(left: Array<L>, right: Array<R>): Array<[L, R]> {
     results[i] = [left[i], right[i]];
   }
   return results;
+}
+
+function partition<T, V extends T>(
+  items: Array<T>,
+  predicate: (item: T) => item is V,
+): [Array<V>, Array<Exclude<T, V>>];
+function partition<T>(items: Array<T>, predicate: (item: T) => boolean): [Array<T>, Array<T>];
+function partition<T>(items: Array<T>, predicate: (item: T) => boolean): [Array<T>, Array<T>] {
+  const left = new Array<T>();
+  const right = new Array<T>();
+  for (const item of items) {
+    if (predicate(item)) left.push(item);
+    else right.push(item);
+  }
+  return [left, right];
 }
 
 function uniqBy<T>(items: Array<T>, key: (item: T) => unknown): Array<T> {

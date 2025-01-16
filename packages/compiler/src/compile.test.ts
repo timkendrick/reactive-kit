@@ -36,6 +36,7 @@ describe(compile, () => {
         params: ["expression", "transform"],
         locals: ["value"],
         intermediates: [],
+        statics: [],
         tryLocsList: null
       };
       
@@ -96,6 +97,7 @@ describe(compile, () => {
         params: ["expression", "transform"],
         locals: ["value"],
         intermediates: [],
+        statics: [],
         tryLocsList: null
       };
       

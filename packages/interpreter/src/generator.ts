@@ -11,6 +11,7 @@ import {
   GeneratorLocals,
   GeneratorState,
   GeneratorStateMachine,
+  GeneratorStatics,
   ResultExpression,
   SuspenseExpression,
   SuspenseState,
@@ -28,6 +29,7 @@ export function createAsyncState<T>(expression: AsyncExpression<T>): SuspenseSta
       ),
       locals: Object.fromEntries(metadata.locals.map((name) => [name, undefined])),
       intermediates: Object.fromEntries(metadata.intermediates.map((name) => [name, undefined])),
+      statics: Object.fromEntries(metadata.statics.map((name) => [name, undefined])),
       prev: 0,
       next: 0,
     },
@@ -39,10 +41,11 @@ export function updateAsyncState<
   TArgs extends GeneratorArgs,
   TLocals extends GeneratorLocals,
   TIntermediates extends GeneratorIntermediates,
+  TStatics extends GeneratorStatics,
   TNext extends Hashable,
   TError extends Hashable,
 >(
-  state: GeneratorState<TArgs, TLocals, TIntermediates>,
+  state: GeneratorState<TArgs, TLocals, TIntermediates, TStatics>,
   sent: { throw: false; value: TNext } | { throw: true; error: TError },
 ): SuspenseState {
   return assignGeneratorStateHash(
@@ -50,6 +53,7 @@ export function updateAsyncState<
       args: state.args,
       locals: state.locals,
       intermediates: state.intermediates,
+      statics: state.statics,
       prev: state.prev,
       next: state.next,
     },
@@ -66,6 +70,7 @@ export function next<T>(
     args: state.args,
     locals: state.locals,
     intermediates: state.intermediates,
+    statics: state.statics,
     prev: state.prev,
     next: state.next,
   });
@@ -131,13 +136,15 @@ class AsyncGeneratorContext<
   TArgs extends GeneratorArgs,
   TLocals extends GeneratorLocals,
   TIntermediates extends GeneratorIntermediates,
+  TStatics extends GeneratorStatics,
   TYield extends Hashable,
   TNext extends Hashable,
   TError extends Hashable,
   TResult,
-> implements GeneratorContext<TArgs, TLocals, TIntermediates, TYield, TNext, TError, TResult>
+> implements
+    GeneratorContext<TArgs, TLocals, TIntermediates, TStatics, TYield, TNext, TError, TResult>
 {
-  public state: GeneratorState<TArgs, TLocals, TIntermediates>;
+  public state: GeneratorState<TArgs, TLocals, TIntermediates, TStatics>;
   public sent: TNext = undefined as never;
   private arg: unknown | undefined = undefined;
   private method: IteratorMethod = IteratorMethod.Next;
@@ -149,7 +156,7 @@ class AsyncGeneratorContext<
 
   public constructor(
     expression: AsyncExpression<TResult>,
-    state: GeneratorState<TArgs, TLocals, TIntermediates>,
+    state: GeneratorState<TArgs, TLocals, TIntermediates, TStatics>,
   ) {
     const metadata = expression.target[TYPE_GENERATOR];
     // TODO: Avoid recreating try entries on each context creation
@@ -252,6 +259,7 @@ class AsyncGeneratorContext<
           args: this.state.args,
           locals: this.state.locals,
           intermediates: this.state.intermediates,
+          statics: this.state.statics,
           prev: this.state.prev,
           next: this.state.next,
         },
@@ -421,13 +429,32 @@ function tryCatch<
   TArgs extends GeneratorArgs,
   TLocals extends GeneratorLocals,
   TIntermediates extends GeneratorIntermediates,
+  TStatics extends GeneratorStatics,
   TYield extends Hashable,
   TNext extends Hashable,
   TError extends Hashable,
   TResult,
 >(
-  fn: GeneratorStateMachine<TArgs, TLocals, TIntermediates, TYield, TNext, TError, TResult>,
-  context: GeneratorContext<TArgs, TLocals, TIntermediates, TYield, TNext, TError, TResult>,
+  fn: GeneratorStateMachine<
+    TArgs,
+    TLocals,
+    TIntermediates,
+    TStatics,
+    TYield,
+    TNext,
+    TError,
+    TResult
+  >,
+  context: GeneratorContext<
+    TArgs,
+    TLocals,
+    TIntermediates,
+    TStatics,
+    TYield,
+    TNext,
+    TError,
+    TResult
+  >,
 ):
   | { success: true; value: Expression<unknown> | Expression<TResult> | CONTINUE }
   | { success: false; error: unknown } {
@@ -442,13 +469,15 @@ function createMutableGeneratorState<
   TArgs extends GeneratorArgs,
   TLocals extends GeneratorLocals,
   TIntermediates extends GeneratorIntermediates,
+  TStatics extends GeneratorStatics,
 >(
-  state: GeneratorState<TArgs, TLocals, TIntermediates>,
-): GeneratorState<TArgs, TLocals, TIntermediates> {
+  state: GeneratorState<TArgs, TLocals, TIntermediates, TStatics>,
+): GeneratorState<TArgs, TLocals, TIntermediates, TStatics> {
   return {
     args: { ...state.args },
     locals: { ...state.locals },
     intermediates: { ...state.intermediates },
+    statics: { ...state.statics },
     prev: state.prev,
     next: state.next,
   };
@@ -458,10 +487,11 @@ function assignGeneratorStateHash<
   TArgs extends GeneratorArgs,
   TLocals extends GeneratorLocals,
   TIntermediates extends GeneratorIntermediates,
+  TStatics extends GeneratorStatics,
   TNext extends Hashable,
   TError extends Hashable,
 >(
-  state: GeneratorState<TArgs, TLocals, TIntermediates>,
+  state: GeneratorState<TArgs, TLocals, TIntermediates, TStatics>,
   sent: GeneratorContinuation<TNext, TError> | null,
 ): SuspenseState {
   return Object.assign(state, {
