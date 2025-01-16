@@ -28,11 +28,11 @@ export function main(): Promise<void> {
     const { default: expression } = module;
     const runtime = new Runtime(handlers);
     const results = runtime.subscribe(expression);
-    subscribeAsyncIterator(
+    return subscribeAsyncIterator(
       results,
       (value) =>
         new Promise((resolve) =>
-          process.stdout.write(`${formatValue(value)}\n`, () => {
+          process.stdout.write(`${formatResult(value)}\n`, () => {
             resolve();
           }),
         ),
@@ -47,7 +47,7 @@ export function main(): Promise<void> {
   });
 }
 
-function formatValue(value: unknown): string {
+function formatResult(value: unknown): string {
   return JSON.stringify(value, null, 2);
 }
 
