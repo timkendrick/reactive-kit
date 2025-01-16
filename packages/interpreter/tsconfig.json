@@ -1,15 +1,4 @@
 {
   "extends": "../build-config/templates/tsc/tsconfig.json",
-  "include": [
-    "src",
-    "lib.ts",
-    "lib.test.ts",
-    "*.config.ts",
-    "package.json",
-    "../types/src/expression.ts",
-    "../types/src/generator.ts",
-    "../types/src/index.ts",
-    "../types/src/interpreter.ts",
-    "../types/src/type.ts"
-  ]
+  "include": ["src", "lib.ts", "lib.test.ts", "*.config.ts", "package.json"]
 }
