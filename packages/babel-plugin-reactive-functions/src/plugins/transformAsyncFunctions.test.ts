@@ -131,4 +131,54 @@ describe(transformAsyncFunctions, () => {
     });
     expect(actual?.code).toBe(printAst(expected));
   });
+
+  test('allows destructuring awaited values', () => {
+    const input = template.program.ast/* javascript */ `
+      async function foo() {
+        const { bar } = await "bar";
+        return bar;
+      }
+    `;
+    const functionHash = t.bigIntLiteral(String(hashAstNode(input.body[0])));
+    const expected = template.program.ast/* javascript */ `
+      function foo$(_context) {
+        while (1) switch (_context.state.prev = _context.state.next) {
+          case 0:
+            _context.state.next = 2;
+            return _context["yield"]("bar");
+          case 2:
+            _context.state.locals._await$bar = _context.sent;
+            _context.state.locals.bar = _context.state.locals._await$bar.bar;
+            return _context.abrupt("return", _context.state.locals.bar);
+          case 5:
+          case 0x1fffffffffffff:
+          default:
+            return _context.stop();
+        }
+      }
+      foo$[Symbol.for("@reactive-kit/symbols/hash")] = _hash => _hash("@reactive-kit/symbols/type/generator", ${functionHash});
+      foo$[Symbol.for("@reactive-kit/symbols/type")] = Symbol.for("@reactive-kit/symbols/type/generator");
+      foo$[Symbol.for("@reactive-kit/symbols/generator")] = {
+        params: [],
+        locals: ["_await$bar", "bar"],
+        intermediates: [],
+        tryLocsList: null
+      };
+      function foo() {
+        return {
+          [Symbol.for("@reactive-kit/symbols/hash")]: _hash => _hash("@reactive-kit/symbols/expression/type/async", ${functionHash}),
+          [Symbol.for("@reactive-kit/symbols/type")]: Symbol.for("@reactive-kit/symbols/type/expression"),
+          [Symbol.for("@reactive-kit/symbols/expression/type")]: Symbol.for("@reactive-kit/symbols/expression/type/async"),
+          target: foo$,
+          args: []
+        };
+      }
+    `;
+
+    const actual = transform(printAst(input), {
+      plugins: [transformAsyncFunctions],
+      code: true,
+    });
+    expect(actual?.code).toBe(printAst(expected));
+  });
 });

@@ -10,7 +10,9 @@ import {
   PluginObj,
 } from '@reactive-kit/babel-types';
 import { Hash } from '@reactive-kit/hash';
+import destructuringTransform from '@babel/plugin-transform-destructuring';
 import regeneratorTransform from 'regenerator-transform';
+import '../transform-destructuring.d.ts';
 import '../regenerator-transform.d.ts';
 
 import { hashAstNode } from '../utils/ast';
@@ -26,6 +28,9 @@ const SYMBOL_NAME_EXPRESSION_TYPE_ASYNC = '@reactive-kit/symbols/expression/type
 export const transformAsyncFunctions: BabelPlugin = (babel): PluginObj<PluginPass> => {
   const { types: t, traverse } = babel;
   const regenerator = regeneratorTransform(babel);
+  const destructuring = destructuringTransform(babel, {
+    useBuiltIns: true,
+  });
   // HACK: Babel plugin types do not expose the `visitSelf` argument
   type TraverseSelf = typeof traverse extends {
     <S>(
@@ -55,6 +60,21 @@ export const transformAsyncFunctions: BabelPlugin = (babel): PluginObj<PluginPas
         const isAsyncFunction = node.async && !node.generator;
         if (!isAsyncFunction) return;
         const inputHash = hashAstNode(path.node);
+        (traverse as TraverseSelf)(
+          node,
+          destructuring.visitor,
+          scope,
+          {
+            ...state,
+            opts: {
+              async: true,
+              generators: true,
+              asyncGenerators: true,
+            },
+          },
+          path,
+          true,
+        );
         (traverse as TraverseSelf)(
           node,
           regenerator.visitor,

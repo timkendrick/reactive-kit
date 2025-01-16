@@ -32,6 +32,7 @@
     }
   },
   "dependencies": {
+    "@babel/plugin-transform-destructuring": "7.25.9",
     "regenerator-transform": "0.15.2"
   },
   "devDependencies": {

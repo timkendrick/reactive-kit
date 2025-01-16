@@ -6,7 +6,7 @@ import type * as BabelCore from '@babel/core';
 export type * as types from '@babel/types';
 
 export type Babel = typeof BabelCore;
-export type BabelPlugin<S = PluginPass> = (babel: Babel) => PluginObj<S>;
+export type BabelPlugin<S = PluginPass, O = never> = (babel: Babel, options?: O) => PluginObj<S>;
 export type BabelPluginWithOptions<S = PluginPass, T extends PluginOptions = object> = [
   BabelPlugin<S>,
   T,
