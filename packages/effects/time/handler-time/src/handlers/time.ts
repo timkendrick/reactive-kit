@@ -153,19 +153,19 @@ function createTimeTaskFactory(
     let activeInterval: ReturnType<typeof setInterval> | undefined;
     const requestQueue = new Array<AsyncTrigger<Date>['emit']>();
     const resultQueue = new Array<Date>();
+    function onEmit(value: Date): void {
+      const pendingRequest = requestQueue.shift();
+      if (pendingRequest) {
+        pendingRequest(value);
+      } else {
+        resultQueue.push(value);
+      }
+    }
     return {
       next(): Promise<IteratorResult<HandlerResult<TimeHandlerInternalMessage>>> {
         if (!activeInterval) {
           resultQueue.push(new Date());
-          activeInterval = setInterval(() => {
-            const value = new Date();
-            const pendingRequest = requestQueue.shift();
-            if (pendingRequest) {
-              pendingRequest(value);
-            } else {
-              resultQueue.push(value);
-            }
-          }, interval);
+          activeInterval = setInterval(() => onEmit(new Date()), interval);
         }
         const nextValue = (() => {
           const queuedResult = resultQueue.shift();
