@@ -7,8 +7,8 @@ async function main() {
   );
   if (response === null) return 'Loading...';
 
-  const user = await response.json();
-  return `Hello, ${user.name}!`;
+  const { name } = await response.json();
+  return `Hello, ${name}!`;
 }
 
 export default main();

@@ -7,13 +7,13 @@ async function Main() {
   const token = await useTime({ interval: 1000 });
 
   const response = await useFetch({
-    url: 'https://worldtimeapi.org/api/timezone/Etc/UTC',
+    url: 'http://localhost:3000/',
     token: hash(token),
   });
 
-  const payload = await response.json();
+  const timestamp = await response.text();
 
-  return <h1>Current UNIX time: {payload.unixtime}</h1>;
+  return <h1>Current UNIX time: {timestamp}</h1>;
 }
 
 render(<Main />, document.body.getElementsByTagName('main')[0]);

@@ -8,8 +8,8 @@ async function Main() {
   );
   if (response === null) return 'Loading...';
 
-  const user = await response.json();
-  return <h1>Hello, {user.name}!</h1>;
+  const { name } = await response.json();
+  return <h1>Hello, {name}!</h1>;
 }
 
 render(<Main />, document.body.getElementsByTagName('main')[0]);

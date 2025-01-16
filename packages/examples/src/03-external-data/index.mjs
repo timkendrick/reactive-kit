@@ -3,9 +3,9 @@ import { useFetch } from '@reactive-kit/hooks';
 async function main() {
   const response = await useFetch('https://jsonplaceholder.typicode.com/users/1');
 
-  const user = await response.json();
+  const { name } = await response.json();
 
-  return `Hello, ${user.name}!`;
+  return `Hello, ${name}!`;
 }
 
 export default main();
