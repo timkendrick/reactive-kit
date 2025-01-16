@@ -4,7 +4,6 @@ import * as lib from './lib';
 
 test('module exports', () => {
   expect({ ...lib }).toEqual({
-    CATCHER_TYPE_PENDING_FALLBACK: lib.CATCHER_TYPE_PENDING_FALLBACK,
     useEvaluate: lib.useEvaluate,
     useFallback: lib.useFallback,
     useFetch: lib.useFetch,
