@@ -330,10 +330,10 @@ export const transformAsyncFunctions: BabelPlugin = (babel): PluginObj<PluginPas
   function rewriteGeneratorIntermediateValueIdentifiers(
     contextBinding: Binding,
     scope: Scope,
-  ): {
-    identifier: Array<t.Identifier>;
+  ): Array<{
+    identifier: t.Identifier;
     isStaticAssignment: boolean;
-  } {
+  }> {
     const contextReferences = contextBinding.referencePaths;
     const contextMemberReferences = contextReferences
       .map(
