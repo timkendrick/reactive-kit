@@ -7,7 +7,11 @@ async function Main() {
 
   const millis = timestamp.getTime();
 
-  return <div>Current UNIX time: {Math.floor(millis / 1000)}</div>;
+  return (
+    <h1>
+      Current UNIX time: <timestamp>{Math.floor(millis / 1000)}</timestamp>
+    </h1>
+  );
 }
 
 render(<Main />, document.body.getElementsByTagName('main')[0]);

@@ -13,7 +13,11 @@ async function Main() {
 
   const timestamp = Number(await response.text());
 
-  return <h1>Current UNIX time: {timestamp}</h1>;
+  return (
+    <h1>
+      Current UNIX time: <timestamp>{timestamp}</timestamp>
+    </h1>
+  );
 }
 
 render(<Main />, document.body.getElementsByTagName('main')[0]);
