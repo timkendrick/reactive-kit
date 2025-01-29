@@ -2,4 +2,3 @@
 /docs/
 /vitest.config.ts.timestamp-*.mjs
 /packages/*/vitest.config.ts.timestamp-*.mjs
-/packages/effects/*/*/vitest.config.ts.timestamp-*.mjs

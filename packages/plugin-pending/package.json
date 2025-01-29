@@ -1,9 +1,9 @@
 {
   "private": true,
-  "name": "@reactive-kit/handlers",
+  "name": "@reactive-kit/plugin-pending",
   "version": "0.0.1",
   "license": "MIT",
-  "description": "ReactiveKit effect handlers",
+  "description": "ReactiveKit pending plugin",
   "author": "Tim Kendrick <timkendrick@gmail.com>",
   "type": "module",
   "main": "./lib.ts",
@@ -32,10 +32,7 @@
     }
   },
   "devDependencies": {
-    "@reactive-kit/build-config": "workspace:*",
-    "@reactive-kit/plugin-fetch": "workspace:*",
-    "@reactive-kit/plugin-time": "workspace:*",
-    "@reactive-kit/runtime": "workspace:*"
+    "@reactive-kit/build-config": "workspace:*"
   },
   "peerDependencies": {
     "eslint": "^8",
@@ -43,5 +40,14 @@
     "typescript": "^5",
     "vite": "^6",
     "vitest": "^2"
+  },
+  "dependencies": {
+    "@reactive-kit/actor": "workspace:*",
+    "@reactive-kit/actor-utils": "workspace:*",
+    "@reactive-kit/hash": "workspace:*",
+    "@reactive-kit/reactive-utils": "workspace:*",
+    "@reactive-kit/runtime-messages": "workspace:*",
+    "@reactive-kit/types": "workspace:*",
+    "@reactive-kit/utils": "workspace:*"
   }
 }

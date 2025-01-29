@@ -468,417 +468,6 @@ importers:
         specifier: workspace:*
         version: link:../utils
 
-  packages/effects/evaluate/effect-evaluate:
-    dependencies:
-      eslint:
-        specifier: ^8
-        version: 8.57.1
-      typedoc:
-        specifier: ^0.27
-        version: 0.27.5(typescript@5.7.2)
-      typescript:
-        specifier: ^5
-        version: 5.7.2
-      vite:
-        specifier: ^6
-        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
-      vitest:
-        specifier: ^2
-        version: 2.1.8(@types/node@20.5.9)
-    devDependencies:
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../../../build-config
-      '@reactive-kit/hash':
-        specifier: workspace:*
-        version: link:../../../hash
-      '@reactive-kit/interpreter':
-        specifier: workspace:*
-        version: link:../../../interpreter
-      '@reactive-kit/types':
-        specifier: workspace:*
-        version: link:../../../types
-
-  packages/effects/evaluate/handler-evaluate:
-    dependencies:
-      eslint:
-        specifier: ^8
-        version: 8.57.1
-      typedoc:
-        specifier: ^0.27
-        version: 0.27.5(typescript@5.7.2)
-      typescript:
-        specifier: ^5
-        version: 5.7.2
-      vite:
-        specifier: ^6
-        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
-      vitest:
-        specifier: ^2
-        version: 2.1.8(@types/node@20.5.9)
-    devDependencies:
-      '@reactive-kit/actor':
-        specifier: workspace:*
-        version: link:../../../actor
-      '@reactive-kit/actor-utils':
-        specifier: workspace:*
-        version: link:../../../actor-utils
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../../../build-config
-      '@reactive-kit/effect-evaluate':
-        specifier: workspace:*
-        version: link:../effect-evaluate
-      '@reactive-kit/hash':
-        specifier: workspace:*
-        version: link:../../../hash
-      '@reactive-kit/interpreter':
-        specifier: workspace:*
-        version: link:../../../interpreter
-      '@reactive-kit/runtime-messages':
-        specifier: workspace:*
-        version: link:../../../runtime-messages
-      '@reactive-kit/types':
-        specifier: workspace:*
-        version: link:../../../types
-      '@reactive-kit/utils':
-        specifier: workspace:*
-        version: link:../../../utils
-
-  packages/effects/evaluate/hook-evaluate:
-    dependencies:
-      eslint:
-        specifier: ^8
-        version: 8.57.1
-      typedoc:
-        specifier: ^0.27
-        version: 0.27.5(typescript@5.7.2)
-      typescript:
-        specifier: ^5
-        version: 5.7.2
-      vite:
-        specifier: ^6
-        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
-      vitest:
-        specifier: ^2
-        version: 2.1.8(@types/node@20.5.9)
-    devDependencies:
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../../../build-config
-      '@reactive-kit/effect-evaluate':
-        specifier: workspace:*
-        version: link:../effect-evaluate
-      '@reactive-kit/hash':
-        specifier: workspace:*
-        version: link:../../../hash
-      '@reactive-kit/interpreter':
-        specifier: workspace:*
-        version: link:../../../interpreter
-      '@reactive-kit/reactive-utils':
-        specifier: workspace:*
-        version: link:../../../reactive-utils
-      '@reactive-kit/types':
-        specifier: workspace:*
-        version: link:../../../types
-
-  packages/effects/fetch/effect-fetch:
-    dependencies:
-      eslint:
-        specifier: ^8
-        version: 8.57.1
-      typedoc:
-        specifier: ^0.27
-        version: 0.27.5(typescript@5.7.2)
-      typescript:
-        specifier: ^5
-        version: 5.7.2
-      vite:
-        specifier: ^6
-        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
-      vitest:
-        specifier: ^2
-        version: 2.1.8(@types/node@20.5.9)
-    devDependencies:
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../../../build-config
-      '@reactive-kit/hash':
-        specifier: workspace:*
-        version: link:../../../hash
-      '@reactive-kit/types':
-        specifier: workspace:*
-        version: link:../../../types
-      '@reactive-kit/utils':
-        specifier: workspace:*
-        version: link:../../../utils
-
-  packages/effects/fetch/handler-fetch:
-    dependencies:
-      eslint:
-        specifier: ^8
-        version: 8.57.1
-      typedoc:
-        specifier: ^0.27
-        version: 0.27.5(typescript@5.7.2)
-      typescript:
-        specifier: ^5
-        version: 5.7.2
-      vite:
-        specifier: ^6
-        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
-      vitest:
-        specifier: ^2
-        version: 2.1.8(@types/node@20.5.9)
-    devDependencies:
-      '@reactive-kit/actor':
-        specifier: workspace:*
-        version: link:../../../actor
-      '@reactive-kit/actor-utils':
-        specifier: workspace:*
-        version: link:../../../actor-utils
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../../../build-config
-      '@reactive-kit/effect-fetch':
-        specifier: workspace:*
-        version: link:../effect-fetch
-      '@reactive-kit/hash':
-        specifier: workspace:*
-        version: link:../../../hash
-      '@reactive-kit/runtime-messages':
-        specifier: workspace:*
-        version: link:../../../runtime-messages
-      '@reactive-kit/types':
-        specifier: workspace:*
-        version: link:../../../types
-      '@reactive-kit/utils':
-        specifier: workspace:*
-        version: link:../../../utils
-
-  packages/effects/fetch/hook-fetch:
-    dependencies:
-      eslint:
-        specifier: ^8
-        version: 8.57.1
-      typedoc:
-        specifier: ^0.27
-        version: 0.27.5(typescript@5.7.2)
-      typescript:
-        specifier: ^5
-        version: 5.7.2
-      vite:
-        specifier: ^6
-        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
-      vitest:
-        specifier: ^2
-        version: 2.1.8(@types/node@20.5.9)
-    devDependencies:
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../../../build-config
-      '@reactive-kit/effect-fetch':
-        specifier: workspace:*
-        version: link:../effect-fetch
-      '@reactive-kit/hash':
-        specifier: workspace:*
-        version: link:../../../hash
-      '@reactive-kit/reactive-utils':
-        specifier: workspace:*
-        version: link:../../../reactive-utils
-      '@reactive-kit/types':
-        specifier: workspace:*
-        version: link:../../../types
-      '@reactive-kit/utils':
-        specifier: workspace:*
-        version: link:../../../utils
-
-  packages/effects/pending/hook-pending:
-    dependencies:
-      eslint:
-        specifier: ^8
-        version: 8.57.1
-      typedoc:
-        specifier: ^0.27
-        version: 0.27.5(typescript@5.7.2)
-      typescript:
-        specifier: ^5
-        version: 5.7.2
-      vite:
-        specifier: ^6
-        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
-      vitest:
-        specifier: ^2
-        version: 2.1.8(@types/node@20.5.9)
-    devDependencies:
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../../../build-config
-      '@reactive-kit/reactive-utils':
-        specifier: workspace:*
-        version: link:../../../reactive-utils
-      '@reactive-kit/types':
-        specifier: workspace:*
-        version: link:../../../types
-
-  packages/effects/state/effect-state:
-    dependencies:
-      eslint:
-        specifier: ^8
-        version: 8.57.1
-      typedoc:
-        specifier: ^0.27
-        version: 0.27.5(typescript@5.7.2)
-      typescript:
-        specifier: ^5
-        version: 5.7.2
-      vite:
-        specifier: ^6
-        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
-      vitest:
-        specifier: ^2
-        version: 2.1.8(@types/node@20.5.9)
-    devDependencies:
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../../../build-config
-      '@reactive-kit/hash':
-        specifier: workspace:*
-        version: link:../../../hash
-      '@reactive-kit/types':
-        specifier: workspace:*
-        version: link:../../../types
-
-  packages/effects/state/hook-state:
-    dependencies:
-      eslint:
-        specifier: ^8
-        version: 8.57.1
-      typedoc:
-        specifier: ^0.27
-        version: 0.27.5(typescript@5.7.2)
-      typescript:
-        specifier: ^5
-        version: 5.7.2
-      vite:
-        specifier: ^6
-        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
-      vitest:
-        specifier: ^2
-        version: 2.1.8(@types/node@20.5.9)
-    devDependencies:
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../../../build-config
-      '@reactive-kit/effect-state':
-        specifier: workspace:*
-        version: link:../effect-state
-      '@reactive-kit/hash':
-        specifier: workspace:*
-        version: link:../../../hash
-      '@reactive-kit/reactive-utils':
-        specifier: workspace:*
-        version: link:../../../reactive-utils
-      '@reactive-kit/types':
-        specifier: workspace:*
-        version: link:../../../types
-
-  packages/effects/time/effect-time:
-    dependencies:
-      eslint:
-        specifier: ^8
-        version: 8.57.1
-      typedoc:
-        specifier: ^0.27
-        version: 0.27.5(typescript@5.7.2)
-      typescript:
-        specifier: ^5
-        version: 5.7.2
-      vite:
-        specifier: ^6
-        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
-      vitest:
-        specifier: ^2
-        version: 2.1.8(@types/node@20.5.9)
-    devDependencies:
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../../../build-config
-      '@reactive-kit/types':
-        specifier: workspace:*
-        version: link:../../../types
-
-  packages/effects/time/handler-time:
-    dependencies:
-      eslint:
-        specifier: ^8
-        version: 8.57.1
-      typedoc:
-        specifier: ^0.27
-        version: 0.27.5(typescript@5.7.2)
-      typescript:
-        specifier: ^5
-        version: 5.7.2
-      vite:
-        specifier: ^6
-        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
-      vitest:
-        specifier: ^2
-        version: 2.1.8(@types/node@20.5.9)
-    devDependencies:
-      '@reactive-kit/actor':
-        specifier: workspace:*
-        version: link:../../../actor
-      '@reactive-kit/actor-utils':
-        specifier: workspace:*
-        version: link:../../../actor-utils
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../../../build-config
-      '@reactive-kit/effect-time':
-        specifier: workspace:*
-        version: link:../effect-time
-      '@reactive-kit/runtime-messages':
-        specifier: workspace:*
-        version: link:../../../runtime-messages
-      '@reactive-kit/types':
-        specifier: workspace:*
-        version: link:../../../types
-      '@reactive-kit/utils':
-        specifier: workspace:*
-        version: link:../../../utils
-
-  packages/effects/time/hook-time:
-    dependencies:
-      eslint:
-        specifier: ^8
-        version: 8.57.1
-      typedoc:
-        specifier: ^0.27
-        version: 0.27.5(typescript@5.7.2)
-      typescript:
-        specifier: ^5
-        version: 5.7.2
-      vite:
-        specifier: ^6
-        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
-      vitest:
-        specifier: ^2
-        version: 2.1.8(@types/node@20.5.9)
-    devDependencies:
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../../../build-config
-      '@reactive-kit/effect-time':
-        specifier: workspace:*
-        version: link:../effect-time
-      '@reactive-kit/reactive-utils':
-        specifier: workspace:*
-        version: link:../../../reactive-utils
-      '@reactive-kit/types':
-        specifier: workspace:*
-        version: link:../../../types
-
   packages/examples:
     dependencies:
       eslint:
@@ -937,12 +526,12 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
-      '@reactive-kit/handler-fetch':
+      '@reactive-kit/plugin-fetch':
         specifier: workspace:*
-        version: link:../effects/fetch/handler-fetch
-      '@reactive-kit/handler-time':
+        version: link:../plugin-fetch
+      '@reactive-kit/plugin-time':
         specifier: workspace:*
-        version: link:../effects/time/handler-time
+        version: link:../plugin-time
       '@reactive-kit/runtime':
         specifier: workspace:*
         version: link:../runtime
@@ -990,21 +579,21 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
-      '@reactive-kit/hook-evaluate':
+      '@reactive-kit/plugin-evaluate':
         specifier: workspace:*
-        version: link:../effects/evaluate/hook-evaluate
-      '@reactive-kit/hook-fetch':
+        version: link:../plugin-evaluate
+      '@reactive-kit/plugin-fetch':
         specifier: workspace:*
-        version: link:../effects/fetch/hook-fetch
-      '@reactive-kit/hook-pending':
+        version: link:../plugin-fetch
+      '@reactive-kit/plugin-pending':
         specifier: workspace:*
-        version: link:../effects/pending/hook-pending
-      '@reactive-kit/hook-state':
+        version: link:../plugin-pending
+      '@reactive-kit/plugin-state':
         specifier: workspace:*
-        version: link:../effects/state/hook-state
-      '@reactive-kit/hook-time':
+        version: link:../plugin-state
+      '@reactive-kit/plugin-time':
         specifier: workspace:*
-        version: link:../effects/time/hook-time
+        version: link:../plugin-time
 
   packages/interpreter:
     dependencies:
@@ -1065,6 +654,224 @@ importers:
         specifier: workspace:*
         version: link:../compiler
 
+  packages/plugin-evaluate:
+    dependencies:
+      '@reactive-kit/actor':
+        specifier: workspace:*
+        version: link:../actor
+      '@reactive-kit/actor-utils':
+        specifier: workspace:*
+        version: link:../actor-utils
+      '@reactive-kit/hash':
+        specifier: workspace:*
+        version: link:../hash
+      '@reactive-kit/interpreter':
+        specifier: workspace:*
+        version: link:../interpreter
+      '@reactive-kit/reactive-utils':
+        specifier: workspace:*
+        version: link:../reactive-utils
+      '@reactive-kit/runtime-messages':
+        specifier: workspace:*
+        version: link:../runtime-messages
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../types
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.27
+        version: 0.27.5(typescript@5.7.2)
+      typescript:
+        specifier: ^5
+        version: 5.7.2
+      vite:
+        specifier: ^6
+        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
+      vitest:
+        specifier: ^2
+        version: 2.1.8(@types/node@20.5.9)
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+
+  packages/plugin-fetch:
+    dependencies:
+      '@reactive-kit/actor':
+        specifier: workspace:*
+        version: link:../actor
+      '@reactive-kit/actor-utils':
+        specifier: workspace:*
+        version: link:../actor-utils
+      '@reactive-kit/hash':
+        specifier: workspace:*
+        version: link:../hash
+      '@reactive-kit/reactive-utils':
+        specifier: workspace:*
+        version: link:../reactive-utils
+      '@reactive-kit/runtime-messages':
+        specifier: workspace:*
+        version: link:../runtime-messages
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../types
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.27
+        version: 0.27.5(typescript@5.7.2)
+      typescript:
+        specifier: ^5
+        version: 5.7.2
+      vite:
+        specifier: ^6
+        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
+      vitest:
+        specifier: ^2
+        version: 2.1.8(@types/node@20.5.9)
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+
+  packages/plugin-pending:
+    dependencies:
+      '@reactive-kit/actor':
+        specifier: workspace:*
+        version: link:../actor
+      '@reactive-kit/actor-utils':
+        specifier: workspace:*
+        version: link:../actor-utils
+      '@reactive-kit/hash':
+        specifier: workspace:*
+        version: link:../hash
+      '@reactive-kit/reactive-utils':
+        specifier: workspace:*
+        version: link:../reactive-utils
+      '@reactive-kit/runtime-messages':
+        specifier: workspace:*
+        version: link:../runtime-messages
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../types
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.27
+        version: 0.27.5(typescript@5.7.2)
+      typescript:
+        specifier: ^5
+        version: 5.7.2
+      vite:
+        specifier: ^6
+        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
+      vitest:
+        specifier: ^2
+        version: 2.1.8(@types/node@20.5.9)
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+
+  packages/plugin-state:
+    dependencies:
+      '@reactive-kit/actor':
+        specifier: workspace:*
+        version: link:../actor
+      '@reactive-kit/actor-utils':
+        specifier: workspace:*
+        version: link:../actor-utils
+      '@reactive-kit/hash':
+        specifier: workspace:*
+        version: link:../hash
+      '@reactive-kit/reactive-utils':
+        specifier: workspace:*
+        version: link:../reactive-utils
+      '@reactive-kit/runtime-messages':
+        specifier: workspace:*
+        version: link:../runtime-messages
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../types
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.27
+        version: 0.27.5(typescript@5.7.2)
+      typescript:
+        specifier: ^5
+        version: 5.7.2
+      vite:
+        specifier: ^6
+        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
+      vitest:
+        specifier: ^2
+        version: 2.1.8(@types/node@20.5.9)
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+
+  packages/plugin-time:
+    dependencies:
+      '@reactive-kit/actor':
+        specifier: workspace:*
+        version: link:../actor
+      '@reactive-kit/actor-utils':
+        specifier: workspace:*
+        version: link:../actor-utils
+      '@reactive-kit/hash':
+        specifier: workspace:*
+        version: link:../hash
+      '@reactive-kit/reactive-utils':
+        specifier: workspace:*
+        version: link:../reactive-utils
+      '@reactive-kit/runtime-messages':
+        specifier: workspace:*
+        version: link:../runtime-messages
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../types
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
+      eslint:
+        specifier: ^8
+        version: 8.48.0
+      typedoc:
+        specifier: ^0.27
+        version: 0.27.5(typescript@5.7.2)
+      typescript:
+        specifier: ^5
+        version: 5.7.2
+      vite:
+        specifier: ^6
+        version: 6.0.5(@types/node@20.5.9)(yaml@2.6.1)
+      vitest:
+        specifier: ^2
+        version: 2.1.8(@types/node@20.5.9)
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+
   packages/reactive-utils:
     dependencies:
       eslint:
@@ -1117,18 +924,15 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
-      '@reactive-kit/effect-evaluate':
-        specifier: workspace:*
-        version: link:../effects/evaluate/effect-evaluate
-      '@reactive-kit/handler-evaluate':
-        specifier: workspace:*
-        version: link:../effects/evaluate/handler-evaluate
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../hash
       '@reactive-kit/interpreter':
         specifier: workspace:*
         version: link:../interpreter
+      '@reactive-kit/plugin-evaluate':
+        specifier: workspace:*
+        version: link:../plugin-evaluate
       '@reactive-kit/runtime-messages':
         specifier: workspace:*
         version: link:../runtime-messages

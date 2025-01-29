@@ -1,11 +1,12 @@
 import type { Actor, ActorHandle } from '@reactive-kit/actor';
 import { BroadcastActor } from '@reactive-kit/actor-utils';
-import { createEvaluateEffect, EFFECT_TYPE_EVALUATE } from '@reactive-kit/effect-evaluate';
 import {
+  createEvaluateEffect,
+  EFFECT_TYPE_EVALUATE,
   EvaluateHandler,
   type ReadyEvaluationResult,
   type StateValues,
-} from '@reactive-kit/handler-evaluate';
+} from '@reactive-kit/plugin-evaluate';
 import { type Hashable } from '@reactive-kit/hash';
 import {
   MESSAGE_EMIT_EFFECT_VALUES,
