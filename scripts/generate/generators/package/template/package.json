@@ -1,0 +1,44 @@
+{
+  "private": true,
+  "name": "@reactive-kit/{{packageName}}",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "{{description}}",
+  "author": "Tim Kendrick <timkendrick@gmail.com>",
+  "type": "module",
+  "main": "./lib.ts",
+  "module": "./lib.ts",
+  "scripts": {
+    "build": "pnpm run build:lib && pnpm run build:docs && pnpm run build:pkg",
+    "build:lib": "vite build",
+    "build:docs": "typedoc",
+    "build:pkg": "pkg . ./dist/package.json",
+    "lint": "pnpm run '/^lint:.*/'",
+    "lint:eslint": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts .",
+    "lint:typescript": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
+  },
+  "pkg": {
+    "type": "module",
+    "main": "./lib/lib.cjs",
+    "module": "/lib/lib.js",
+    "types": "./lib.d.ts",
+    "exports": {
+      ".": {
+        "import": "./lib/lib.js",
+        "require": "./lib/lib.cjs"
+      }
+    }
+  },
+  "devDependencies": {
+    "@reactive-kit/build-config": "workspace:*"
+  },
+  "peerDependencies": {
+    "eslint": "^8",
+    "typedoc": "^0.27",
+    "typescript": "^5",
+    "vite": "^6",
+    "vitest": "^2"
+  }
+}

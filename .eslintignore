@@ -1,3 +1,4 @@
+/scripts/generate/generators/*/template/
 /coverage/
 /docs/
 /packages/*/dist/
