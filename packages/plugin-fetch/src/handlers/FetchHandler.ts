@@ -1,30 +1,29 @@
 /// <reference lib="dom" />
 import {
   HandlerAction,
-  type Actor,
   type ActorHandle,
+  type AsyncTaskFactory,
   type AsyncTaskHandle,
   type HandlerContext,
-  type HandlerResult,
-  AsyncTaskFactory,
 } from '@reactive-kit/actor';
 import { fromCancelablePromiseFactory } from '@reactive-kit/actor-utils';
 import {
-  createEmitEffectValuesMessage,
-  getTypedEffects,
-  isSubscribeEffectsMessage,
-  isUnsubscribeEffectsMessage,
-  MESSAGE_SUBSCRIBE_EFFECTS,
-  MESSAGE_UNSUBSCRIBE_EFFECTS,
-  type EmitEffectValuesMessage,
-  type Message,
-  type SubscribeEffectsMessage,
-  type UnsubscribeEffectsMessage,
-} from '@reactive-kit/runtime-messages';
-import { createPending, createResult, EffectId, PendingExpression } from '@reactive-kit/types';
-import { nonNull, generateUid } from '@reactive-kit/utils';
-import { CustomHashable, hash, HASH, Hash, HashableError } from '@reactive-kit/hash';
+  EffectHandler,
+  EffectHandlerOutputMessage,
+  type EffectHandlerInput,
+  type EffectHandlerOutput,
+} from '@reactive-kit/handler-utils';
+import { hash, HASH, HashableError, type CustomHashable, type Hash } from '@reactive-kit/hash';
+import type { Message } from '@reactive-kit/runtime-messages';
+import { createResult, type Expression, type EffectId } from '@reactive-kit/types';
+import { generateUid } from '@reactive-kit/utils';
 import { EFFECT_TYPE_FETCH, type FetchEffect } from '../effects';
+import {
+  createFetchHandlerResponseMessage,
+  isFetchHandlerResponseMessage,
+  type FetchHandlerResponseMessage,
+  type TaskId,
+} from '../messages';
 import type { FetchHeaders, FetchRequest, FetchResponse, FetchResponseState } from '../types';
 
 class FetchResponseError extends Error implements CustomHashable {
@@ -39,20 +38,7 @@ class FetchResponseError extends Error implements CustomHashable {
   }
 }
 
-import {
-  createFetchHandlerResponseMessage,
-  isFetchHandlerResponseMessage,
-  MESSAGE_FETCH_HANDLER_RESPONSE,
-  type FetchHandlerResponseMessage,
-  type TaskId,
-} from '../messages';
-
-export type FetchHandlerInputMessage = SubscribeEffectsMessage | UnsubscribeEffectsMessage;
-export type FetchHandlerOutputMessage = EmitEffectValuesMessage;
-
 type FetchHandlerInternalMessage = FetchHandlerResponseMessage;
-type FetchHandlerInput = FetchHandlerInputMessage | FetchHandlerInternalMessage;
-type FetchHandlerOutput = HandlerResult<FetchHandlerOutputMessage | FetchHandlerInternalMessage>;
 
 interface FetchSubscription {
   handle: AsyncTaskHandle;
@@ -60,113 +46,73 @@ interface FetchSubscription {
   controller: AbortController;
 }
 
-export class FetchHandler implements Actor<Message<unknown>> {
-  private readonly next: ActorHandle<FetchHandlerOutputMessage>;
+export class FetchHandler extends EffectHandler<FetchEffect, FetchHandlerInternalMessage> {
   private subscriptions: Map<EffectId, TaskId> = new Map();
   private requests: Map<TaskId, FetchSubscription> = new Map();
   private nextTaskId: TaskId = 1;
 
-  constructor(next: ActorHandle<FetchHandlerOutputMessage>) {
-    this.next = next;
+  public constructor(next: ActorHandle<EffectHandlerOutputMessage>) {
+    super(EFFECT_TYPE_FETCH, next);
   }
 
-  public handle(
-    message: Message<unknown>,
-    context: HandlerContext<FetchHandlerInput>,
-  ): FetchHandlerOutput {
-    if (!this.accept(message)) return null;
-    switch (message.type) {
-      case MESSAGE_SUBSCRIBE_EFFECTS:
-        return this.handleSubscribeEffects(message, context);
-      case MESSAGE_UNSUBSCRIBE_EFFECTS:
-        return this.handleUnsubscribeEffects(message, context);
-      case MESSAGE_FETCH_HANDLER_RESPONSE:
-        return this.handleFetchHandlerResponse(message, context);
-    }
+  protected override getInitialValue(effect: FetchEffect): Expression<any> | null {
+    return null;
   }
 
-  private accept(message: Message<unknown>): message is FetchHandlerInput {
-    if (isSubscribeEffectsMessage(message)) return message.effects.has(EFFECT_TYPE_FETCH);
-    if (isUnsubscribeEffectsMessage(message)) return message.effects.has(EFFECT_TYPE_FETCH);
+  protected onSubscribe(
+    effect: FetchEffect,
+    context: HandlerContext<EffectHandlerInput<FetchHandlerInternalMessage>>,
+  ): EffectHandlerOutput<FetchHandlerInternalMessage> {
+    const stateToken = effect.id;
+    if (this.subscriptions.has(stateToken)) return null;
+    const taskId = ++this.nextTaskId;
+    this.subscriptions.set(stateToken, taskId);
+    const controller = new AbortController();
+    const factory = createFetchTaskFactory(taskId, effect, controller, context.self());
+    const handle = context.spawnAsync(factory);
+    this.requests.set(taskId, {
+      handle,
+      effect,
+      controller,
+    });
+    return [HandlerAction.Spawn(handle)];
+  }
+
+  protected onUnsubscribe(
+    effect: FetchEffect,
+    context: HandlerContext<EffectHandlerInput<FetchHandlerInternalMessage>>,
+  ): EffectHandlerOutput<FetchHandlerInternalMessage> {
+    const stateToken = effect.id;
+    const taskId = this.subscriptions.get(stateToken);
+    if (taskId === undefined) return null;
+    this.subscriptions.delete(stateToken);
+    const requestState = this.requests.get(taskId);
+    if (!requestState) return null;
+    this.requests.delete(taskId);
+    const { handle, controller } = requestState;
+    controller.abort();
+    return [HandlerAction.Kill(handle)];
+  }
+
+  protected acceptInternal(message: Message<unknown>): message is FetchHandlerInternalMessage {
     if (isFetchHandlerResponseMessage(message)) return true;
     return false;
   }
 
-  private handleSubscribeEffects(
-    message: SubscribeEffectsMessage,
-    context: HandlerContext<FetchHandlerInput>,
-  ): FetchHandlerOutput {
-    const { effects } = message;
-    const typedEffects = getTypedEffects<FetchEffect>(EFFECT_TYPE_FETCH, effects);
-    if (!typedEffects || typedEffects.length === 0) return null;
-    const self = context.self();
-    const pendingValues = new Map(
-      typedEffects
-        .map((effect): [EffectId, PendingExpression] | null => {
-          const stateToken = effect.id;
-          if (this.subscriptions.has(stateToken)) return null;
-          return [stateToken, createPending()];
-        })
-        .filter(nonNull),
-    );
-    const actions = typedEffects
-      .map((effect) => {
-        const stateToken = effect.id;
-        if (this.subscriptions.has(stateToken)) return null;
-        const taskId = ++this.nextTaskId;
-        this.subscriptions.set(stateToken, taskId);
-        const controller = new AbortController();
-        const factory = createFetchTaskFactory(taskId, effect, controller, self);
-        const handle = context.spawnAsync(factory);
-        this.requests.set(taskId, {
-          handle,
-          effect,
-          controller,
-        });
-        return HandlerAction.Spawn(handle);
-      })
-      .filter(nonNull);
-    const pendingPlaceholdersMessage =
-      pendingValues.size === 0
-        ? null
-        : createEmitEffectValuesMessage(new Map([[EFFECT_TYPE_FETCH, pendingValues]]));
-    const pendingPlaceholderActions =
-      pendingPlaceholdersMessage != null
-        ? [HandlerAction.Send(this.next, pendingPlaceholdersMessage)]
-        : [];
-    const combinedActions = [...pendingPlaceholderActions, ...actions];
-    return combinedActions.length === 0 ? null : combinedActions;
-  }
-
-  private handleUnsubscribeEffects(
-    message: UnsubscribeEffectsMessage,
-    context: HandlerContext<FetchHandlerInput>,
-  ): FetchHandlerOutput {
-    const { effects } = message;
-    const typedEffects = getTypedEffects<FetchEffect>(EFFECT_TYPE_FETCH, effects);
-    if (!typedEffects || typedEffects.length === 0) return null;
-    const actions = typedEffects
-      .map((effect) => {
-        const stateToken = effect.id;
-        const taskId = this.subscriptions.get(stateToken);
-        if (taskId === undefined) return null;
-        this.subscriptions.delete(stateToken);
-        const requestState = this.requests.get(taskId);
-        if (!requestState) return null;
-        this.requests.delete(taskId);
-        const { handle, controller } = requestState;
-        controller.abort();
-        return HandlerAction.Kill(handle);
-      })
-      .filter(nonNull);
-    if (actions.length === 0) return null;
-    return actions;
+  protected handleInternal(
+    message: Message<unknown>,
+    context: HandlerContext<EffectHandlerInput<FetchHandlerInternalMessage>>,
+  ): EffectHandlerOutput<FetchHandlerInternalMessage> {
+    if (isFetchHandlerResponseMessage(message)) {
+      return this.handleFetchHandlerResponse(message, context);
+    }
+    return null;
   }
 
   private handleFetchHandlerResponse(
     message: FetchHandlerResponseMessage,
-    context: HandlerContext<FetchHandlerInput>,
-  ): FetchHandlerOutput {
+    context: HandlerContext<EffectHandlerInput<FetchHandlerInternalMessage>>,
+  ): EffectHandlerOutput<FetchHandlerInternalMessage> {
     const { taskId, response } = message;
     const subscription = this.requests.get(taskId);
     if (!subscription) return null;
@@ -175,9 +121,7 @@ export class FetchHandler implements Actor<Message<unknown>> {
     this.requests.delete(taskId);
     this.subscriptions.delete(stateToken);
     const effectValue = createResult(response);
-    const effectValues = new Map([[EFFECT_TYPE_FETCH, new Map([[stateToken, effectValue]])]]);
-    const emitMessage = createEmitEffectValuesMessage(effectValues);
-    const action = HandlerAction.Send(this.next, emitMessage);
+    const action = this.emit(new Map([[stateToken, effectValue]]));
     return [action];
   }
 }

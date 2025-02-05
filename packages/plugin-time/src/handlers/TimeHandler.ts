@@ -1,6 +1,5 @@
 import {
   HandlerAction,
-  type Actor,
   type ActorHandle,
   type AsyncTaskHandle,
   type HandlerContext,
@@ -9,136 +8,99 @@ import {
 } from '@reactive-kit/actor';
 import { fromAsyncIteratorFactory } from '@reactive-kit/actor-utils';
 import {
-  createEmitEffectValuesMessage,
-  getTypedEffects,
-  isSubscribeEffectsMessage,
-  isUnsubscribeEffectsMessage,
-  MESSAGE_SUBSCRIBE_EFFECTS,
-  MESSAGE_UNSUBSCRIBE_EFFECTS,
-  type EmitEffectValuesMessage,
-  type Message,
-  type SubscribeEffectsMessage,
-  type UnsubscribeEffectsMessage,
-} from '@reactive-kit/runtime-messages';
-import { createResult, type EffectId } from '@reactive-kit/types';
-import { createAsyncTrigger, nonNull, type AsyncTrigger } from '@reactive-kit/utils';
+  EffectHandler,
+  EffectHandlerInput,
+  EffectHandlerOutput,
+  EffectHandlerOutputMessage,
+} from '@reactive-kit/handler-utils';
+import { type Message } from '@reactive-kit/runtime-messages';
+import { createResult, type Expression, type EffectId } from '@reactive-kit/types';
+import { createAsyncTrigger, type AsyncTrigger } from '@reactive-kit/utils';
 import { EFFECT_TYPE_TIME, type TimeEffect } from '../effects';
 import {
-  MESSAGE_TIME_HANDLER_EMIT,
   createTimeHandlerEmitMessage,
   isTimeHandlerEmitMessage,
   type TaskId,
   type TimeHandlerEmitMessage,
 } from '../messages';
 
-export type TimeHandlerInputMessage = SubscribeEffectsMessage | UnsubscribeEffectsMessage;
-export type TimeHandlerOutputMessage = EmitEffectValuesMessage;
-
-type TimeHandlerInternalMessage = TimeHandlerEmitMessage;
-type TimeHandlerInput = TimeHandlerInputMessage | TimeHandlerInternalMessage;
-type TimeHandlerOutput = HandlerResult<TimeHandlerOutputMessage | TimeHandlerInternalMessage>;
-
 interface TimeSubscription {
   handle: AsyncTaskHandle;
   effect: TimeEffect;
 }
 
-export class TimeHandler implements Actor<Message<unknown>> {
-  private readonly next: ActorHandle<TimeHandlerOutputMessage>;
+type TimeHandlerInternalMessage = TimeHandlerEmitMessage;
+
+export class TimeHandler extends EffectHandler<TimeEffect, TimeHandlerInternalMessage> {
   private subscriptions: Map<EffectId, TaskId> = new Map();
   private requests: Map<TaskId, TimeSubscription> = new Map();
   private nextTaskId: TaskId = 1;
 
-  constructor(next: ActorHandle<TimeHandlerOutputMessage>) {
-    this.next = next;
+  public constructor(next: ActorHandle<EffectHandlerOutputMessage>) {
+    super(EFFECT_TYPE_TIME, next);
   }
 
-  public handle(
+  protected override getInitialValue(effect: TimeEffect): Expression<any> | null  {
+    return null;
+  }
+
+  protected override onSubscribe(
+    effect: TimeEffect,
+    context: HandlerContext<EffectHandlerInput<TimeHandlerInternalMessage>>,
+  ): EffectHandlerOutput<TimeHandlerInternalMessage> {
+    const stateToken = effect.id;
+    if (this.subscriptions.has(stateToken)) return null;
+    const self = context.self();
+    const taskId = ++this.nextTaskId;
+    this.subscriptions.set(stateToken, taskId);
+    const factory = createTimeTaskFactory(taskId, effect, self);
+    const handle = context.spawnAsync(factory);
+    this.requests.set(taskId, { handle, effect });
+    return [HandlerAction.Spawn(handle)];
+  }
+
+  protected override onUnsubscribe(
+    effect: TimeEffect,
+    context: HandlerContext<EffectHandlerInput<TimeHandlerInternalMessage>>,
+  ): EffectHandlerOutput<TimeHandlerInternalMessage> {
+    const stateToken = effect.id;
+    const taskId = this.subscriptions.get(stateToken);
+    if (taskId === undefined) return null;
+    this.subscriptions.delete(stateToken);
+    const requestState = this.requests.get(taskId);
+    if (!requestState) return null;
+    this.requests.delete(taskId);
+    const { handle } = requestState;
+    return [HandlerAction.Kill(handle)];
+  }
+
+  protected override acceptInternal(
     message: Message<unknown>,
-    context: HandlerContext<TimeHandlerInput>,
-  ): TimeHandlerOutput {
-    if (!this.accept(message)) return null;
-    switch (message.type) {
-      case MESSAGE_SUBSCRIBE_EFFECTS:
-        return this.handleSubscribeEffects(message, context);
-      case MESSAGE_UNSUBSCRIBE_EFFECTS:
-        return this.handleUnsubscribeEffects(message, context);
-      case MESSAGE_TIME_HANDLER_EMIT:
-        return this.handleTimeHandlerEmit(message, context);
-    }
-  }
-
-  private accept(message: Message<unknown>): message is TimeHandlerInput {
-    if (isSubscribeEffectsMessage(message)) return message.effects.has(EFFECT_TYPE_TIME);
-    if (isUnsubscribeEffectsMessage(message)) return message.effects.has(EFFECT_TYPE_TIME);
+  ): message is TimeHandlerInternalMessage {
     if (isTimeHandlerEmitMessage(message)) return true;
     return false;
   }
 
-  private handleSubscribeEffects(
-    message: SubscribeEffectsMessage,
-    context: HandlerContext<TimeHandlerInput>,
-  ): TimeHandlerOutput {
-    const { effects } = message;
-    const typedEffects = getTypedEffects<TimeEffect>(EFFECT_TYPE_TIME, effects);
-    if (!typedEffects || typedEffects.length === 0) return null;
-    const self = context.self();
-    const actions = typedEffects
-      .map((effect) => {
-        const stateToken = effect.id;
-        if (this.subscriptions.has(stateToken)) return null;
-        const taskId = ++this.nextTaskId;
-        this.subscriptions.set(stateToken, taskId);
-        const factory = createTimeTaskFactory(taskId, effect, self);
-        const handle = context.spawnAsync(factory);
-        this.requests.set(taskId, {
-          handle,
-          effect,
-        });
-        return HandlerAction.Spawn(handle);
-      })
-      .filter(nonNull);
-    if (actions.length === 0) return null;
-    return actions;
-  }
-
-  private handleUnsubscribeEffects(
-    message: UnsubscribeEffectsMessage,
-    context: HandlerContext<TimeHandlerInput>,
-  ): TimeHandlerOutput {
-    const { effects } = message;
-    const typedEffects = getTypedEffects<TimeEffect>(EFFECT_TYPE_TIME, effects);
-    if (!typedEffects || typedEffects.length === 0) return null;
-    const actions = typedEffects
-      .map((effect) => {
-        const stateToken = effect.id;
-        const taskId = this.subscriptions.get(stateToken);
-        if (taskId === undefined) return null;
-        this.subscriptions.delete(stateToken);
-        const requestState = this.requests.get(taskId);
-        if (!requestState) return null;
-        this.requests.delete(taskId);
-        const { handle } = requestState;
-        return HandlerAction.Kill(handle);
-      })
-      .filter(nonNull);
-    if (actions.length === 0) return null;
-    return actions;
+  protected override handleInternal(
+    message: Message<unknown>,
+    context: HandlerContext<EffectHandlerInput<TimeHandlerInternalMessage>>,
+  ): EffectHandlerOutput<TimeHandlerInternalMessage> {
+    if (isTimeHandlerEmitMessage(message)) {
+      return this.handleTimeHandlerEmit(message, context);
+    }
+    return null;
   }
 
   private handleTimeHandlerEmit(
     message: TimeHandlerEmitMessage,
-    context: HandlerContext<TimeHandlerInput>,
-  ): TimeHandlerOutput {
+    context: HandlerContext<EffectHandlerInput<TimeHandlerInternalMessage>>,
+  ): EffectHandlerOutput<TimeHandlerInternalMessage> {
     const { taskId, time } = message;
     const subscription = this.requests.get(taskId);
     if (!subscription) return null;
     const effect = subscription.effect;
-    const stateToken = effect.id;
     const effectValue = createResult(time);
-    const effectValues = new Map([[EFFECT_TYPE_TIME, new Map([[stateToken, effectValue]])]]);
-    const emitMessage = createEmitEffectValuesMessage(effectValues);
-    const action = HandlerAction.Send(this.next, emitMessage);
+    const action = this.emit(new Map([[effect.id, effectValue]]));
     return [action];
   }
 }

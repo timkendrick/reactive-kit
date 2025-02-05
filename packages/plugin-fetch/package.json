@@ -44,6 +44,7 @@
   "dependencies": {
     "@reactive-kit/actor": "workspace:*",
     "@reactive-kit/actor-utils": "workspace:*",
+    "@reactive-kit/handler-utils": "workspace:*",
     "@reactive-kit/hash": "workspace:*",
     "@reactive-kit/reactive-utils": "workspace:*",
     "@reactive-kit/runtime-messages": "workspace:*",

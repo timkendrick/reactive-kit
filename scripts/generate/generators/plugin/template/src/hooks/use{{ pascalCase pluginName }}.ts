@@ -3,5 +3,5 @@ import { create{{ pascalCase pluginName }}Effect } from '../effects';
 
 export function use{{ pascalCase pluginName }}(options: {}): Promise<unknown> {
   const {} = options;
-  return useReactive(create{{ pascalCase pluginName }}Effect({}));
+  return useReactive(create{{ pascalCase pluginName }}Effect());
 }
