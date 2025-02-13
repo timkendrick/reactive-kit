@@ -43,6 +43,9 @@ export default function (plop) {
         destination: 'packages/{{packageName}}',
         templateFiles: TEMPLATE_PATH,
         base: TEMPLATE_PATH,
+        globOptions: {
+          dot: true,
+        },
       },
       {
         type: 'shell',

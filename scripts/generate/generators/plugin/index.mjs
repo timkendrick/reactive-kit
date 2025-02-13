@@ -56,12 +56,88 @@ export default function (plop) {
         destination: 'packages/{{packageName}}',
         templateFiles: PACKAGE_TEMPLATE_PATH,
         base: PACKAGE_TEMPLATE_PATH,
+        globOptions: {
+          dot: true,
+        },
       },
       {
         type: 'addMany',
         destination: 'packages/{{packageName}}',
         templateFiles: TEMPLATE_PATH,
         base: TEMPLATE_PATH,
+        globOptions: {
+          dot: true,
+        },
+      },
+      {
+        type: 'modify',
+        path: 'packages/{{packageName}}/package.json',
+        pattern: staticRegExp(
+          [
+            '    "exports": {',
+            '      ".": {',
+            '        "import": "./lib/lib.js",',
+            '        "require": "./lib/lib.cjs"',
+            '      }',
+            '    }',
+          ].join('\n'),
+        ),
+        template: [
+          '    "exports": {',
+          '      ".": {',
+          '        "import": "./lib/lib.js",',
+          '        "require": "./lib/lib.cjs"',
+          '      },',
+          '      "./effects": {',
+          '        "import": "./lib/effects.lib.js",',
+          '        "require": "./lib/effects.lib.cjs"',
+          '      },',
+          '      "./handlers": {',
+          '        "import": "./lib/handlers.lib.js",',
+          '        "require": "./lib/handlers.lib.cjs"',
+          '      },',
+          '      "./hooks": {',
+          '        "import": "./lib/hooks.lib.js",',
+          '        "require": "./lib/hooks.lib.cjs"',
+          '      },',
+          '      "./messages": {',
+          '        "import": "./lib/messages.lib.js",',
+          '        "require": "./lib/messages.lib.cjs"',
+          '      },',
+          '      "./types": {',
+          '        "import": "./lib/types.lib.js",',
+          '        "require": "./lib/types.lib.cjs"',
+          '      }',
+          '    }',
+        ].join('\n'),
+      },
+      {
+        type: 'modify',
+        path: 'packages/{{packageName}}/vite.config.ts',
+        pattern: staticRegExp('entry: resolve(__dirname, pkg.module)'),
+        template: [
+          'entry: {',
+          '          lib: resolve(__dirname, pkg.module),',
+          "          effects: resolve(__dirname, './effects.lib.ts'),",
+          "          handlers: resolve(__dirname, './handlers.lib.ts'),",
+          "          hooks: resolve(__dirname, './hooks.lib.ts'),",
+          "          messages: resolve(__dirname, './messages.lib.ts'),",
+          "          types: resolve(__dirname, './types.lib.ts'),",
+          '        }',
+        ].join('\n'),
+      },
+      {
+        type: 'modify',
+        path: 'packages/{{packageName}}/lib.test.ts',
+        pattern: staticRegExp('expect({ ...lib }).toEqual({'),
+        template: [
+          'expect({ ...lib }).toEqual({',
+          '    {{ pascalCase pluginName }}Handler: lib.{{ pascalCase pluginName }}Handler,',
+          '    EFFECT_TYPE_{{ constantCase pluginName }}: lib.EFFECT_TYPE_{{ constantCase pluginName }},',
+          '    create{{ pascalCase pluginName }}Effect: lib.create{{ pascalCase pluginName }}Effect,',
+          '    is{{ pascalCase pluginName }}Effect: lib.is{{ pascalCase pluginName }}Effect,',
+          '    use{{ pascalCase pluginName }}: lib.use{{ pascalCase pluginName }},',
+        ].join('\n'),
       },
       {
         type: 'append',
@@ -109,9 +185,10 @@ export default function (plop) {
       {
         type: 'shell',
         cwd: 'packages/{{packageName}}',
-        command: `pnpm add ${[
+        command: `pnpm add --save-dev ${[
           '@reactive-kit/actor',
           '@reactive-kit/actor-utils',
+          '@reactive-kit/handler-utils',
           '@reactive-kit/hash',
           '@reactive-kit/runtime-messages',
           '@reactive-kit/reactive-utils',
@@ -133,4 +210,8 @@ export default function (plop) {
       },
     ],
   });
+}
+
+function staticRegExp(string) {
+  return new RegExp(string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
 }
