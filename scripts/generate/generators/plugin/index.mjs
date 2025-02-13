@@ -201,12 +201,12 @@ export default function (plop) {
       {
         type: 'shell',
         cwd: 'packages/hooks',
-        command: `pnpm add @reactive-kit/{{ packageName }}@workspace:*`,
+        command: `pnpm add --save-dev @reactive-kit/{{ packageName }}@workspace:*`,
       },
       {
         type: 'shell',
         cwd: 'packages/handlers',
-        command: `pnpm add @reactive-kit/{{ packageName }}@workspace:*`,
+        command: `pnpm add --save-dev @reactive-kit/{{ packageName }}@workspace:*`,
       },
     ],
   });

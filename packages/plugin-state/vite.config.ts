@@ -14,10 +14,15 @@ export default mergeConfig(
   defineConfig({
     build: {
       lib: {
-        entry: resolve(__dirname, pkg.module),
+        entry: {
+          lib: resolve(__dirname, pkg.module),
+          effects: resolve(__dirname, './effects.lib.ts'),
+          hooks: resolve(__dirname, './hooks.lib.ts'),
+          types: resolve(__dirname, './types.lib.ts'),
+        },
         name: pkg.name,
         formats: ['es', 'cjs'],
-        fileName: 'lib/lib',
+        fileName: (format, entry) => `lib/${entry}${format === 'cjs' ? '.cjs' : '.js'}`,
       },
     },
   }),

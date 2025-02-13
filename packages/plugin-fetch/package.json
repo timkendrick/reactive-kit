@@ -28,6 +28,26 @@
       ".": {
         "import": "./lib/lib.js",
         "require": "./lib/lib.cjs"
+      },
+      "./effects": {
+        "import": "./lib/effects.lib.js",
+        "require": "./lib/effects.lib.cjs"
+      },
+      "./handlers": {
+        "import": "./lib/handlers.lib.js",
+        "require": "./lib/handlers.lib.cjs"
+      },
+      "./hooks": {
+        "import": "./lib/hooks.lib.js",
+        "require": "./lib/hooks.lib.cjs"
+      },
+      "./messages": {
+        "import": "./lib/messages.lib.js",
+        "require": "./lib/messages.lib.cjs"
+      },
+      "./types": {
+        "import": "./lib/types.lib.js",
+        "require": "./lib/types.lib.cjs"
       }
     }
   },
