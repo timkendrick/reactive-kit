@@ -1,0 +1,16 @@
+{
+  "name": "@reactive-kit/websocket-server",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "ReactiveKit WebSocket server",
+  "author": "Tim Kendrick <timkendrick@gmail.com>",
+  "dependencies": {
+    "@reactive-kit/loader": "0.0.1",
+    "ws": "8.18.0"
+  },
+  "bundleDependencies": [
+    "@reactive-kit/loader"
+  ],
+  "main": "./index.cjs",
+  "bin": "./index.cjs"
+}

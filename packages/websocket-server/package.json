@@ -1,18 +1,21 @@
 {
   "private": true,
-  "name": "@reactive-kit/hooks",
+  "name": "@reactive-kit/websocket-server",
   "version": "0.0.1",
   "license": "MIT",
-  "description": "ReactiveKit hooks",
+  "description": "ReactiveKit WebSocket server",
   "author": "Tim Kendrick <timkendrick@gmail.com>",
   "type": "module",
-  "main": "./lib.ts",
+  "main": "./index.ts",
   "module": "./lib.ts",
   "scripts": {
-    "build": "pnpm run build:lib && pnpm run build:docs && pnpm run build:pkg",
+    "build": "pnpm run build:lib && pnpm run build:loader && pnpm run build:pkg",
     "build:lib": "vite build",
     "build:docs": "typedoc",
     "build:pkg": "pkg . ./dist/package.json",
+    "build:loader": "pnpm run build:loader:lib && pnpm run build:loader:pkg",
+    "build:loader:lib": "vite build --config loader.vite.config.ts",
+    "build:loader:pkg": "pkg ../loader ./dist/node_modules/@reactive-kit/loader/package.json",
     "lint": "pnpm run '/^lint:.*/'",
     "lint:eslint": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts .",
     "lint:typescript": "tsc --noEmit",
@@ -20,25 +23,19 @@
     "test:watch": "vitest watch"
   },
   "pkg": {
-    "type": "module",
-    "main": "./lib/lib.cjs",
-    "module": "/lib/lib.js",
-    "types": "./lib.d.ts",
-    "exports": {
-      ".": {
-        "import": "./lib/lib.js",
-        "require": "./lib/lib.cjs"
-      }
-    }
+    "main": "./index.cjs",
+    "bin": "./index.cjs"
+  },
+  "bundleDependencies": [
+    "@reactive-kit/loader"
+  ],
+  "dependencies": {
+    "@reactive-kit/loader": "workspace:*",
+    "ws": "8.18.0"
   },
   "devDependencies": {
     "@reactive-kit/build-config": "workspace:*",
-    "@reactive-kit/plugin-evaluate": "workspace:*",
-    "@reactive-kit/plugin-fetch": "workspace:*",
-    "@reactive-kit/plugin-pending": "workspace:*",
-    "@reactive-kit/plugin-state": "workspace:*",
-    "@reactive-kit/plugin-time": "workspace:*",
-    "@reactive-kit/plugin-web-socket": "workspace:*"
+    "@types/ws": "8.5.13"
   },
   "peerDependencies": {
     "eslint": "^8",
