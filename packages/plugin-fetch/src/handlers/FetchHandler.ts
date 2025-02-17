@@ -121,7 +121,7 @@ export class FetchHandler extends EffectHandler<FetchEffect, FetchHandlerInterna
     this.requests.delete(taskId);
     this.subscriptions.delete(stateToken);
     const effectValue = createResult(response);
-    const action = this.emit(new Map([[stateToken, effectValue]]));
+    const action = this.emit(EFFECT_TYPE_FETCH, new Map([[stateToken, effectValue]]));
     return [action];
   }
 }

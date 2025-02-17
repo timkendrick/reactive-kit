@@ -100,7 +100,7 @@ export class TimeHandler extends EffectHandler<TimeEffect, TimeHandlerInternalMe
     if (!subscription) return null;
     const effect = subscription.effect;
     const effectValue = createResult(time);
-    const action = this.emit(new Map([[effect.id, effectValue]]));
+    const action = this.emit(EFFECT_TYPE_TIME, new Map([[effect.id, effectValue]]));
     return [action];
   }
 }
