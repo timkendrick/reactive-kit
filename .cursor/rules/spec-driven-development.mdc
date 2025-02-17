@@ -1,0 +1,78 @@
+---
+alwaysApply: false
+---
+## Spec-driven development
+
+### Project Structure
+- Each workspace and package should maintain a `SPEC.md` file that serves as a table of contents for feature specifications
+- The workspace-level `SPEC.md` should be at the root of the project
+- Each package should have its own `SPEC.md` in its root directory
+- Individual feature specifications should be stored in `.spec.md` files within the `spec` directory of the workspace or package
+
+### SPEC.md Format
+```markdown
+# Feature Specifications
+
+## Feature Category
+- [Feature Name](mdc:spec/feature-name.spec.md) - Short description of the feature
+- [Another Feature](mdc:spec/another-feature.spec.md) - Another short description
+```
+
+### Development Workflow
+1. When creating a new feature:
+   - Determine if it's a workspace-wide or package-specific feature
+   - If the feature entails building a new package, prompt to create a package for the feature
+   - Create a `.spec.md` file in the appropriate `spec` directory
+   - Add an entry to the relevant `SPEC.md` file with a relative link and description
+
+2. Spec Development:
+   - Break the feature down into small requirements
+   - Clarify each requirement before proceeding
+   - Requirements that are not yet ready for implementation can be annotated with `[TBD]` for revisiting later
+   - Focus specifically on usage examples
+   - Clarify and validate each usage example in turn before proceeding
+   - Document any undefined requirements
+   - Generate the full spec text
+
+3. Implementation:
+   - Prompt whether to update existing documentation (`README.md`, architectural docs, etc) with usage examples from the spec
+   - Prompt whether to create high-level automated tests based on the spec
+   - Use the spec to guide feature development
+
+### File Organization
+```
+workspace/
+├── SPEC.md                    # Workspace feature index
+├── spec/                      # Workspace-wide specs
+│   ├── feature-1.spec.md
+│   └── feature-2.spec.md
+└── packages/
+    └── package-name/
+        ├── SPEC.md           # Package feature index
+        └── spec/             # Package-specific specs
+            ├── feature-1.spec.md
+            └── feature-2.spec.md
+```
+
+### Spec File Naming
+- Use kebab-case for spec filenames
+- Include the feature name followed by `.spec.md`
+- Example: `reactive-state-management.spec.md`
+
+### Spec Content Guidelines
+- Each spec should be self-contained
+- Each spec should contain the following sections:
+   - Overview
+   - Background (optional)
+   - Detailed explanation (optional)
+   - Requirements
+   - Examples
+   - Related specs (optional)
+- Include clear implementation details
+- Provide examples and diagrams where appropriate
+- Diagrams should be expressed in mermaid format
+- Reference related specs if needed
+- Use `[TBD]` suffix for headings where details are not yet finalized
+  - Example: `## Error Recovery Strategy [TBD]`
+  - This indicates that the section needs further discussion or implementation details
+  - TBD sections should be reviewed and finalized before feature completion
