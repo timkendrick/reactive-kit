@@ -1,0 +1,17 @@
+---
+description: TypeScript coding conventions
+globs: *.ts, *.tsx
+alwaysApply: true
+---
+- Prefer functional code over imperative code
+  - Exception: prefer loops over `.forEach()`
+- Always annotate function return types
+- Prefer `null` over `undefined` to indicate missing values
+- Use `import type {} from '...'` if all imports are `type` imports
+- Use `import { Foo, type Bar } from '...'` if only some imports are `type` imports
+- Import Node.js internals via `node:` prefix
+- Use `Array<T>` instead of `T[]` for type annotations
+- Use JSDoc summary for function description instead of inline comments
+- Use function hoisting; declare helper functions below their usage if it helps top-to-bottom module structure
+- Don't use unnecessary abbreviations in variable names
+- Prefer `function foo() {}` over `const foo = () => {}` for named function declarations
