@@ -1,0 +1,14 @@
+---
+description: Spec-driven development guidelines
+globs: 
+---
+## Spec-driven development
+
+- When creating a new feature, ensure a spec is generated for the feature
+- Each spec will be used to guide the development of a feature
+- Break the spec down into small chunks and clarify each chunk before continuing to the next chunk
+- Clarify any requirements that are undefined
+- Once the spec requirment gathering is complete, prompt with the full text to generate a `.spec.md` file within the `spec` directory of either the workspace (if the feature affects multiple packages) or the appropriate package (if the feature is internal to a single package)
+- Once the spec file has been generated, use it to generate the contents of a `README.md` containing usage examples
+- Clarify each usage examples before proceeding
+- Once the `README.md` is complete, prompt to generate high-level unit tests for the feature
