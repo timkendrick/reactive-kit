@@ -1,0 +1,95 @@
+---
+description: Cursor IDE MDC rule conventions
+globs: .cursor/rules/*.mdc
+alwaysApply: false
+---
+
+# MDC Rule Creation Conventions
+
+## File Location and Naming
+- All MDC rules must be created in the `.cursor/rules` directory
+- Each rule should be in a separate file
+- Use hyphenated lowercase names (e.g., `example-rule.mdc`)
+- Files must have the `.mdc` extension
+
+## Frontmatter Requirements
+Every MDC rule file must include valid markdown frontmatter with three potential fields:
+
+### `description`
+- Must be a clear, concise description of the rule's purpose
+- For rules that should always be applied regardless of context, prefix with "ALWAYS"
+  ```markdown
+  description: ALWAYS commit all changes for all AI interactions
+  ```
+- For context-specific rules, use normal descriptive text
+  ```markdown
+  description: TypeScript coding conventions
+  ```
+- This field should be omitted for manually-invoked rules
+
+### `globs`
+- Specifies file patterns that the rule applies to
+- For universal rules (all files), leave empty:
+  ```markdown
+  globs:
+  ```
+- For language-specific rules, use standard file extensions:
+  ```markdown
+  globs: *.ts, *.tsx
+  ```
+- For path-specific rules, use exact paths:
+  ```markdown
+  globs: src/components/**/*
+  ```
+- This field should be omitted for manually-invoked rules
+
+### `alwaysApply`
+- Boolean flag indicating if rule is a universal convention
+- Set to `true` for rules that should be applied across all edits
+- Set to `false` for utility rules that are only applied for specific tasks
+  ```markdown
+  alwaysApply: true  # For universal conventions
+  alwaysApply: false # For task-specific rules
+  ```
+
+## Complete Frontmatter Examples
+
+1. Universal Convention:
+```markdown
+---
+description: ALWAYS commit all changes for all AI interactions
+globs:
+alwaysApply: true
+---
+```
+
+2. Language-Specific Convention:
+```markdown
+---
+description: TypeScript coding conventions
+globs: *.ts, *.tsx
+alwaysApply: true
+---
+```
+
+3. Task-Specific Rule:
+```markdown
+---
+description: Component styling guidelines
+globs: src/components/**/*.css
+alwaysApply: false
+---
+```
+
+## Rule Content
+- Use clear, well-structured markdown
+- Include examples where appropriate
+- Document any exceptions or special cases
+- Explain the reasoning behind conventions when relevant
+
+## Validation
+Before finalizing a rule:
+1. Verify the frontmatter syntax is valid
+2. Confirm glob patterns match intended files
+3. Test the rule against existing codebase
+4. Document any required dependencies or prerequisites 

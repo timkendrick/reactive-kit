@@ -1,0 +1,142 @@
+---
+alwaysApply: false
+---
+# Git Commit Conventions
+
+When requested by the user, commit the changed files using git.
+
+## Commit Message Convention
+
+Follow the [Conventional Commits](mdc:https:/www.conventionalcommits.org) specification:
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Types
+- `feat`: New features
+- `fix`: Bug fixes
+- `refactor`: Code changes that neither fix bugs nor add features
+- `style`: Changes that don't affect code meaning (formatting, etc)
+- `docs`: Documentation only changes
+- `test`: Adding or modifying tests
+- `chore`: Changes to build process or auxiliary tools
+- `perf`: Performance improvements
+
+### Message Structure
+
+1. **Title Line**:
+   - Start with the appropriate type and scope
+   - Use imperative mood ("add" not "added" or "adds")
+   - Don't capitalize first letter
+   - No period at the end
+
+2. **Body**:
+   - Leave one blank line after the title
+   - Explain what was changed and why
+   - This section follows the Title Line directly and does *not* start with a `Body:` heading.
+   - Wrap at 72 characters
+   - Use bullet points for multiple changes
+
+3. **User requirements**:
+   - Leave one blank line after the Body
+   - Summarize the prompts that led to the changes
+   - Use bullet points
+
+4. **Additional observations**:
+   - Leave one blank line after the User requirements
+   - Highlight specific implementation details that arose during prompting
+   - Use bullet points
+
+5. **Footer**:
+   - Leave one blank line after the last section (Body, User requirements, or Additional observations)
+   - Reference related issues/tickets if applicable
+   - Include breaking changes notifications if any
+
+### Examples
+
+For a feature addition:
+```
+feat(auth): add password reset functionality
+
+Implement password reset flow
+- Add reset password form component
+- Create API endpoint for password reset
+- Add email notification service
+
+User requirements:
+- User requested the implementation of a standard password reset feature.
+
+Additional observations:
+- Passwords are validated server-side
+- New password must not equal existing password
+```
+
+For a bug fix:
+```
+fix(validation): correct email format checking
+
+Improve email validation regex to properly handle all valid email formats,
+addressing an issue where addresses with plus signs were incorrectly rejected.
+
+User requirements:
+- User reported that email validation failed for addresses containing '+'.
+
+Additional observations:
+- The previous regex failed to account for the '+' character in the local part of email addresses.
+```
+
+For a refactor:
+```
+refactor(components): extract button styles to shared module
+
+Move common button styles to a shared stylesheet to reduce duplication
+and improve maintainability.
+
+User requirements:
+- User requested refactoring button styles for better consistency across the application.
+
+Additional observations:
+- Shared stylesheet contains existing class names
+- `.btn-disabled` class name is no longer needed and has been removed
+```
+
+## Implementation Notes
+
+1. After each change, analyze:
+   - Which files were modified
+   - The nature of the changes
+   - The original prompt that triggered the changes
+   - If changes span multiple distinct features/fixes, create separate commits
+   - Group related changes into atomic, logical commits
+
+2. Stage known changes: Pre-emptively stage the files identified in step 1 using `git add [known changed files]`. This ensures the subsequent check focuses on *unexpected* unstaged changes.
+
+3. Check for additional unstaged changes: Run `git diff --quiet`. If the command exits with a non-zero status code (indicating *additional* unstaged changes), **STOP** and ask the user how to proceed (e.g., stage the additional changes, stash them, abort the commit).
+
+4. Run `git diff --staged | cat` to review the specific changes being committed. This context should inform the commit message generation.
+
+5. Generate appropriate commit message:
+   - Select the most appropriate type
+   - Include relevant scope
+   - Write clear description (Title Line)
+   - Add detailed explanation in Body (without a 'Body:' prefix)
+   - Add a prompt summary in User requirements
+   - Optionally include Additional observations and Footer sections
+
+6. Write the commit message to a file using a `write_file` tool call to a `COMMIT_EDITMSG` file in the current repository root
+
+7. Execute git command and remove temporary commit message file:
+   ```bash
+   git commit -F ./COMMIT_EDITMSG && rm ./COMMIT_EDITMSG
+   ```
+
+## Validation
+- Ensure all changed files are included in the commit
+- Verify commit message follows conventional format
+- Check that commit message accurately reflects the changes
+- Confirm prompt context is preserved in commit message 
