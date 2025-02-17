@@ -1,0 +1,83 @@
+---
+description: ALWAYS follow this workflow when developing features
+globs:
+alwaysApply: true
+---
+# Feature Development Workflow
+
+## Golden Rule
+**ALWAYS ask before making any changes.** Summarize proposed changes and wait for explicit confirmation before proceeding.
+
+The one exception to this rule is when gathering context: you are *always* allowed to pre-emptively gather context without prompting the user first.
+
+## Workflow Phases
+
+### 1. Context Gathering
+- Focus on understanding requirements, NOT producing code or documentation artifacts
+- Review existing documentation and codebase
+- Identify related components and dependencies
+- Do NOT generate any code or documentation during this phase
+- **Confirmation Required:** Summarize gathered context for validation before proceeding to the next phase
+
+### 2. Iterative Development
+1. High-Level Understanding
+   - Ask clarifying questions about core purpose
+   - Only ask a single question at a time, starting with high level and becoming more granular. If there are multiple ways to proceed, ask stakeholder which to take.
+   - Validate all assumptions with stakeholder
+   - Validate any unclear requirements or assumptions
+   - Establish scope boundaries
+   - Do NOT generate any code or documentation during this phase
+   - **Confirmation Required:** Verify understanding before proceeding
+
+2. Gradual Refinement
+   - Break down feature into smaller components
+   - Discuss each component's requirements
+   - Explore edge cases and constraints
+   - Do NOT generate any code or documentation during this phase
+   - **Confirmation Required:** Validate each component's design before proceeding
+
+3. Final Review
+   - Review complete design
+   - Verify all requirements are covered
+   - Check integration points
+   - Do NOT generate any code or documentation during this phase
+   - **Confirmation Required:** Final spec approval
+
+### 3. Pre-Implementation Phase
+After design approach is confirmed, prompt for next steps:
+1. Documentation Updates
+   - Add usage examples
+   - Update relevant docs
+   - **Confirmation Required:** Review documentation changes
+   
+2. Test Suite Development
+   - Create high-level test plan
+   - Implement core test cases
+   - **Confirmation Required:** Review test coverage plan
+
+3. Implementation Planning
+   - Break down into discrete steps
+   - Identify potential challenges
+   - **Confirmation Required:** Review implementation plan
+
+### 4. Implementation Phase
+For each implementation step:
+1. Summarize proposed changes
+2. **Confirmation Required:** Get approval before making changes
+3. Implement approved changes
+4. Review results
+5. **Confirmation Required:** Verify changes meet requirements
+
+## Validation Checkpoints
+Each phase must include:
+1. Clear summary of work to be done
+2. Explicit confirmation before proceeding
+3. Documentation of decisions and changes
+4. Verification against requirements
+
+## Documentation Requirements
+Maintain throughout development:
+1. Updated specs and documentation
+2. Implementation progress
+3. Decisions and their rationale
+4. Any deviations from original plan 
