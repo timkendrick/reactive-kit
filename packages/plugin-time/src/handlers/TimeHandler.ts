@@ -3,10 +3,7 @@ import {
   type ActorHandle,
   type AsyncTaskHandle,
   type HandlerContext,
-  type HandlerResult,
-  AsyncTaskFactory,
 } from '@reactive-kit/actor';
-import { fromAsyncIteratorFactory } from '@reactive-kit/actor-utils';
 import {
   EffectHandler,
   EffectHandlerInput,
@@ -15,14 +12,9 @@ import {
 } from '@reactive-kit/handler-utils';
 import { type Message } from '@reactive-kit/runtime-messages';
 import { createResult, type Expression, type EffectId } from '@reactive-kit/types';
-import { createAsyncTrigger, type AsyncTrigger } from '@reactive-kit/utils';
 import { EFFECT_TYPE_TIME, type TimeEffect } from '../effects';
-import {
-  createTimeHandlerEmitMessage,
-  isTimeHandlerEmitMessage,
-  type TaskId,
-  type TimeHandlerEmitMessage,
-} from '../messages';
+import { isTimeHandlerEmitMessage, type TaskId, type TimeHandlerEmitMessage } from '../messages';
+import { createTimeTask } from '../tasks/TimeTask';
 
 interface TimeSubscription {
   handle: AsyncTaskHandle;
@@ -40,7 +32,7 @@ export class TimeHandler extends EffectHandler<TimeEffect, TimeHandlerInternalMe
     super(EFFECT_TYPE_TIME, next);
   }
 
-  protected override getInitialValue(effect: TimeEffect): Expression<any> | null  {
+  protected override getInitialValue(effect: TimeEffect): Expression<any> | null {
     return null;
   }
 
@@ -53,7 +45,7 @@ export class TimeHandler extends EffectHandler<TimeEffect, TimeHandlerInternalMe
     const self = context.self();
     const taskId = ++this.nextTaskId;
     this.subscriptions.set(stateToken, taskId);
-    const factory = createTimeTaskFactory(taskId, effect, self);
+    const factory = createTimeTask(taskId, effect, self);
     const handle = context.spawnAsync(factory);
     this.requests.set(taskId, { handle, effect });
     return [HandlerAction.Spawn(handle)];
@@ -103,59 +95,4 @@ export class TimeHandler extends EffectHandler<TimeEffect, TimeHandlerInternalMe
     const action = this.emit(EFFECT_TYPE_TIME, new Map([[effect.id, effectValue]]));
     return [action];
   }
-}
-
-function createTimeTaskFactory(
-  taskId: TaskId,
-  effect: TimeEffect,
-  output: ActorHandle<TimeHandlerInternalMessage>,
-): AsyncTaskFactory<never, TimeHandlerInternalMessage> {
-  const interval = effect.payload;
-  return fromAsyncIteratorFactory<TimeHandlerInternalMessage>(() => {
-    let activeInterval: ReturnType<typeof setInterval> | undefined;
-    const requestQueue = new Array<AsyncTrigger<Date>['emit']>();
-    const resultQueue = new Array<Date>();
-    function onEmit(value: Date): void {
-      const pendingRequest = requestQueue.shift();
-      if (pendingRequest) {
-        pendingRequest(value);
-      } else {
-        resultQueue.push(value);
-      }
-    }
-    return {
-      next(): Promise<IteratorResult<HandlerResult<TimeHandlerInternalMessage>>> {
-        if (!activeInterval) {
-          resultQueue.push(new Date());
-          activeInterval = setInterval(() => onEmit(new Date()), interval);
-        }
-        const nextValue = (() => {
-          const queuedResult = resultQueue.shift();
-          if (queuedResult != null) {
-            return Promise.resolve(queuedResult);
-          } else {
-            const { signal, emit } = createAsyncTrigger<Date>();
-            requestQueue.push(emit);
-            return signal;
-          }
-        })();
-        return nextValue.then((value) => ({
-          done: false,
-          value: [HandlerAction.Send(output, createTimeHandlerEmitMessage(taskId, value))],
-        }));
-      },
-      return(): Promise<IteratorResult<HandlerResult<TimeHandlerInternalMessage>>> {
-        if (activeInterval != null) clearInterval(activeInterval);
-        requestQueue.length = 0;
-        resultQueue.length = 0;
-        return Promise.resolve({ done: true, value: null });
-      },
-      throw(): Promise<IteratorResult<HandlerResult<TimeHandlerInternalMessage>>> {
-        if (activeInterval != null) clearInterval(activeInterval);
-        requestQueue.length = 0;
-        resultQueue.length = 0;
-        return Promise.resolve({ done: true, value: null });
-      },
-    };
-  });
 }
