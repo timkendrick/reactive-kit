@@ -9,11 +9,13 @@ Front-end frameworks have revolutionised the way we write real-time application 
 Use simple `async` / `await` syntax to declare a reactive function that is recomputed whenever its dependencies change:
 
 ```js
-import { useRead } from '@reactive-kit/hooks';
+import { useWatchFile } from '@reactive-kit/hooks';
 
 // Automatically updates whenever the file contents changes
 async function greet() {
-  const message = await useRead('/motd.txt', { encoding: 'utf-8' });
+  const message = await useWatchFile('/motd.txt', {
+    encoding: 'utf-8',
+  });
   return `Message of the day: ${message}`;
 }
 
