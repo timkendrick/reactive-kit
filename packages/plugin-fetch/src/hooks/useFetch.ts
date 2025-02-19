@@ -1,8 +1,8 @@
 import { HASH, assignCustomHash, hash, type CustomHashable, type Hash } from '@reactive-kit/hash';
 import { map, useReactive } from '@reactive-kit/reactive-utils';
 import type { Uid } from '@reactive-kit/utils';
-import { createFetchEffect } from '../effects';
-import type { FetchRequest, FetchResponse, FetchResponseState } from '../types';
+import { createFetchEffect, type FetchEffectValue } from '../effects';
+import type { FetchRequest, FetchResponse } from '../types';
 
 type FetchRequestInit = Pick<FetchRequest, RequiredKeys> &
   Partial<Omit<FetchRequest, RequiredKeys | keyof CoercedInitValues>> &
@@ -21,12 +21,12 @@ interface FetchResult extends FetchResponse {
 
 const handleFetchResponse = assignCustomHash(
   hash('@reactive-kit/hook-fetch/useFetch/handleFetchResponse'),
-  (response: FetchResponseState): FetchResult => {
-    if (!response.success) {
+  (value: FetchEffectValue): FetchResult => {
+    if (!value.success) {
       // FIXME: Determine error throwing behavior
-      throw response.error;
+      throw value.error;
     } else {
-      return new FetchResult(response.response);
+      return new FetchResult(value.response);
     }
   },
 );

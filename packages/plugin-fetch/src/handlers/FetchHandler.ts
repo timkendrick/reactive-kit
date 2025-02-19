@@ -2,41 +2,24 @@
 import {
   HandlerAction,
   type ActorHandle,
-  type AsyncTaskFactory,
   type AsyncTaskHandle,
-  type HandlerContext,
+  type HandlerContext
 } from '@reactive-kit/actor';
-import { fromCancelablePromiseFactory } from '@reactive-kit/actor-utils';
 import {
   EffectHandler,
   EffectHandlerOutputMessage,
   type EffectHandlerInput,
   type EffectHandlerOutput,
 } from '@reactive-kit/handler-utils';
-import { hash, HASH, HashableError, type CustomHashable, type Hash } from '@reactive-kit/hash';
 import type { Message } from '@reactive-kit/runtime-messages';
-import { createResult, type Expression, type EffectId } from '@reactive-kit/types';
-import { generateUid } from '@reactive-kit/utils';
+import { createResult, type EffectId, type Expression } from '@reactive-kit/types';
 import { EFFECT_TYPE_FETCH, type FetchEffect } from '../effects';
 import {
-  createFetchHandlerResponseMessage,
   isFetchHandlerResponseMessage,
   type FetchHandlerResponseMessage,
-  type TaskId,
+  type TaskId
 } from '../messages';
-import type { FetchHeaders, FetchRequest, FetchResponse, FetchResponseState } from '../types';
-
-class FetchResponseError extends Error implements CustomHashable {
-  public readonly response: FetchResponse;
-  public [HASH]: Hash;
-
-  constructor(response: FetchResponse) {
-    super(`HTTP error ${response.status}`);
-    this.name = 'FetchResponseError';
-    this.response = response;
-    this[HASH] = hash(this.name, this.response);
-  }
-}
+import { createFetchTask } from '../tasks';
 
 type FetchHandlerInternalMessage = FetchHandlerResponseMessage;
 
@@ -68,8 +51,8 @@ export class FetchHandler extends EffectHandler<FetchEffect, FetchHandlerInterna
     const taskId = ++this.nextTaskId;
     this.subscriptions.set(stateToken, taskId);
     const controller = new AbortController();
-    const factory = createFetchTaskFactory(taskId, effect, controller, context.self());
-    const handle = context.spawnAsync(factory);
+    const task = createFetchTask(taskId, effect, controller, context.self());
+    const handle = context.spawnAsync(task);
     this.requests.set(taskId, {
       handle,
       effect,
@@ -124,109 +107,4 @@ export class FetchHandler extends EffectHandler<FetchEffect, FetchHandlerInterna
     const action = this.emit(EFFECT_TYPE_FETCH, new Map([[stateToken, effectValue]]));
     return [action];
   }
-}
-
-function createFetchTaskFactory(
-  taskId: number,
-  effect: FetchEffect,
-  controller: AbortController,
-  output: ActorHandle<FetchHandlerInternalMessage>,
-): AsyncTaskFactory<never, FetchHandlerInternalMessage> {
-  const { signal } = controller;
-  return fromCancelablePromiseFactory<FetchHandlerInternalMessage>(() => ({
-    result: fetchRequest(effect.payload, signal).then((response) => [
-      HandlerAction.Send(output, createFetchHandlerResponseMessage(taskId, response)),
-    ]),
-    abort: controller,
-  }));
-}
-
-function fetchRequest(request: FetchRequest, signal: AbortSignal): Promise<FetchResponseState> {
-  return fetch(request.url, {
-    method: request.method,
-    headers: parseRequestHeaders(request.headers),
-    body: request.body,
-    signal,
-  })
-    .then((response) => {
-      const { status } = response;
-      const headers = parseResponseHeaders(response.headers);
-      const token = generateUid();
-      if (response.ok) {
-        return response.arrayBuffer().then(
-          (body): FetchResponseState => ({
-            success: true,
-            response: {
-              status,
-              headers,
-              body: new Uint8Array(body),
-              token,
-            },
-          }),
-          (err): FetchResponseState => ({
-            success: false,
-            error: parseResponseError(err),
-            response: {
-              status,
-              headers,
-              body: null,
-              token,
-            },
-          }),
-        );
-      } else {
-        return response.arrayBuffer().then(
-          (body): FetchResponseState => {
-            const response: FetchResponse = {
-              status,
-              headers,
-              body: new Uint8Array(body),
-              token,
-            };
-            return {
-              success: false,
-              error: new FetchResponseError(response),
-              response: response,
-            };
-          },
-          (err): FetchResponseState => ({
-            success: false,
-            error: parseResponseError(err),
-            response: {
-              status,
-              headers,
-              body: null,
-              token,
-            },
-          }),
-        );
-      }
-    })
-    .catch((err) => ({
-      success: false,
-      error: parseResponseError(err),
-      response: null,
-    }));
-}
-
-function parseRequestHeaders(headers: FetchHeaders | null | undefined): Headers {
-  const result = new Headers();
-  if (headers) {
-    for (const [key, value] of Object.entries(headers)) {
-      result.set(key, value);
-    }
-  }
-  return result;
-}
-
-function parseResponseHeaders(headers: Headers): Record<string, string> {
-  const result: Record<string, string> = {};
-  headers.forEach((value, key) => {
-    result[key] = value;
-  });
-  return result;
-}
-
-function parseResponseError(err: unknown): HashableError {
-  return new HashableError(err instanceof Error ? err : new Error(String(err), { cause: err }));
 }
