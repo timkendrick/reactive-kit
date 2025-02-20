@@ -5,16 +5,13 @@ import {
   type HandlerResult,
 } from '@reactive-kit/actor';
 import { fromAsyncIteratorFactory } from '@reactive-kit/actor-utils';
-import { AsyncTrigger, createAsyncTrigger } from '@reactive-kit/utils';
+import type { AsyncTaskId } from '@reactive-kit/handler-utils';
+import { createAsyncTrigger, type AsyncTrigger } from '@reactive-kit/utils';
 import type { TimeEffect } from '../effects';
-import {
-  createTimeHandlerEmitMessage,
-  type TaskId,
-  type TimeHandlerEmitMessage,
-} from '../messages';
+import { createTimeHandlerEmitMessage, type TimeHandlerEmitMessage } from '../messages';
 
 export function createTimeTask(
-  taskId: TaskId,
+  taskId: AsyncTaskId,
   effect: TimeEffect,
   output: ActorHandle<TimeHandlerEmitMessage>,
 ): AsyncTaskFactory<never, TimeHandlerEmitMessage> {

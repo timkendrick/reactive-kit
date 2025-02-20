@@ -1,15 +1,12 @@
-import { ActorHandle, AsyncTaskFactory, HandlerAction } from '@reactive-kit/actor';
-import { FetchEffect } from '../effects';
-import {
-  createFetchHandlerResponseMessage,
-  FetchHandlerResponseMessage,
-  TaskId,
-} from '../messages';
+import { type ActorHandle, type AsyncTaskFactory, HandlerAction } from '@reactive-kit/actor';
 import { fromCancelablePromiseFactory } from '@reactive-kit/actor-utils';
+import type { AsyncTaskId } from '@reactive-kit/handler-utils';
+import type { FetchEffect } from '../effects';
+import { createFetchHandlerResponseMessage, type FetchHandlerResponseMessage } from '../messages';
 import { fetchRequest } from '../utils';
 
 export function createFetchTask(
-  taskId: TaskId,
+  taskId: AsyncTaskId,
   effect: FetchEffect,
   controller: AbortController,
   output: ActorHandle<FetchHandlerResponseMessage>,
