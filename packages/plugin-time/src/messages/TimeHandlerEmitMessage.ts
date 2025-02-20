@@ -1,15 +1,16 @@
+import { AsyncTaskId, AsyncTaskMessage } from '@reactive-kit/handler-utils';
 import type { Message } from '@reactive-kit/runtime-messages';
-
-export type TaskId = number;
 
 export const MESSAGE_TIME_HANDLER_EMIT = '@reactive-kit/plugin-time/emit';
 
-export interface TimeHandlerEmitMessage extends Message<typeof MESSAGE_TIME_HANDLER_EMIT> {
-  taskId: TaskId;
+export interface TimeHandlerEmitMessage extends AsyncTaskMessage<typeof MESSAGE_TIME_HANDLER_EMIT> {
   time: Date;
 }
 
-export function createTimeHandlerEmitMessage(taskId: TaskId, time: Date): TimeHandlerEmitMessage {
+export function createTimeHandlerEmitMessage(
+  taskId: AsyncTaskId,
+  time: Date,
+): TimeHandlerEmitMessage {
   return { type: MESSAGE_TIME_HANDLER_EMIT, taskId, time };
 }
 

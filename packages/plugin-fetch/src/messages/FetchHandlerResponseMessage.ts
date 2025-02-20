@@ -1,18 +1,16 @@
 import type { Message } from '@reactive-kit/runtime-messages';
 import type { FetchResponseState } from '../types';
+import { AsyncTaskId, AsyncTaskMessage } from '@reactive-kit/handler-utils';
 
 export const MESSAGE_FETCH_HANDLER_RESPONSE = '@reactive-kit/handler-fetch/response';
 
-export type TaskId = number;
-
 export interface FetchHandlerResponseMessage
-  extends Message<typeof MESSAGE_FETCH_HANDLER_RESPONSE> {
-  taskId: TaskId;
+  extends AsyncTaskMessage<typeof MESSAGE_FETCH_HANDLER_RESPONSE> {
   response: FetchResponseState;
 }
 
 export function createFetchHandlerResponseMessage(
-  taskId: TaskId,
+  taskId: AsyncTaskId,
   response: FetchResponseState,
 ): FetchHandlerResponseMessage {
   return { type: MESSAGE_FETCH_HANDLER_RESPONSE, taskId, response };
