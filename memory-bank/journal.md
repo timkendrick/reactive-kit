@@ -218,4 +218,9 @@ pnpm docs
      reducer: (sum, value) => sum + value,
      initial: 0
    });
-   ``` 
+   ```
+
+### Async Actor Constraints
+- Limited to parent handle communication
+- No direct access to sibling/cousin actors
+- External I/O isolation through specialized handlers
