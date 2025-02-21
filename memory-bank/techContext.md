@@ -97,3 +97,222 @@ Currently implementing:
    - Combined async/sync testing
    - Mock effect handler support
    - Deterministic behavior verification 
+
+## Core Architecture
+
+### Dependency Tracking System
+- Performs computation via dependency-tracked reactive functions 
+- Maintains complete causal chains across system boundaries
+- Enables advanced debugging and monitoring capabilities
+- Links events across systems (UI → server → deployment → build → git commit)
+
+### Dual-Realm Design
+```mermaid
+flowchart TD
+    Effects[Effect Sources] --> Runtime[Runtime]
+    Runtime --> Sync[Synchronous Realm]
+    Runtime --> Async[Asynchronous Realm]
+    Sync --> Runtime
+    Async --> Runtime
+```
+
+1. Synchronous Realm
+   - Pure computation layer
+   - Reactive functions compute values based on current state
+   - All side effects abstracted through hooks
+   - Deterministic output for given inputs
+   - Similar to React's render phase
+
+2. Asynchronous Realm
+   - Message-driven actor system
+   - Handlers respond to subscriptions/unsubscriptions
+   - All async behavior reified as messages
+   - Deterministic response to message sequences
+   - Similar to Redux saga/effects pattern
+
+### Runtime Coordination
+- Runtime acts as bridge between realms
+- Tracks active effect subscriptions
+- Manages dependency graph updates
+- Schedules re-computation of affected values
+- Ensures causal chain tracking
+
+## Key Design Patterns
+
+### Effect Pattern
+```typescript
+interface Effect<T> {
+  type: symbol;        // Unique effect type identifier
+  payload: unknown;    // Effect-specific configuration
+  result: T;          // Type of effect result
+}
+```
+
+- Effects are declarative descriptions of side effects
+- Each effect type has associated handler and hook
+- Effects are pure data structures
+- Runtime resolves effects to handlers
+
+### Handler Pattern
+```typescript
+class EffectHandler extends Handler {
+  onSubscribe(effect: Effect): void
+  onUnsubscribe(effect: Effect): void
+  onMessage(msg: Message): void
+}
+```
+
+- Handlers implement effect behavior
+- Message-based communication
+- Maintain subscription state
+- Emit effect value updates
+
+### Hook Pattern
+```typescript
+async function useEffect<T>(
+  effect: Effect<T>
+): Promise<T> {
+  // Subscribe to effect
+  // Return current value
+  // Unsubscribe on cleanup
+}
+```
+
+- Hooks provide sync realm access to effects
+- Must be called from reactive functions
+- Manage effect lifecycle
+- Cache effect values
+
+### Higher-Order Effects
+```typescript
+interface ReducerEffect<T, R> extends Effect<R> {
+  type: typeof EFFECT_TYPE_REDUCER;
+  payload: {
+    source: Effect<T>;
+    reducer: (acc: R, value: T) => R;
+    initial: R;
+  };
+}
+
+// Usage example
+const countEffect = createReducerEffect({
+  source: someNumberEffect,
+  reducer: (count, value) => count + 1,
+  initial: 0
+});
+```
+
+- Higher-order effects transform other effects
+- Can compose multiple effects together
+- Maintain referential transparency
+- Handle cleanup automatically
+
+## Plugin Architecture
+
+### Plugin Components
+1. Effect Definitions
+   - Define new effect types
+   - Specify payload schema
+   - Define result type
+
+2. Effect Handler
+   - Implement effect behavior
+   - Handle subscriptions
+   - Process messages
+   - Emit updates
+
+3. Hook Implementation
+   - Provide reactive function interface
+   - Handle effect lifecycle
+   - Cache results
+
+### Plugin Integration
+```mermaid
+flowchart TD
+    Plugin[Plugin Package] --> Effects[Effect Types]
+    Plugin --> Handler[Effect Handler]
+    Plugin --> Hook[Effect Hook]
+    Effects --> Handlers[Handlers Package]
+    Handler --> Handlers
+    Hook --> Hooks[Hooks Package]
+```
+
+## Testing Patterns
+
+### Handler Testing
+```typescript
+test('handler behavior', async () => {
+  const handler = new TestHandler();
+  await handler.processMessages([
+    Subscribe(effect),
+    CustomMessage(data),
+    Unsubscribe(effect)
+  ]);
+  expect(handler.emittedMessages).toEqual([
+    // Expected message sequence
+  ]);
+});
+```
+
+### Reactive Function Testing
+```typescript
+test('reactive computation', async () => {
+  const result = await mount(
+    async () => {
+      const value = await useEffect(effect);
+      return transform(value);
+    },
+    {
+      effects: {
+        [effectType]: mockHandler
+      }
+    }
+  );
+  expect(result).toEqual(expected);
+});
+```
+
+## Actor System Fundamentals
+
+```mermaid
+classDiagram
+    class Scheduler {
+        -handlers: Map<Handle, ActorState>
+        -phase: AsyncSchedulerPhase
+        +dispatch()
+        +handleCommands()
+    }
+    
+    class SyncActor {
+        +handle(): HandlerResult
+    }
+    
+    class AsyncActor {
+        -inbox: AsyncQueue
+        -outbox: AsyncQueue
+    }
+    
+    Scheduler --> SyncActor : Manages
+    Scheduler --> AsyncActor : Queues
+```
+
+### Key Characteristics
+- **Handle Management**:
+  - Opaque identifiers generated by scheduler
+  - Central registry in scheduler's `handlers` Map
+  - No direct actor→actor communication without handle exchange
+
+- **Lifecycle Hooks**:
+  1. Subscription tracking through effect IDs
+  2. Automatic task cleanup on unsubscribe
+  3. Parent/child relationships via spawn/kill
+
+- **Async Constraints**:
+  - Limited to parent handle communication
+  - No direct sibling/cousin actor access
+  - External I/O isolation through specialized handlers
+
+- **Message Processing**:
+  - Sync actors: Immediate message handling
+  - Async actors: Queue-based processing
+  - Strict parent/child communication hierarchy
