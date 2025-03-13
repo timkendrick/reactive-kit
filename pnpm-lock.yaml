@@ -8,9 +8,9 @@ importers:
 
   .:
     dependencies:
-      '@vitest/coverage-v8':
-        specifier: ^2
-        version: 2.1.8(vitest@2.1.8(@types/node@20.5.9))
+      eslint:
+        specifier: ^8
+        version: 8.48.0
       typedoc:
         specifier: ^0.27
         version: 0.27.5(typescript@5.7.2)
@@ -24,6 +24,9 @@ importers:
         specifier: ^2
         version: 2.1.8(@types/node@20.5.9)
     devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:packages/build-config
       plop:
         specifier: 4.0.1
         version: 4.0.1
