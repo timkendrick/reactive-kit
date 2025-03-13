@@ -1,6 +1,7 @@
 ---
 description: TypeScript coding conventions
 globs: *.ts, *.tsx
+alwaysApply: true
 ---
 - Prefer functional code over imperative code
 - Always annotate function return types

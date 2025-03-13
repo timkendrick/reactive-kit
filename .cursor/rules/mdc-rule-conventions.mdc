@@ -1,0 +1,68 @@
+---
+description: Conventions for creating Cursor IDE MDC rules
+globs: .cursor/rules/*.mdc
+alwaysApply: false
+---
+
+# MDC Rule Creation Conventions
+
+## File Location
+- All MDC rules must be created in the `.cursor/rules` directory
+- Each rule should be in a separate file
+
+## File Naming
+- Use hyphenated lowercase names (e.g., `example-rule.mdc`)
+- Files must have the `.mdc` extension
+
+## Frontmatter Requirements
+Every MDC rule file must include valid markdown frontmatter with:
+
+1. `description`: A clear, concise description of the rule's purpose
+2. `globs`: File patterns that the rule applies to
+2. `alwaysApply`: Whether the rule indicates a convention that should be applied across all edits, or a more specific utility rule that should only be applied when performing specific tasks
+
+### Glob Patterns
+
+For different rule types:
+
+1. **Universal Rules** (applying to all files):
+```markdown
+---
+description: Your rule description
+globs:
+alwaysApply: true
+---
+```
+
+2. **Language-Specific Rules**:
+Use standard file extensions for the language:
+```markdown
+---
+description: TypeScript-specific rule
+globs: *.ts, *.tsx
+alwaysApply: true
+---
+```
+
+3. **Task-Specific Rules**:
+For rules that depend on workspace structure, specify the exact paths:
+```markdown
+---
+description: Components rule
+globs: src/components/**/*
+alwaysApply: false
+---
+```
+
+## Rule Content
+- Use clear, well-structured markdown
+- Include examples where appropriate
+- Document any exceptions or special cases
+- Explain the reasoning behind conventions when relevant
+
+## Validation
+Before finalizing a rule:
+1. Verify the frontmatter syntax is valid
+2. Confirm glob patterns match intended files
+3. Test the rule against existing codebase
+4. Document any required dependencies or prerequisites 
