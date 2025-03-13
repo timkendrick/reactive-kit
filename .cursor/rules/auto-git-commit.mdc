@@ -1,0 +1,113 @@
+---
+description: Automatically commit all changes
+globs: 
+alwaysApply: true
+---
+# Automatic Git Commits for Cursor Changes
+
+After each change performed by Cursor, automatically commit the changed files using git.
+
+## Commit Message Convention
+
+Follow the [Conventional Commits](mdc:https:/www.conventionalcommits.org) specification:
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Types
+- `feat`: New features
+- `fix`: Bug fixes
+- `refactor`: Code changes that neither fix bugs nor add features
+- `style`: Changes that don't affect code meaning (formatting, etc)
+- `docs`: Documentation only changes
+- `test`: Adding or modifying tests
+- `chore`: Changes to build process or auxiliary tools
+- `perf`: Performance improvements
+
+### Message Structure
+
+1. **Title Line**:
+   - Start with the appropriate type and scope
+   - Use imperative mood ("add" not "added" or "adds")
+   - Don't capitalize first letter
+   - No period at the end
+
+2. **Body**:
+   - Leave one blank line after the title
+   - Explain what was changed and why
+   - Reference the prompts that led to the changes
+   - Wrap at 72 characters
+   - Use bullet points for multiple changes
+
+3. **Footer**:
+   - Reference related issues/tickets if applicable
+   - Include breaking changes notifications if any
+
+### Examples
+
+For a feature addition:
+```
+feat(auth): add password reset functionality
+
+Implement password reset flow based on user requirements:
+- Add reset password form component
+- Create API endpoint for password reset
+- Add email notification service
+
+Prompted by: "Add password reset capability to auth system"
+```
+
+For a bug fix:
+```
+fix(validation): correct email format checking
+
+Fix email validation regex to properly handle all valid email formats.
+Previous implementation was rejecting valid addresses with plus signs.
+
+Prompted by: "Fix email validation to accept plus signs"
+```
+
+For a refactor:
+```
+refactor(components): extract button styles to shared module
+
+Move common button styles to a shared stylesheet to reduce duplication
+and improve maintainability.
+
+Prompted by: "Refactor button styles to be more consistent"
+```
+
+## Implementation Notes
+
+1. After each change, analyze:
+   - Which files were modified
+   - The nature of the changes
+   - The original prompt that triggered the changes
+
+2. Generate appropriate commit message:
+   - Select the most appropriate type
+   - Include relevant scope
+   - Write clear description
+   - Add detailed explanation in body
+   - Reference the original prompt
+
+3. Execute git commands:
+   ```bash
+   git add [changed files]
+   git commit -m "type(scope): description" -m "detailed explanation"
+   ```
+
+4. Handle Multiple Changes:
+   - If changes span multiple distinct features/fixes, create separate commits
+   - Group related changes into single, logical commits
+
+## Validation
+- Ensure all changed files are included in the commit
+- Verify commit message follows conventional format
+- Check that commit message accurately reflects the changes
+- Confirm prompt context is preserved in commit message 

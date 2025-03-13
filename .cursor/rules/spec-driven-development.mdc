@@ -1,14 +1,72 @@
 ---
-description: Spec-driven development guidelines
+description: Spec-driven development workflow
 globs: 
+alwaysApply: true
 ---
 ## Spec-driven development
 
-- When creating a new feature, ensure a spec is generated for the feature
-- Each spec will be used to guide the development of a feature
-- Break the spec down into small chunks and clarify each chunk before continuing to the next chunk
-- Clarify any requirements that are undefined
-- Once the spec requirment gathering is complete, prompt with the full text to generate a `.spec.md` file within the `spec` directory of either the workspace (if the feature affects multiple packages) or the appropriate package (if the feature is internal to a single package)
-- Once the spec file has been generated, use it to generate the contents of a `README.md` containing usage examples
-- Clarify each usage examples before proceeding
-- Once the `README.md` is complete, prompt to generate high-level unit tests for the feature
+### Project Structure
+- Each workspace and package should maintain a `SPEC.md` file that serves as a table of contents for feature specifications
+- The workspace-level `SPEC.md` should be at the root of the project
+- Each package should have its own `SPEC.md` in its root directory
+- Individual feature specifications should be stored in `.spec.md` files within the `spec` directory of the workspace or package
+
+### SPEC.md Format
+```markdown
+# Feature Specifications
+
+## Overview
+[Brief description of the project/package]
+
+## Features
+- [Feature Name](./spec/feature-name.spec.md) - Short description of the feature
+- [Another Feature](./spec/another-feature.spec.md) - Another short description
+
+## Package-Specific Features
+- [Package Feature](./packages/package-name/spec/package-feature.spec.md) - Package-specific feature description
+```
+
+### Development Workflow
+1. When creating a new feature:
+   - Determine if it's a workspace-wide or package-specific feature
+   - Create a `.spec.md` file in the appropriate `spec` directory
+   - Add an entry to the relevant `SPEC.md` file with a relative link and description
+
+2. Spec Development:
+   - Break the spec down into small chunks
+   - Clarify each chunk before proceeding
+   - Document any undefined requirements
+   - Generate the full spec text
+
+3. Implementation:
+   - Use the spec to guide feature development
+   - Generate a `README.md` with usage examples
+   - Clarify and validate usage examples
+   - Create high-level unit tests
+
+### File Organization
+```
+workspace/
+├── SPEC.md                    # Workspace feature index
+├── spec/                      # Workspace-wide specs
+│   ├── feature-1.spec.md
+│   └── feature-2.spec.md
+└── packages/
+    └── package-name/
+        ├── SPEC.md           # Package feature index
+        └── spec/             # Package-specific specs
+            ├── feature-1.spec.md
+            └── feature-2.spec.md
+```
+
+### Spec File Naming
+- Use kebab-case for spec filenames
+- Include the feature name followed by `.spec.md`
+- Example: `reactive-state-management.spec.md`
+
+### Spec Content Guidelines
+- Each spec should be self-contained
+- Include clear requirements and acceptance criteria
+- Document any dependencies or prerequisites
+- Provide examples where appropriate
+- Reference related specs if needed
