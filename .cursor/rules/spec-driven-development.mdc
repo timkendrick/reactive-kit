@@ -70,3 +70,7 @@ workspace/
 - Document any dependencies or prerequisites
 - Provide examples where appropriate
 - Reference related specs if needed
+- Use `[TBD]` suffix for headings where details are not yet finalized
+  - Example: `## Error Recovery Strategy [TBD]`
+  - This indicates that the section needs further discussion or implementation details
+  - TBD sections should be reviewed and finalized before feature completion
