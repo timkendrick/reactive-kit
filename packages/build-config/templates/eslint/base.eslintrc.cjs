@@ -6,7 +6,7 @@ module.exports = {
     es2022: true,
   },
   extends: ['plugin:vitest/recommended', 'plugin:prettier/recommended'],
-  plugins: ['@typescript-eslint', 'vitest'],
+  plugins: ['@typescript-eslint', 'vitest', 'prettier'],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 'latest',
