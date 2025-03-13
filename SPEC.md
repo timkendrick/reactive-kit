@@ -1,8 +1,5 @@
 # Feature Specifications
 
-## Overview
-Reactive Kit is a comprehensive JavaScript/TypeScript framework for reactive programming, providing a complete toolkit for building reactive applications with a focus on performance, type safety, and developer experience. The framework implements a dual-realm architecture combining synchronous reactive computation with asynchronous message-based actor system.
-
 ## Core Features
 - [Dual Realm Architecture](./spec/dual-realm-architecture.spec.md) - Core architecture combining synchronous reactive computation with asynchronous actor system
 - [Dependency Tracking](./spec/dependency-tracking.spec.md) - Fine-grained dependency tracking system with complete causal chain preservation
