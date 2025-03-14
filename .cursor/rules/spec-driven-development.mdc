@@ -1,5 +1,5 @@
 ---
-description: Spec-driven development workflow
+description: ALWAYS use spec-driven development workflow for all new features
 globs: 
 alwaysApply: true
 ---
@@ -19,11 +19,11 @@ alwaysApply: true
 [Brief description of the project/package]
 
 ## Features
-- [Feature Name](./spec/feature-name.spec.md) - Short description of the feature
-- [Another Feature](./spec/another-feature.spec.md) - Another short description
+- [Feature Name](mdc:spec/feature-name.spec.md) - Short description of the feature
+- [Another Feature](mdc:spec/another-feature.spec.md) - Another short description
 
 ## Package-Specific Features
-- [Package Feature](./packages/package-name/spec/package-feature.spec.md) - Package-specific feature description
+- [Package Feature](mdc:packages/package-name/spec/package-feature.spec.md) - Package-specific feature description
 ```
 
 ### Development Workflow

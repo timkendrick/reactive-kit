@@ -1,5 +1,5 @@
 ---
-description: Automatically commit all changes
+description: ALWAYS commit all changes for all AI interactions
 globs: 
 alwaysApply: true
 ---
