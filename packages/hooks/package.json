@@ -35,6 +35,7 @@
     "@reactive-kit/build-config": "workspace:*",
     "@reactive-kit/plugin-evaluate": "workspace:*",
     "@reactive-kit/plugin-fetch": "workspace:*",
+    "@reactive-kit/plugin-foo": "workspace:*",
     "@reactive-kit/plugin-pending": "workspace:*",
     "@reactive-kit/plugin-state": "workspace:*",
     "@reactive-kit/plugin-time": "workspace:*"

@@ -1,15 +1,9 @@
-import { Actor, ActorHandle, HandlerContext } from '@reactive-kit/actor';
+import { ActorHandle, HandlerContext } from '@reactive-kit/actor';
 
 type PipedActorFactory<I extends T, O extends T, T = I | O> = (
   next: ActorHandle<O>,
   context: HandlerContext<T>,
 ) => ActorHandle<I>;
-
-export function pipe<I extends T, O extends T, T = I | O>(
-  factory: (next: ActorHandle<O>) => Actor<I, O>,
-): PipedActorFactory<I, O, T> {
-  return (next, context) => context.spawn(() => factory(next));
-}
 
 export function chain<T0 extends T, T1 extends T, T2 extends T, T = T0 | T1 | T2>(
   left: PipedActorFactory<T0, T1>,
@@ -36,15 +30,15 @@ type PipedActorFactoryInput<T extends AnyPipedActorFactory> =
 
 type FlowReturn<T extends Array<AnyPipedActorFactory>, TInput> =
   T extends [PipedActorFactory<TInput, infer TOutput, any>, ...infer TRest]
-    ? TRest extends Array<AnyPipedActorFactory>
-      ? FlowReturn<TRest, TOutput>
-      : never
-    : TInput;
+  ? TRest extends Array<AnyPipedActorFactory>
+  ? FlowReturn<TRest, TOutput>
+  : never
+  : TInput;
 
 type FlowMessageTypes<T extends Array<AnyPipedActorFactory>, TMessage> =
   T extends [PipedActorFactory<any, any, infer M>, ...infer TRest]
-    ? TRest extends Array<AnyPipedActorFactory>
-      ? FlowMessageTypes<TRest, TMessage | M>
-      : never
-    : TMessage;
+  ? TRest extends Array<AnyPipedActorFactory>
+  ? FlowMessageTypes<TRest, TMessage | M>
+  : never
+  : TMessage;
 /* eslint-enable prettier/prettier */

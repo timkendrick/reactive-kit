@@ -4,9 +4,7 @@ import * as lib from './handlers.lib';
 
 test('module exports', () => {
   expect({ ...lib }).toEqual({
-    createFetchHandlerResponseMessage: lib.createFetchHandlerResponseMessage,
+    ACTOR_TYPE_FETCH_HANDLER: lib.ACTOR_TYPE_FETCH_HANDLER,
     FetchHandler: lib.FetchHandler,
-    isFetchHandlerResponseMessage: lib.isFetchHandlerResponseMessage,
-    MESSAGE_FETCH_HANDLER_RESPONSE: lib.MESSAGE_FETCH_HANDLER_RESPONSE,
   });
 });

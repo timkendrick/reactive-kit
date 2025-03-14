@@ -34,6 +34,7 @@
   "devDependencies": {
     "@reactive-kit/build-config": "workspace:*",
     "@reactive-kit/plugin-fetch": "workspace:*",
+    "@reactive-kit/plugin-foo": "workspace:*",
     "@reactive-kit/plugin-time": "workspace:*",
     "@reactive-kit/runtime": "workspace:*"
   },

@@ -6,7 +6,7 @@ import {
   Actor,
 } from '@reactive-kit/actor';
 
-export class BroadcastActor<T> implements Actor<T> {
+export class BroadcastActor<T> implements Actor<T, T> {
   private readonly targets: Array<ActorHandle<T>> = [];
 
   public constructor(targets: Iterable<ActorHandle<T>>) {
@@ -15,7 +15,7 @@ export class BroadcastActor<T> implements Actor<T> {
     }
   }
 
-  public handle(message: T, context: HandlerContext<T>): HandlerResult<unknown> {
+  public handle(message: T, context: HandlerContext<T>): HandlerResult<T> {
     return this.targets.map((target) => HandlerAction.Send(target, message));
   }
 }
