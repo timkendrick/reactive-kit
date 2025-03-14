@@ -1,6 +1,6 @@
 ---
-description: Enforces memory bank context requirements for all AI interactions
-globs:
+description: ALWAYS enforce memory bank context requirements for all AI interactions
+globs: 
 alwaysApply: true
 ---
 # Memory Bank Context Requirements

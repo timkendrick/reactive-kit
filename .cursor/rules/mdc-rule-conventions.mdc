@@ -1,55 +1,80 @@
 ---
-description: Conventions for creating Cursor IDE MDC rules
+description: Cursor IDE MDC rule conventions
 globs: .cursor/rules/*.mdc
 alwaysApply: false
 ---
 
 # MDC Rule Creation Conventions
 
-## File Location
+## File Location and Naming
 - All MDC rules must be created in the `.cursor/rules` directory
 - Each rule should be in a separate file
-
-## File Naming
 - Use hyphenated lowercase names (e.g., `example-rule.mdc`)
 - Files must have the `.mdc` extension
 
 ## Frontmatter Requirements
-Every MDC rule file must include valid markdown frontmatter with:
+Every MDC rule file must include valid markdown frontmatter with three required fields:
 
-1. `description`: A clear, concise description of the rule's purpose
-2. `globs`: File patterns that the rule applies to
-2. `alwaysApply`: Whether the rule indicates a convention that should be applied across all edits, or a more specific utility rule that should only be applied when performing specific tasks
+### `description`
+- Must be a clear, concise description of the rule's purpose
+- For rules that should always be applied regardless of context, prefix with "ALWAYS"
+  ```markdown
+  description: ALWAYS commit all changes for all AI interactions
+  ```
+- For context-specific rules, use normal descriptive text
+  ```markdown
+  description: TypeScript coding conventions
+  ```
 
-### Glob Patterns
+### `globs`
+- Specifies file patterns that the rule applies to
+- For universal rules (all files), leave empty:
+  ```markdown
+  globs:
+  ```
+- For language-specific rules, use standard file extensions:
+  ```markdown
+  globs: *.ts, *.tsx
+  ```
+- For path-specific rules, use exact paths:
+  ```markdown
+  globs: src/components/**/*
+  ```
 
-For different rule types:
+### `alwaysApply`
+- Boolean flag indicating if rule is a universal convention
+- Set to `true` for rules that should be applied across all edits
+- Set to `false` for utility rules that are only applied for specific tasks
+  ```markdown
+  alwaysApply: true  # For universal conventions
+  alwaysApply: false # For task-specific rules
+  ```
 
-1. **Universal Rules** (applying to all files):
+## Complete Frontmatter Examples
+
+1. Universal Convention:
 ```markdown
 ---
-description: Your rule description
+description: ALWAYS commit all changes for all AI interactions
 globs:
 alwaysApply: true
 ---
 ```
 
-2. **Language-Specific Rules**:
-Use standard file extensions for the language:
+2. Language-Specific Convention:
 ```markdown
 ---
-description: TypeScript-specific rule
+description: TypeScript coding conventions
 globs: *.ts, *.tsx
 alwaysApply: true
 ---
 ```
 
-3. **Task-Specific Rules**:
-For rules that depend on workspace structure, specify the exact paths:
+3. Task-Specific Rule:
 ```markdown
 ---
-description: Components rule
-globs: src/components/**/*
+description: Component styling guidelines
+globs: src/components/**/*.css
 alwaysApply: false
 ---
 ```
