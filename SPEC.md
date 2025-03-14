@@ -13,7 +13,7 @@
 - [Babel Integration](./spec/babel-integration.spec.md) - Babel preset and plugins for reactive function compilation
 
 ## Testing Infrastructure
-- [Async Testing](./spec/async-testing.spec.md) [TBD] - Asynchronous realm testing with message sequence verification
+- [Async Testing](./spec/async-testing.spec.md) - Asynchronous realm testing with message sequence verification
 - [Sync Testing](./spec/sync-testing.spec.md) [TBD] - Synchronous realm testing for reactive functions
 - [Integration Testing](./spec/integration-testing.spec.md) [TBD] - Combined async/sync testing with mock support
 
