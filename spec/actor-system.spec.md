@@ -57,45 +57,6 @@ The Actor System is a core component of Reactive Kit that provides a message-bas
    - Must enable resource monitoring
    - Must handle resource exhaustion
 
-## Acceptance Criteria
-
-### Functional Requirements
-1. Correctness
-   - Messages must be delivered reliably
-   - Actor state must remain consistent
-   - Actor lifecycle must be managed correctly
-   - Message ordering must be preserved
-   - Errors must be handled properly
-
-2. Completeness
-   - All messages must be processed
-   - No message loss
-   - Complete actor lifecycle
-   - Full type safety
-   - Complete error handling
-
-### Non-Functional Requirements
-1. Performance
-   - Low message latency
-   - High message throughput
-   - Efficient resource usage
-   - Scalable actor count
-   - Responsive message handling
-
-2. Developer Experience
-   - Intuitive actor API
-   - Clear error messages
-   - Easy debugging
-   - Type safety
-   - Documentation
-
-## Dependencies
-- TypeScript type system
-- Runtime scheduler
-- Message system
-- Plugin system
-- Dependency tracking
-
 ## Examples
 
 ### Basic Actor

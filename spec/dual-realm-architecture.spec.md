@@ -71,47 +71,6 @@ The Dual Realm Architecture is the core design pattern of Reactive Kit, combinin
    - Must enable resource monitoring
    - Must handle resource errors
 
-## Acceptance Criteria
-
-### Functional Requirements
-1. Deterministic Behavior
-   - Given the same inputs, synchronous computations must produce identical outputs
-   - Message sequences must be deterministic
-   - State updates must be atomic and consistent
-
-2. Performance
-   - Synchronous computations must be optimized for speed
-   - Asynchronous operations must handle backpressure
-   - Resource usage must be bounded and predictable
-
-3. Reliability
-   - System must handle errors gracefully
-   - State must remain consistent
-   - Resources must be properly cleaned up
-
-### Non-Functional Requirements
-1. Type Safety
-   - All interfaces must be fully typed
-   - Type inference must be accurate
-   - Type errors must be caught at compile time
-
-2. Developer Experience
-   - API must be intuitive
-   - Error messages must be helpful
-   - Debugging must be straightforward
-
-3. Extensibility
-   - System must support plugins
-   - New effect types must be easy to add
-   - Custom actors must be supported
-
-## Dependencies
-- TypeScript type system
-- Actor system implementation
-- Dependency tracking system
-- Plugin architecture
-- Runtime scheduler
-
 ## Examples
 
 ### Synchronous Realm Examples
