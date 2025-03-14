@@ -1,0 +1,39 @@
+---
+description: ALWAYS consider ARCHITECTURE.md when planning new features
+globs:
+alwaysApply: true
+---
+# Architecture-First Development
+
+## Overview
+When planning and implementing new features, the top-level `ARCHITECTURE.md` document must be consulted and respected. This document serves as the authoritative source for architectural decisions and patterns.
+
+## Requirements
+
+### Feature Planning Phase
+1. Review `ARCHITECTURE.md` before starting feature design
+2. Ensure new feature aligns with documented architectural principles
+3. Identify any potential architectural impacts
+
+### Implementation Phase
+1. Follow architectural patterns defined in `ARCHITECTURE.md`
+2. Document any deviations or extensions to the architecture
+3. Update `ARCHITECTURE.md` if the feature introduces architectural changes
+
+## Validation
+Before proceeding with feature development:
+1. Verify alignment with architectural principles
+2. Document any architectural implications
+3. Update architecture documentation if needed
+
+## Integration with Other Rules
+This rule works in conjunction with:
+- Spec-driven development workflow
+- Memory bank context requirements
+- TypeScript conventions
+
+## Documentation Updates
+If a feature requires architectural changes:
+1. Propose changes in `ARCHITECTURE.md`
+2. Get approval for architectural modifications
+3. Update related documentation to reflect changes 
