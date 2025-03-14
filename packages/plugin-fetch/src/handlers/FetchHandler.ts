@@ -1,5 +1,4 @@
-/// <reference lib="dom" />
-import { AsyncTaskFactory, type ActorHandle, type HandlerContext } from '@reactive-kit/actor';
+import { ActorFactory, type ActorHandle, type HandlerContext } from '@reactive-kit/actor';
 import {
   AsyncTaskHandler,
   AsyncTaskId,
@@ -11,20 +10,33 @@ import type { Message } from '@reactive-kit/runtime-messages';
 import { createResult, type Expression } from '@reactive-kit/types';
 import { EFFECT_TYPE_FETCH, type FetchEffect } from '../effects';
 import { isFetchHandlerResponseMessage, type FetchHandlerResponseMessage } from '../messages';
-import { createFetchTask } from '../tasks';
+import { FETCH_TASK, FetchTaskFactory, type FetchTaskConfig } from '../tasks';
 
 type FetchHandlerInternalMessage = FetchHandlerResponseMessage;
 
-interface FetchTaskState {
-  controller: AbortController;
+export const ACTOR_TYPE_FETCH_HANDLER = '@reactive-kit/actor/fetch-handler';
+
+export interface FetchHandlerConfig {
+  next: ActorHandle<EffectHandlerOutputMessage>;
 }
 
 export class FetchHandler extends AsyncTaskHandler<
   FetchEffect,
   FetchHandlerInternalMessage,
-  FetchTaskState
+  FetchTaskConfig
 > {
-  public constructor(next: ActorHandle<EffectHandlerOutputMessage>) {
+  public static readonly FACTORY: ActorFactory<
+    FetchHandlerConfig,
+    Message<unknown>,
+    EffectHandlerOutputMessage | FetchHandlerInternalMessage
+  > = {
+    type: ACTOR_TYPE_FETCH_HANDLER,
+    async: false,
+    factory: (config: FetchHandlerConfig) => new FetchHandler(config),
+  };
+
+  public constructor(config: FetchHandlerConfig) {
+    const { next } = config;
     super(EFFECT_TYPE_FETCH, next);
   }
 
@@ -37,15 +49,18 @@ export class FetchHandler extends AsyncTaskHandler<
     effect: FetchEffect,
     context: HandlerContext<EffectHandlerInput<FetchHandlerInternalMessage>>,
   ): {
-    task: AsyncTaskFactory<FetchHandlerInternalMessage>;
-    state: FetchTaskState;
+    task: FetchTaskFactory;
+    config: FetchTaskConfig;
   } {
     // TODO: Abort fetch requests on unsubscribe
     const controller = new AbortController();
     return {
-      task: createFetchTask(taskId, effect, controller, context.self()),
-      state: {
+      task: FETCH_TASK,
+      config: {
+        taskId,
+        effect,
         controller,
+        output: context.self(),
       },
     };
   }
@@ -58,7 +73,7 @@ export class FetchHandler extends AsyncTaskHandler<
 
   protected override handleTaskMessage(
     message: FetchHandlerInternalMessage,
-    state: FetchTaskState,
+    state: FetchTaskConfig,
     effect: FetchEffect,
     context: HandlerContext<EffectHandlerInput<FetchHandlerInternalMessage>>,
   ): EffectHandlerOutput<FetchHandlerInternalMessage> {

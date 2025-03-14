@@ -1,4 +1,4 @@
-import type { Actor, ActorHandle } from '@reactive-kit/actor';
+import type { Actor, ActorFactory, ActorHandle } from '@reactive-kit/actor';
 import { BroadcastActor } from '@reactive-kit/actor-utils';
 import {
   createEvaluateEffect,
@@ -10,6 +10,7 @@ import {
 import { type Hashable } from '@reactive-kit/hash';
 import {
   MESSAGE_EMIT_EFFECT_VALUES,
+  Message,
   createSubscribeEffectsMessage,
   createUnsubscribeEffectsMessage,
   type RuntimeMessage,
@@ -18,7 +19,9 @@ import { AsyncScheduler } from '@reactive-kit/scheduler';
 import { type Expression, type EffectId, isResultExpression } from '@reactive-kit/types';
 import { createAsyncTrigger, type AsyncTrigger } from '@reactive-kit/utils';
 
-export type RuntimeEffectHandlers = Iterable<(next: ActorHandle<unknown>) => Actor<unknown>>;
+export type RuntimeEffectHandlers = Iterable<
+  ActorFactory<{ next: ActorHandle<Message<unknown>> }, Message<unknown>, Message<unknown>>
+>;
 
 interface Subscription<T> {
   status: SubscriptionStatus<T>;
@@ -34,6 +37,8 @@ type SubscriptionStatus<T> =
       value: ReadyEvaluationResult<T>;
     };
 
+export const ACTOR_TYPE_RUNTIME = '@reactive-kit/actor/runtime';
+
 export class Runtime {
   private scheduler: AsyncScheduler<RuntimeMessage>;
   private subscriptionResults = new Map<EffectId, Subscription<any>>();
@@ -46,12 +51,22 @@ export class Runtime {
     },
   ) {
     const { state = null } = options ?? {};
-    this.scheduler = new AsyncScheduler((output, context) => {
+    this.scheduler = new AsyncScheduler((context) => {
       const input = context.self();
       // FIXME: compose effect handlers into single combined effect handler
-      const evaluateHandler = context.spawn(() => new EvaluateHandler({ state }, input));
-      const effectHandlers = Array.from(handlers, (factory) => context.spawn(() => factory(input)));
-      return new BroadcastActor<RuntimeMessage>([evaluateHandler, ...effectHandlers, output]);
+      const evaluateHandler = context.spawn({
+        actor: EvaluateHandler.FACTORY,
+        config: { state, next: input },
+      });
+      const effectHandlers = Array.from(handlers, (factory) =>
+        context.spawn({ actor: factory, config: { next: input } }),
+      );
+      return {
+        type: ACTOR_TYPE_RUNTIME,
+        async: false,
+        factory: (output) =>
+          new BroadcastActor<RuntimeMessage>([evaluateHandler, ...effectHandlers, output]),
+      };
     });
   }
 

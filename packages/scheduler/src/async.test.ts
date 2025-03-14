@@ -1,5 +1,6 @@
 import {
   Actor,
+  ActorFactory,
   ActorHandle,
   HandlerAction,
   HandlerContext,
@@ -28,7 +29,7 @@ describe(AsyncScheduler, () => {
       value: number;
     }
     type AppMessage = IncrementMessage | DecrementMessage | DestroyMessage | ResultMessage;
-    class AppActor implements Actor<IncrementMessage | DecrementMessage> {
+    class AppActor implements Actor<IncrementMessage | DecrementMessage, AppMessage> {
       private readonly output: ActorHandle<ResultMessage>;
       private counter = 0;
       public constructor(output: ActorHandle<ResultMessage>) {
@@ -60,7 +61,12 @@ describe(AsyncScheduler, () => {
         }
       }
     }
-    const scheduler = new AsyncScheduler<AppMessage>((output) => new AppActor(output));
+    const APP_ACTOR = {
+      type: 'AppActor',
+      async: false,
+      factory: (output: ActorHandle<ResultMessage>) => new AppActor(output),
+    } satisfies ActorFactory<ActorHandle<AppMessage>, AppMessage, AppMessage>;
+    const scheduler = new AsyncScheduler<AppMessage>(() => APP_ACTOR);
     scheduler.dispatch({ type: AppMessageType.Increment });
     {
       const result = await scheduler.next();

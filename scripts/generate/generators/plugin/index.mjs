@@ -174,9 +174,7 @@ export default function (plop) {
         type: 'modify',
         path: 'packages/handlers/src/handlers.ts',
         pattern: /\];\n$/,
-        template: ['  (next) => new {{ pascalCase pluginName }}Handler(next),', '];', ''].join(
-          '\n',
-        ),
+        template: ['  {{ pascalCase pluginName }}Handler.FACTORY,', '];', ''].join('\n'),
       },
       {
         type: 'shell',

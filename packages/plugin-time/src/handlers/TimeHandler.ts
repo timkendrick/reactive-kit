@@ -1,4 +1,4 @@
-import { AsyncTaskFactory, type ActorHandle, type HandlerContext } from '@reactive-kit/actor';
+import { ActorFactory, type ActorHandle, type HandlerContext } from '@reactive-kit/actor';
 import {
   AsyncTaskHandler,
   AsyncTaskId,
@@ -10,18 +10,33 @@ import { type Message } from '@reactive-kit/runtime-messages';
 import { createResult, type Expression } from '@reactive-kit/types';
 import { EFFECT_TYPE_TIME, type TimeEffect } from '../effects';
 import { isTimeHandlerEmitMessage, type TimeHandlerEmitMessage } from '../messages';
-import { createTimeTask } from '../tasks/TimeTask';
+import { TIME_TASK, type TimeTaskConfig, type TimeTaskFactory } from '../tasks/TimeTask';
+
+export const ACTOR_TYPE_TIME_HANDLER = '@reactive-kit/actor/time-handler';
+
+export interface TimeHandlerConfig {
+  next: ActorHandle<EffectHandlerOutputMessage>;
+}
 
 type TimeHandlerInternalMessage = TimeHandlerEmitMessage;
-
-type TimeTaskState = null;
 
 export class TimeHandler extends AsyncTaskHandler<
   TimeEffect,
   TimeHandlerInternalMessage,
-  TimeTaskState
+  TimeTaskConfig
 > {
-  public constructor(next: ActorHandle<EffectHandlerOutputMessage>) {
+  public static readonly FACTORY: ActorFactory<
+    TimeHandlerConfig,
+    Message<unknown>,
+    EffectHandlerOutputMessage | TimeHandlerInternalMessage
+  > = {
+    type: ACTOR_TYPE_TIME_HANDLER,
+    async: false,
+    factory: (config: TimeHandlerConfig) => new TimeHandler(config),
+  };
+
+  public constructor(config: TimeHandlerConfig) {
+    const { next } = config;
     super(EFFECT_TYPE_TIME, next);
   }
 
@@ -34,12 +49,16 @@ export class TimeHandler extends AsyncTaskHandler<
     effect: TimeEffect,
     context: HandlerContext<EffectHandlerInput<TimeHandlerInternalMessage>>,
   ): {
-    task: AsyncTaskFactory<TimeHandlerInternalMessage>;
-    state: TimeTaskState;
+    task: TimeTaskFactory;
+    config: TimeTaskConfig;
   } {
     return {
-      task: createTimeTask(taskId, effect, context.self()),
-      state: null,
+      task: TIME_TASK,
+      config: {
+        taskId,
+        effect,
+        output: context.self(),
+      },
     };
   }
 
@@ -51,7 +70,7 @@ export class TimeHandler extends AsyncTaskHandler<
 
   protected override handleTaskMessage(
     message: TimeHandlerInternalMessage,
-    state: TimeTaskState,
+    state: TimeTaskConfig,
     effect: TimeEffect,
     context: HandlerContext<EffectHandlerInput<TimeHandlerInternalMessage>>,
   ): EffectHandlerOutput<TimeHandlerInternalMessage> {

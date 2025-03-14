@@ -4,6 +4,7 @@ import * as lib from './handlers.lib';
 
 test('module exports', () => {
   expect({ ...lib }).toEqual({
+    ACTOR_TYPE_TIME_HANDLER: lib.ACTOR_TYPE_TIME_HANDLER,
     TimeHandler: lib.TimeHandler,
   });
 });

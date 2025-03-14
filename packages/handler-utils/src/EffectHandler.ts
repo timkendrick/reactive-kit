@@ -36,7 +36,7 @@ export type EffectHandlerOutput<TInternal extends Message<unknown>> = HandlerRes
 export abstract class EffectHandler<
   T extends EffectExpression<unknown>,
   TInternal extends Message<unknown>,
-> implements Actor<Message<unknown>>
+> implements Actor<Message<unknown>, EffectHandlerOutputMessage | TInternal>
 {
   protected readonly effectTypes: Set<T['type']>;
   protected readonly next: ActorHandle<EffectHandlerOutputMessage>;

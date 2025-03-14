@@ -4,6 +4,7 @@ import * as lib from './lib';
 
 test('module exports', () => {
   expect({ ...lib }).toEqual({
+    ACTOR_TYPE_FETCH_HANDLER: lib.ACTOR_TYPE_FETCH_HANDLER,
     createFetchEffect: lib.createFetchEffect,
     createFetchHandlerResponseMessage: lib.createFetchHandlerResponseMessage,
     EFFECT_TYPE_FETCH: lib.EFFECT_TYPE_FETCH,
