@@ -11,34 +11,51 @@ alwaysApply: true
 ## Workflow Phases
 
 ### 1. Context Gathering
-- Focus on understanding requirements, not producing code
+- Focus on understanding requirements, NOT producing code or documentation artifacts
 - Review existing documentation and codebase
 - Identify related components and dependencies
-- Document any unclear requirements or assumptions
+- Do NOT generate any code or documentation during this phase
 - **Confirmation Required:** Present gathered context for validation
 
-### 2. Feature Summary
-- Create concise summary of the feature
-- Include:
-  - Purpose and goals
-  - Core functionality
-  - Expected behavior
-  - Integration points
-  - Dependencies
-- **Confirmation Required:** Present summary for validation before proceeding to spec
+### 2. Iterative Spec Development
+1. High-Level Understanding
+   - Ask clarifying questions about core purpose
+   - Only ask a single question at a time, starting with high level and becoming more granular. If there are multiple ways to proceed, ask stakeholder which to take.
+   - Validate all assumptions with stakeholder
+   - Validate any unclear requirements or assumptions
+   - Establish scope boundaries
+   - Do NOT generate any code or documentation during this phase
+   - **Confirmation Required:** Verify understanding before proceeding
 
-### 3. Specification Development
-- Follow rules in `@file .cursor/rules/spec-driven-development.mdc`
-- Develop spec interactively with stakeholder
-- Include:
-  - Detailed requirements
-  - Technical approach
-  - API design
-  - Data structures
-  - Error handling
-- **Confirmation Required:** Get approval on completed spec
+2. Gradual Refinement
+   - Break down feature into smaller components
+   - Discuss each component's requirements
+   - Explore edge cases and constraints
+   - Do NOT generate any code or documentation during this phase
+   - **Confirmation Required:** Validate each component's design before proceeding
 
-### 4. Pre-Implementation Phase
+3. Spec Writing
+   - Follow rules in `@file .cursor/rules/spec-driven-development.mdc`
+   - Develop spec interactively with stakeholder
+   - Write spec sections incrementally
+   - Get feedback on each section before proceeding
+   - Refine based on feedback
+   - ALWAYS clarify all API decisions with stakeholder
+   - Include:
+     - Detailed requirements
+     - Technical approach
+     - API design
+     - Data structures
+     - Error handling
+   - **Confirmation Required:** Approve each section before moving to next
+
+4. Final Review
+   - Review complete spec
+   - Verify all requirements are covered
+   - Check integration points
+   - **Confirmation Required:** Final spec approval
+
+### 3. Pre-Implementation Phase
 After spec completion, prompt for next steps:
 1. Documentation Updates
    - Add usage examples
@@ -55,7 +72,7 @@ After spec completion, prompt for next steps:
    - Identify potential challenges
    - **Confirmation Required:** Review implementation plan
 
-### 5. Implementation Phase
+### 4. Implementation Phase
 For each implementation step:
 1. Summarize proposed changes
 2. **Confirmation Required:** Get approval before making changes
