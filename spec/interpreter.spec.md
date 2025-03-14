@@ -64,45 +64,6 @@ The Interpreter is a core component of Reactive Kit that provides a deterministi
    - Must enable resource reuse
    - Must prevent memory leaks
 
-## Acceptance Criteria
-
-### Functional Requirements
-1. Correctness
-   - Expressions must evaluate correctly
-   - Effects must be handled properly
-   - Concurrent evaluations must coordinate
-   - Results must be cached accurately
-   - Errors must be handled appropriately
-
-2. Completeness
-   - All expressions must be evaluated
-   - No effect loss
-   - Complete fiber lifecycle
-   - Full type safety
-   - Complete error handling
-
-### Non-Functional Requirements
-1. Performance
-   - Low evaluation overhead
-   - Efficient concurrent execution
-   - Scalable expression count
-   - Responsive effect handling
-   - Memory-efficient caching
-
-2. Developer Experience
-   - Intuitive expression API
-   - Clear error messages
-   - Easy debugging
-   - Type safety
-   - Documentation
-
-## Dependencies
-- TypeScript type system
-- Runtime scheduler
-- Actor system
-- Dependency tracking
-- Compiler transform
-
 ## Examples
 
 ### Basic Evaluation

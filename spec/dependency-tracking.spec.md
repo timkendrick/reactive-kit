@@ -57,45 +57,6 @@ The Dependency Tracking system is a core component of Reactive Kit that enables 
    - Must manage subscription lifecycle
    - Must handle resource limits
 
-## Acceptance Criteria
-
-### Functional Requirements
-1. Correctness
-   - Dependencies must be tracked accurately
-   - Updates must propagate correctly
-   - Changes must be atomic
-   - State must remain consistent
-   - Errors must be handled properly
-
-2. Completeness
-   - All dependencies must be captured
-   - No false dependencies
-   - No missed dependencies
-   - Complete causal chains
-   - Full type information
-
-### Non-Functional Requirements
-1. Performance
-   - Low tracking overhead
-   - Fast dependency resolution
-   - Efficient change propagation
-   - Minimal memory usage
-   - Scalable to large graphs
-
-2. Developer Experience
-   - Intuitive dependency tracking
-   - Clear error messages
-   - Easy debugging
-   - Type safety
-   - Documentation
-
-## Dependencies
-- TypeScript type system
-- Runtime scheduler
-- Compiler transform
-- Plugin system
-- Actor system
-
 ## Examples
 
 ### Basic Dependency Tracking

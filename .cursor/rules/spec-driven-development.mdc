@@ -15,34 +15,31 @@ alwaysApply: true
 ```markdown
 # Feature Specifications
 
-## Overview
-[Brief description of the project/package]
-
-## Features
+## Feature Category
 - [Feature Name](mdc:spec/feature-name.spec.md) - Short description of the feature
 - [Another Feature](mdc:spec/another-feature.spec.md) - Another short description
-
-## Package-Specific Features
-- [Package Feature](mdc:packages/package-name/spec/package-feature.spec.md) - Package-specific feature description
 ```
 
 ### Development Workflow
 1. When creating a new feature:
    - Determine if it's a workspace-wide or package-specific feature
+   - If the feature entails building a new package, prompt to create a package for the feature
    - Create a `.spec.md` file in the appropriate `spec` directory
    - Add an entry to the relevant `SPEC.md` file with a relative link and description
 
 2. Spec Development:
-   - Break the spec down into small chunks
-   - Clarify each chunk before proceeding
+   - Break the feature down into small requirements
+   - Clarify each requirement before proceeding
+   - Requirements that are not yet ready for implementation can be annotated with `[TBD]` for revisiting later
+   - Focus specifically on usage examples
+   - Clarify and validate each usage example in turn before proceeding
    - Document any undefined requirements
    - Generate the full spec text
 
 3. Implementation:
+   - Prompt whether to update existing documentation (`README.md`, architectural docs, etc) with usage examples from the spec
+   - Prompt whether to create high-level automated tests based on the spec
    - Use the spec to guide feature development
-   - Generate a `README.md` with usage examples
-   - Clarify and validate usage examples
-   - Create high-level unit tests
 
 ### File Organization
 ```
@@ -66,9 +63,16 @@ workspace/
 
 ### Spec Content Guidelines
 - Each spec should be self-contained
-- Include clear requirements and acceptance criteria
-- Document any dependencies or prerequisites
-- Provide examples where appropriate
+- Each spec should contain the following sections:
+   - Overview
+   - Background (optional)
+   - Detailed explanation (optional)
+   - Requirements
+   - Examples
+   - Related specs (optional)
+- Include clear implementation details
+- Provide examples and diagrams where appropriate
+- Diagrams should be expressed in mermaid format
 - Reference related specs if needed
 - Use `[TBD]` suffix for headings where details are not yet finalized
   - Example: `## Error Recovery Strategy [TBD]`

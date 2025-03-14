@@ -50,44 +50,6 @@ The Runtime Scheduler is a core component of Reactive Kit that coordinates the e
    - Must support task pooling
    - Must enable resource reuse
 
-## Acceptance Criteria
-
-### Functional Requirements
-1. Correctness
-   - Tasks must execute in correct order
-   - Dependencies must be respected
-   - State must remain consistent
-   - Errors must be handled properly
-
-2. Completeness
-   - All tasks must be processed
-   - No task loss
-   - Complete task lifecycle
-   - Full type safety
-   - Complete error handling
-
-### Non-Functional Requirements
-1. Performance
-   - Low scheduling overhead
-   - High task throughput
-   - Efficient resource usage
-   - Scalable task count
-   - Responsive task handling
-
-2. Developer Experience
-   - Intuitive scheduling API
-   - Clear error messages
-   - Easy debugging
-   - Type safety
-   - Documentation
-
-## Dependencies
-- TypeScript type system
-- Actor system
-- Dependency tracking
-- Plugin system
-- Compiler transform
-
 ## Examples
 
 ### Basic Scheduling
