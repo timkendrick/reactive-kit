@@ -14,6 +14,5 @@ test('module exports', () => {
     fromAsyncIteratorFactory: lib.fromAsyncIteratorFactory,
     fromCancelablePromiseFactory: lib.fromCancelablePromiseFactory,
     fromPromiseFactory: lib.fromPromiseFactory,
-    pipe: lib.pipe,
   });
 });

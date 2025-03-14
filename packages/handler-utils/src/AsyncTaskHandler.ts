@@ -1,8 +1,8 @@
 import {
   AsyncTaskHandle,
   HandlerAction,
-  type AsyncTaskFactory,
   type HandlerContext,
+  AsyncTaskFactory,
 } from '@reactive-kit/actor';
 import { type Message } from '@reactive-kit/runtime-messages';
 import { EffectExpression, type EffectId } from '@reactive-kit/types';
@@ -14,19 +14,19 @@ export interface AsyncTaskMessage<T> extends Message<T> {
   taskId: AsyncTaskId;
 }
 
-interface AsyncTaskRequest<T extends EffectExpression<unknown>, S> {
+interface AsyncTaskRequest<T extends EffectExpression<unknown>, C> {
   effect: T;
-  state: S;
+  config: C;
   handle: AsyncTaskHandle;
 }
 
 export abstract class AsyncTaskHandler<
   T extends EffectExpression<unknown>,
   M extends AsyncTaskMessage<unknown>,
-  S,
+  C,
 > extends EffectHandler<T, M> {
   protected subscriptions = new Map<EffectId, AsyncTaskId>();
-  protected requests = new Map<AsyncTaskId, AsyncTaskRequest<T, S>>();
+  protected requests = new Map<AsyncTaskId, AsyncTaskRequest<T, C>>();
   protected nextTaskId = 1;
 
   protected abstract createTask(
@@ -34,13 +34,13 @@ export abstract class AsyncTaskHandler<
     effect: T,
     context: HandlerContext<EffectHandlerInput<M>>,
   ): {
-    task: AsyncTaskFactory<M>;
-    state: S;
+    task: AsyncTaskFactory<C, M, M>;
+    config: C;
   };
 
   protected abstract handleTaskMessage(
     message: M,
-    state: S,
+    config: C,
     effect: T,
     context: HandlerContext<EffectHandlerInput<M>>,
   ): EffectHandlerOutput<M>;
@@ -53,9 +53,9 @@ export abstract class AsyncTaskHandler<
     if (this.subscriptions.has(stateToken)) return null;
     const taskId = this.nextTaskId++;
     this.subscriptions.set(stateToken, taskId);
-    const { task, state } = this.createTask(taskId, effect, context);
-    const handle = context.spawnAsync(task);
-    this.requests.set(taskId, { effect, handle, state });
+    const { task, config } = this.createTask(taskId, effect, context);
+    const handle = context.spawn({ actor: task, config });
+    this.requests.set(taskId, { effect, handle, config });
     return [HandlerAction.Spawn(handle)];
   }
 
@@ -82,7 +82,7 @@ export abstract class AsyncTaskHandler<
     const { taskId } = message;
     const request = this.requests.get(taskId);
     if (request === undefined) return null;
-    const { effect, state } = request;
-    return this.handleTaskMessage(message, state, effect, context);
+    const { effect, config } = request;
+    return this.handleTaskMessage(message, config, effect, context);
   }
 }

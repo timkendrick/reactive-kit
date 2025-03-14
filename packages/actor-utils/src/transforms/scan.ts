@@ -6,7 +6,7 @@ import {
   HandlerResult,
 } from '@reactive-kit/actor';
 
-export class ScanActor<T, S> implements Actor<T> {
+export class ScanActor<T, S> implements Actor<T, S> {
   private state: S;
   private reducer: (state: S, action: T) => S;
   private next: ActorHandle<S>;

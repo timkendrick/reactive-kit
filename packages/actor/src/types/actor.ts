@@ -6,8 +6,31 @@ import {
   type PhantomType,
 } from '@reactive-kit/utils';
 
-export interface Actor<I, O = unknown> {
+export interface Actor<I, O> {
   handle(message: I, context: HandlerContext<I>): HandlerResult<O>;
+}
+
+export interface ActorFactoryBase {
+  type: ActorType;
+}
+
+export type ActorFactory<C, I, O> =
+  | SyncActorFactory<C, I, O, Actor<I, O>>
+  | AsyncActorFactory<C, I, O, AsyncActor<I, O>>;
+
+export interface ActorCreator<C, I, O> {
+  actor: ActorFactory<C, I, O>;
+  config: C;
+}
+
+export interface SyncActorFactory<C, I, O, A extends Actor<I, O>> extends ActorFactoryBase {
+  async: false;
+  factory: (config: C) => A;
+}
+
+export interface AsyncActorFactory<C, I, O, A extends AsyncActor<I, O>> extends ActorFactoryBase {
+  async: true;
+  factory: (config: C, self: ActorHandle<I>) => A;
 }
 
 export interface ActorHandle<T> {
@@ -17,8 +40,7 @@ export interface ActorHandle<T> {
 
 export interface HandlerContext<T> {
   self(): ActorHandle<T>;
-  spawn<T>(factory: () => Actor<T>): ActorHandle<T>;
-  spawnAsync<T>(factory: AsyncTaskFactory<T>): ActorHandle<T>;
+  spawn<C, I, O>(actor: ActorCreator<C, I, O>): ActorHandle<I>;
 }
 
 export type HandlerResult<T = unknown> = Array<HandlerAction<T>> | null;
@@ -42,9 +64,15 @@ export type HandlerAction<T> = Enum<{
   };
 }>;
 
-export type AsyncTaskHandle = ActorHandle<never>;
+export type ActorType = string;
 
-export type AsyncTaskFactory<I, O = unknown> = (self: ActorHandle<I>) => AsyncActor<I, O>;
+export type MaybeAsyncActor<I, O = unknown> = Actor<I, O> | AsyncActor<I, O>;
+
+export type AsyncTaskType = ActorType;
+
+export interface AsyncTaskFactory<C, I, O> extends AsyncActorFactory<C, I, O, AsyncActor<I, O>> {}
+
+export type AsyncTaskHandle = ActorHandle<never>;
 
 export interface AsyncActor<I, O = unknown>
   extends AsyncIterator<HandlerResult<O>, HandlerResult<O>, I> {}
@@ -58,7 +86,9 @@ export const HandlerAction = {
     function Spawn<T>(
       target: ActorHandle<T>,
     ): EnumVariant<HandlerAction<T>, HandlerActionType.Spawn> {
-      return instantiateEnum(HandlerActionType.Spawn, { target });
+      return instantiateEnum(HandlerActionType.Spawn, {
+        target,
+      });
     },
     {
       [VARIANT]: HandlerActionType.Spawn,

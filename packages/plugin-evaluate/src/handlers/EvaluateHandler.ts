@@ -1,5 +1,6 @@
 import {
   Actor,
+  ActorFactory,
   ActorHandle,
   HandlerAction,
   HandlerContext,
@@ -28,15 +29,15 @@ import {
   EffectExpression,
   Expression,
   EffectId,
-  InterpreterResult,
   EvaluationResultType,
-  createResult,
   EvaluationErrorResult,
   EvaluationSuccessResult,
   ResultExpression,
   EvaluationResult,
 } from '@reactive-kit/types';
 import { EFFECT_TYPE_EVALUATE, EvaluateEffect } from '../effects';
+
+export const ACTOR_TYPE_EVALUATE_HANDLER = '@reactive-kit/actor/evaluate-handler';
 
 type EvaluateHandlerInputMessage =
   | SubscribeEffectsMessage
@@ -50,11 +51,6 @@ type EvaluateHandlerOutputMessage =
 type EvaluateHandlerInput = EvaluateHandlerInputMessage;
 type EvaluateHandlerOutput = HandlerResult<EvaluateHandlerOutputMessage>;
 
-interface QuerySubscription<T> {
-  effect: InterpreterSubscription<T>;
-  result: InterpreterResult<T>;
-}
-
 export type ReadyEvaluationResult<T> = ResultExpression<T>;
 export type StateValues = Map<EffectId, Expression<unknown>>;
 
@@ -64,17 +60,29 @@ interface EvaluateHandlerSubscription<T> {
   result: EvaluationResult<T>;
 }
 
-export class EvaluateHandler implements Actor<Message<unknown>> {
+export interface EvaluateHandlerConfig {
+  state: StateValues | null;
+  next: ActorHandle<EvaluateHandlerOutputMessage>;
+}
+
+export class EvaluateHandler implements Actor<Message<unknown>, Message<unknown>> {
   private readonly next: ActorHandle<EvaluateHandlerOutputMessage>;
   private effectState: StateValues;
   private interpreter: Interpreter;
   private subscriptions: Map<Hash, EvaluateHandlerSubscription<Hashable>>;
 
-  constructor(
-    options: { state: StateValues | null },
-    next: ActorHandle<EvaluateHandlerOutputMessage>,
-  ) {
-    const { state } = options;
+  public static readonly FACTORY: ActorFactory<
+    EvaluateHandlerConfig,
+    Message<unknown>,
+    Message<unknown>
+  > = {
+    type: ACTOR_TYPE_EVALUATE_HANDLER,
+    async: false,
+    factory: (config: EvaluateHandlerConfig) => new EvaluateHandler(config),
+  };
+
+  public constructor(config: EvaluateHandlerConfig) {
+    const { state, next } = config;
     this.effectState = state ?? new Map();
     this.interpreter = new Interpreter();
     this.subscriptions = new Map();
@@ -322,10 +330,6 @@ function parseInterpreterResultValue<T>(
     case EvaluationResultType.Error:
       return result.error;
   }
-}
-
-function parseMaybeHashable(value: Hashable | unknown): Expression<Hashable> {
-  return createResult(isHashable(value) ? value : null);
 }
 
 function isEqualMaybeHashable<T extends Hashable | unknown>(left: T, right: T): boolean {

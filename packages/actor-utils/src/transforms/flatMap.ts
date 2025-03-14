@@ -6,7 +6,7 @@ import {
   HandlerResult,
 } from '@reactive-kit/actor';
 
-export class FlatMapActor<T, T2> implements Actor<T> {
+export class FlatMapActor<T, T2> implements Actor<T, T2> {
   private iteratee: (message: T) => Array<T2>;
   private next: ActorHandle<T2>;
 
