@@ -124,10 +124,6 @@ hasResultingState(
     hasField("count", n => n > 0)
   )
 )
-
-hasStateTransition((prev, next) => 
-  hasField("count", n => n === prev.count + 1)
-)
 ```
 
 ## Advanced Usage
@@ -196,13 +192,6 @@ await verifyHandlerBehavior(handler, {
 
 ### Pattern Matchers
 
-- Message Matchers
-  - `hasActionType(type)`
-  - `hasMessageType(type)`
-  - `hasMessagePayload(payload)`
-  - `sentTo(handle)`
-  - `sentFrom(handle)`
-
 - Logical Operators
   - `and(...predicates)`
   - `or(...predicates)`
@@ -215,10 +204,16 @@ await verifyHandlerBehavior(handler, {
   - `zeroOrMore(pattern)`
   - `oneOrMore(pattern)`
 
-- State Matchers
-  - `hasResultingState(predicate)`
-  - `hasStateTransition(predicate)`
+- Object matchers
   - `hasField(key, predicate)`
+
+- Message Matchers
+  - `hasActionType(type)`
+  - `hasMessageType(type)`
+  - `hasMessagePayload(payload)`
+  - `sentTo(handle)`
+  - `sentFrom(handle)`
+  - `hasResultingState(predicate)`
 
 ### Task Mocking
 
@@ -233,4 +228,3 @@ await verifyHandlerBehavior(handler, {
   - `withState(initial, actions)`
   - `modifyState(state, fn)`
   - `getState(state, fn)`
-  

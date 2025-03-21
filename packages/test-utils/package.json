@@ -32,7 +32,10 @@
     }
   },
   "devDependencies": {
-    "@reactive-kit/build-config": "workspace:*"
+    "@reactive-kit/actor": "workspace:*",
+    "@reactive-kit/build-config": "workspace:*",
+    "@reactive-kit/runtime-messages": "workspace:*",
+    "@reactive-kit/utils": "workspace:*"
   },
   "peerDependencies": {
     "eslint": "^8",

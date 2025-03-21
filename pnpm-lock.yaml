@@ -1067,9 +1067,18 @@ importers:
         specifier: ^2
         version: 2.1.8(@types/node@20.5.9)
     devDependencies:
+      '@reactive-kit/actor':
+        specifier: workspace:*
+        version: link:../actor
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
+      '@reactive-kit/runtime-messages':
+        specifier: workspace:*
+        version: link:../runtime-messages
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
 
   packages/types:
     dependencies:
