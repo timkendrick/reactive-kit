@@ -27,7 +27,7 @@ export class TimeHandler extends AsyncTaskHandler<
 > {
   public static readonly FACTORY: ActorFactory<
     TimeHandlerConfig,
-    Message<unknown>,
+    Message<unknown, unknown>,
     EffectHandlerOutputMessage | TimeHandlerInternalMessage
   > = {
     type: ACTOR_TYPE_TIME_HANDLER,
@@ -63,7 +63,7 @@ export class TimeHandler extends AsyncTaskHandler<
   }
 
   protected override acceptInternal(
-    message: Message<unknown>,
+    message: Message<unknown, unknown>,
   ): message is TimeHandlerInternalMessage {
     return isTimeHandlerEmitMessage(message);
   }
@@ -74,7 +74,7 @@ export class TimeHandler extends AsyncTaskHandler<
     effect: TimeEffect,
     context: HandlerContext<EffectHandlerInput<TimeHandlerInternalMessage>>,
   ): EffectHandlerOutput<TimeHandlerInternalMessage> {
-    const { time } = message;
+    const { time } = message.payload;
     const effectValue = createResult(time);
     const action = this.emit(EFFECT_TYPE_TIME, new Map([[effect.id, effectValue]]));
     return [action];

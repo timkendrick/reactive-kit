@@ -10,7 +10,9 @@ import { EffectHandler } from './EffectHandler';
 import type { EffectHandlerInput, EffectHandlerOutput } from './EffectHandler';
 export type AsyncTaskId = number;
 
-export interface AsyncTaskMessage<T> extends Message<T> {
+export interface AsyncTaskMessage<T, V extends AsyncTaskMessagePayload> extends Message<T, V> {}
+
+export interface AsyncTaskMessagePayload {
   taskId: AsyncTaskId;
 }
 
@@ -22,7 +24,7 @@ interface AsyncTaskRequest<T extends EffectExpression<unknown>, C> {
 
 export abstract class AsyncTaskHandler<
   T extends EffectExpression<unknown>,
-  M extends AsyncTaskMessage<unknown>,
+  M extends AsyncTaskMessage<unknown, AsyncTaskMessagePayload>,
   C,
 > extends EffectHandler<T, M> {
   protected subscriptions = new Map<EffectId, AsyncTaskId>();
@@ -75,11 +77,11 @@ export abstract class AsyncTaskHandler<
   }
 
   protected override handleInternal(
-    message: Message<unknown>,
+    message: Message<unknown, unknown>,
     context: HandlerContext<EffectHandlerInput<M>>,
   ): EffectHandlerOutput<M> {
     if (!this.acceptInternal(message)) return null;
-    const { taskId } = message;
+    const { taskId } = message.payload;
     const request = this.requests.get(taskId);
     if (request === undefined) return null;
     const { effect, config } = request;

@@ -55,14 +55,18 @@ export type HandlerAction<T> = Enum<{
   [HandlerActionType.Spawn]: {
     target: ActorHandle<T>;
   };
-  [HandlerActionType.Kill]: {
-    target: ActorHandle<T>;
-  };
   [HandlerActionType.Send]: {
     target: ActorHandle<T>;
     message: T;
   };
+  [HandlerActionType.Kill]: {
+    target: ActorHandle<T>;
+  };
 }>;
+
+export type SpawnHandlerAction<T> = EnumVariant<HandlerAction<T>, HandlerActionType.Spawn>;
+export type SendHandlerAction<T> = EnumVariant<HandlerAction<T>, HandlerActionType.Send>;
+export type KillHandlerAction<T> = EnumVariant<HandlerAction<T>, HandlerActionType.Kill>;
 
 export type ActorType = string;
 

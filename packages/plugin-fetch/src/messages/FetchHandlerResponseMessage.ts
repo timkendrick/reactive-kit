@@ -17,7 +17,7 @@ export function createFetchHandlerResponseMessage(
 }
 
 export function isFetchHandlerResponseMessage(
-  message: Message<unknown>,
+  message: Message<unknown, unknown>,
 ): message is FetchHandlerResponseMessage {
   return message.type === MESSAGE_FETCH_HANDLER_RESPONSE;
 }

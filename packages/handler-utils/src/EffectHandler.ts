@@ -26,17 +26,17 @@ import { nonNull } from '@reactive-kit/utils';
 export type EffectHandlerInputMessage = SubscribeEffectsMessage | UnsubscribeEffectsMessage;
 export type EffectHandlerOutputMessage = EmitEffectValuesMessage;
 
-export type EffectHandlerInput<TInternal extends Message<unknown>> =
+export type EffectHandlerInput<TInternal extends Message<unknown, unknown>> =
   | EffectHandlerInputMessage
   | TInternal;
-export type EffectHandlerOutput<TInternal extends Message<unknown>> = HandlerResult<
+export type EffectHandlerOutput<TInternal extends Message<unknown, unknown>> = HandlerResult<
   EffectHandlerOutputMessage | TInternal
 >;
 
 export abstract class EffectHandler<
   T extends EffectExpression<unknown>,
-  TInternal extends Message<unknown>,
-> implements Actor<Message<unknown>, EffectHandlerOutputMessage | TInternal>
+  TInternal extends Message<unknown, unknown>,
+> implements Actor<Message<unknown, unknown>, EffectHandlerOutputMessage | TInternal>
 {
   protected readonly effectTypes: Set<T['type']>;
   protected readonly next: ActorHandle<EffectHandlerOutputMessage>;
@@ -61,15 +61,15 @@ export abstract class EffectHandler<
     context: HandlerContext<EffectHandlerInput<TInternal>>,
   ): EffectHandlerOutput<TInternal>;
 
-  protected abstract acceptInternal(message: Message<unknown>): message is TInternal;
+  protected abstract acceptInternal(message: Message<unknown, unknown>): message is TInternal;
 
   protected abstract handleInternal(
-    message: Message<unknown>,
+    message: Message<unknown, unknown>,
     context: HandlerContext<EffectHandlerInput<TInternal>>,
   ): EffectHandlerOutput<TInternal>;
 
   public handle(
-    message: Message<unknown>,
+    message: Message<unknown, unknown>,
     context: HandlerContext<EffectHandlerInput<TInternal>>,
   ): EffectHandlerOutput<TInternal> {
     if (!this.accept(message)) return null;
@@ -82,12 +82,12 @@ export abstract class EffectHandler<
     return this.handleInternal(message, context);
   }
 
-  private accept(message: Message<unknown>): message is EffectHandlerInput<TInternal> {
+  private accept(message: Message<unknown, unknown>): message is EffectHandlerInput<TInternal> {
     if (isSubscribeEffectsMessage(message)) {
-      return Array.from(message.effects.keys()).some((type) => this.effectTypes.has(type));
+      return Array.from(message.payload.effects.keys()).some((type) => this.effectTypes.has(type));
     }
     if (isUnsubscribeEffectsMessage(message)) {
-      return Array.from(message.effects.keys()).some((type) => this.effectTypes.has(type));
+      return Array.from(message.payload.effects.keys()).some((type) => this.effectTypes.has(type));
     }
     if (this.acceptInternal(message)) return true;
     return false;
@@ -97,7 +97,7 @@ export abstract class EffectHandler<
     message: SubscribeEffectsMessage,
     context: HandlerContext<EffectHandlerInput<TInternal>>,
   ): EffectHandlerOutput<TInternal> {
-    const { effects } = message;
+    const { effects } = message.payload;
     const effectsByType = new Map<T['type'], T[]>();
 
     for (const effectType of this.effectTypes) {
@@ -133,7 +133,9 @@ export abstract class EffectHandler<
       .flat();
 
     const initialValuesMessage =
-      initialValuesByType.size === 0 ? null : createEmitEffectValuesMessage(initialValuesByType);
+      initialValuesByType.size === 0
+        ? null
+        : createEmitEffectValuesMessage({ updates: initialValuesByType });
 
     const initialValueActions =
       initialValuesMessage != null ? [HandlerAction.Send(this.next, initialValuesMessage)] : [];
@@ -146,7 +148,7 @@ export abstract class EffectHandler<
     message: UnsubscribeEffectsMessage,
     context: HandlerContext<EffectHandlerInput<TInternal>>,
   ): EffectHandlerOutput<TInternal> {
-    const { effects } = message;
+    const { effects } = message.payload;
     const allTypedEffects = Array.from(this.effectTypes)
       .map((effectType) => getTypedEffects<T>(effectType, effects))
       .filter(nonNull)
@@ -168,7 +170,7 @@ export abstract class EffectHandler<
     values: Map<EffectId, Expression<any>>,
   ): HandlerAction<EffectHandlerOutputMessage> {
     const effectValues = new Map([[effectType, values]]);
-    const emitMessage = createEmitEffectValuesMessage(effectValues);
+    const emitMessage = createEmitEffectValuesMessage({ updates: effectValues });
     return HandlerAction.Send(this.next, emitMessage);
   }
 }

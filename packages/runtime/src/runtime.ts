@@ -1,4 +1,4 @@
-import type { Actor, ActorFactory, ActorHandle } from '@reactive-kit/actor';
+import type { ActorFactory, ActorHandle } from '@reactive-kit/actor';
 import { BroadcastActor } from '@reactive-kit/actor-utils';
 import {
   createEvaluateEffect,
@@ -20,7 +20,11 @@ import { type Expression, type EffectId, isResultExpression } from '@reactive-ki
 import { createAsyncTrigger, type AsyncTrigger } from '@reactive-kit/utils';
 
 export type RuntimeEffectHandlers = Iterable<
-  ActorFactory<{ next: ActorHandle<Message<unknown>> }, Message<unknown>, Message<unknown>>
+  ActorFactory<
+    { next: ActorHandle<Message<unknown, unknown>> },
+    Message<unknown, unknown>,
+    Message<unknown, unknown>
+  >
 >;
 
 interface Subscription<T> {
@@ -88,7 +92,7 @@ export class Runtime {
     if (!existingResult) {
       subscriptionResults.set(effectId, subscriptionResult);
       scheduler.dispatch(
-        createSubscribeEffectsMessage(new Map([[EFFECT_TYPE_EVALUATE, [effect]]])),
+        createSubscribeEffectsMessage({ effects: new Map([[EFFECT_TYPE_EVALUATE, [effect]]]) }),
       );
     }
     const queue = new Array<(value: IteratorResult<ReadyEvaluationResult<T>, null>) => void>();
@@ -136,7 +140,7 @@ export class Runtime {
           unsubscribeTrigger.emit({ done: true, value: null });
         }
         scheduler.dispatch(
-          createUnsubscribeEffectsMessage(new Map([[EFFECT_TYPE_EVALUATE, [effect]]])),
+          createUnsubscribeEffectsMessage({ effects: new Map([[EFFECT_TYPE_EVALUATE, [effect]]]) }),
         );
       }
       const queuedResults = queue.slice();
@@ -160,7 +164,7 @@ function awaitEvaluationResults(
       const { value: message } = result;
       const evaluationResults =
         message.type === MESSAGE_EMIT_EFFECT_VALUES
-          ? message.updates.get(EFFECT_TYPE_EVALUATE)
+          ? message.payload.updates.get(EFFECT_TYPE_EVALUATE)
           : undefined;
       if (evaluationResults) {
         for (const [stateToken, value] of evaluationResults) {
