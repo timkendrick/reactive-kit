@@ -20,7 +20,7 @@ type {{ pascalCase pluginName }}HandlerInternalMessage = never;
 export class {{ pascalCase pluginName }}Handler extends EffectHandler<{{ pascalCase pluginName }}Effect, {{ pascalCase pluginName }}HandlerInternalMessage> {
   public static readonly FACTORY: ActorFactory<
     {{ pascalCase pluginName }}HandlerConfig,
-    Message<unknown>,
+    Message<unknown, unknown>,
     EffectHandlerOutputMessage | {{ pascalCase pluginName }}HandlerInternalMessage
   > = {
     type: ACTOR_TYPE_{{ constantCase pluginName }}_HANDLER,
@@ -52,13 +52,13 @@ export class {{ pascalCase pluginName }}Handler extends EffectHandler<{{ pascalC
   }
 
   protected override acceptInternal(
-    message: Message<unknown>,
+    message: Message<unknown, unknown>,
   ): message is {{ pascalCase pluginName }}HandlerInternalMessage {
     return false;
   }
 
   protected override handleInternal(
-    message: Message<unknown>,
+    message: Message<unknown, unknown>,
     context: HandlerContext<EffectHandlerInput<{{ pascalCase pluginName }}HandlerInternalMessage>>,
   ): EffectHandlerOutput<{{ pascalCase pluginName }}HandlerInternalMessage> {
     return null;

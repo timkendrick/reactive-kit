@@ -3,21 +3,24 @@ import type { Message } from '../message';
 
 export const MESSAGE_SUBSCRIBE_EFFECTS = 'core::subscribeEffects';
 
-export interface SubscribeEffectsMessage extends Message<typeof MESSAGE_SUBSCRIBE_EFFECTS> {
+export interface SubscribeEffectsMessagePayload {
   effects: Map<EffectType, Array<EffectExpression<unknown>>>;
 }
 
+export interface SubscribeEffectsMessage
+  extends Message<typeof MESSAGE_SUBSCRIBE_EFFECTS, SubscribeEffectsMessagePayload> {}
+
 export function createSubscribeEffectsMessage(
-  effects: Map<EffectType, Array<EffectExpression<unknown>>>,
+  payload: SubscribeEffectsMessagePayload,
 ): SubscribeEffectsMessage {
   return {
     type: MESSAGE_SUBSCRIBE_EFFECTS,
-    effects,
+    payload,
   };
 }
 
 export function isSubscribeEffectsMessage(
-  message: Message<unknown>,
+  message: Message<unknown, unknown>,
 ): message is SubscribeEffectsMessage {
   return message.type === MESSAGE_SUBSCRIBE_EFFECTS;
 }

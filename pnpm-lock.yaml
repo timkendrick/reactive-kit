@@ -716,9 +716,6 @@ importers:
       '@reactive-kit/actor':
         specifier: workspace:*
         version: link:../actor
-      '@reactive-kit/actor-utils':
-        specifier: workspace:*
-        version: link:../actor-utils
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config

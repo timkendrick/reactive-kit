@@ -27,7 +27,7 @@ export class FetchHandler extends AsyncTaskHandler<
 > {
   public static readonly FACTORY: ActorFactory<
     FetchHandlerConfig,
-    Message<unknown>,
+    Message<unknown, unknown>,
     EffectHandlerOutputMessage | FetchHandlerInternalMessage
   > = {
     type: ACTOR_TYPE_FETCH_HANDLER,
@@ -66,7 +66,7 @@ export class FetchHandler extends AsyncTaskHandler<
   }
 
   protected override acceptInternal(
-    message: Message<unknown>,
+    message: Message<unknown, unknown>,
   ): message is FetchHandlerInternalMessage {
     return isFetchHandlerResponseMessage(message);
   }

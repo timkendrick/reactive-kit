@@ -10,8 +10,9 @@ import { describe, expect, test } from 'vitest';
 
 import { AsyncScheduler } from './async';
 
-interface Message<T> {
+interface Message<T, V> {
   type: T;
+  payload: V;
 }
 
 describe(AsyncScheduler, () => {
@@ -22,12 +23,10 @@ describe(AsyncScheduler, () => {
       Result,
       Destroy,
     }
-    interface IncrementMessage extends Message<AppMessageType.Increment> {}
-    interface DecrementMessage extends Message<AppMessageType.Decrement> {}
-    interface DestroyMessage extends Message<AppMessageType.Destroy> {}
-    interface ResultMessage extends Message<AppMessageType.Result> {
-      value: number;
-    }
+    interface IncrementMessage extends Message<AppMessageType.Increment, null> {}
+    interface DecrementMessage extends Message<AppMessageType.Decrement, null> {}
+    interface DestroyMessage extends Message<AppMessageType.Destroy, null> {}
+    interface ResultMessage extends Message<AppMessageType.Result, { value: number }> {}
     type AppMessage = IncrementMessage | DecrementMessage | DestroyMessage | ResultMessage;
     class AppActor implements Actor<IncrementMessage | DecrementMessage, AppMessage> {
       private readonly output: ActorHandle<ResultMessage>;
@@ -44,14 +43,14 @@ describe(AsyncScheduler, () => {
             return [
               HandlerAction.Send(this.output, {
                 type: AppMessageType.Result,
-                value: ++this.counter,
+                payload: { value: ++this.counter },
               }),
             ];
           case AppMessageType.Decrement:
             return [
               HandlerAction.Send(this.output, {
                 type: AppMessageType.Result,
-                value: --this.counter,
+                payload: { value: --this.counter },
               }),
             ];
           case AppMessageType.Destroy:
@@ -67,13 +66,13 @@ describe(AsyncScheduler, () => {
       factory: (output: ActorHandle<ResultMessage>) => new AppActor(output),
     } satisfies ActorFactory<ActorHandle<AppMessage>, AppMessage, AppMessage>;
     const scheduler = new AsyncScheduler<AppMessage>(() => APP_ACTOR);
-    scheduler.dispatch({ type: AppMessageType.Increment });
+    scheduler.dispatch({ type: AppMessageType.Increment, payload: null });
     {
       const result = await scheduler.next();
       expect(result).toEqual({ done: false, value: { type: AppMessageType.Result, value: 1 } });
     }
-    scheduler.dispatch({ type: AppMessageType.Increment });
-    scheduler.dispatch({ type: AppMessageType.Increment });
+    scheduler.dispatch({ type: AppMessageType.Increment, payload: null });
+    scheduler.dispatch({ type: AppMessageType.Increment, payload: null });
     {
       const result = await scheduler.next();
       expect(result).toEqual({ done: false, value: { type: AppMessageType.Result, value: 2 } });
@@ -82,12 +81,12 @@ describe(AsyncScheduler, () => {
       const result = await scheduler.next();
       expect(result).toEqual({ done: false, value: { type: AppMessageType.Result, value: 3 } });
     }
-    scheduler.dispatch({ type: AppMessageType.Decrement });
+    scheduler.dispatch({ type: AppMessageType.Decrement, payload: null });
     {
       const result = await scheduler.next();
       expect(result).toEqual({ done: false, value: { type: AppMessageType.Result, value: 2 } });
     }
-    scheduler.dispatch({ type: AppMessageType.Destroy });
+    scheduler.dispatch({ type: AppMessageType.Destroy, payload: null });
     {
       const result = await scheduler.next();
       expect(result).toEqual({ done: true, value: null });

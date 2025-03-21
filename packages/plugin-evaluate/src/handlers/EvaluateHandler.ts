@@ -65,7 +65,9 @@ export interface EvaluateHandlerConfig {
   next: ActorHandle<EvaluateHandlerOutputMessage>;
 }
 
-export class EvaluateHandler implements Actor<Message<unknown>, Message<unknown>> {
+export class EvaluateHandler
+  implements Actor<Message<unknown, unknown>, Message<unknown, unknown>>
+{
   private readonly next: ActorHandle<EvaluateHandlerOutputMessage>;
   private effectState: StateValues;
   private interpreter: Interpreter;
@@ -73,8 +75,8 @@ export class EvaluateHandler implements Actor<Message<unknown>, Message<unknown>
 
   public static readonly FACTORY: ActorFactory<
     EvaluateHandlerConfig,
-    Message<unknown>,
-    Message<unknown>
+    Message<unknown, unknown>,
+    Message<unknown, unknown>
   > = {
     type: ACTOR_TYPE_EVALUATE_HANDLER,
     async: false,
@@ -90,7 +92,7 @@ export class EvaluateHandler implements Actor<Message<unknown>, Message<unknown>
   }
 
   public handle(
-    message: Message<unknown>,
+    message: Message<unknown, unknown>,
     context: HandlerContext<EvaluateHandlerInput>,
   ): EvaluateHandlerOutput {
     if (!this.accept(message)) return null;
@@ -104,10 +106,12 @@ export class EvaluateHandler implements Actor<Message<unknown>, Message<unknown>
     }
   }
 
-  private accept(message: Message<unknown>): message is EvaluateHandlerInput {
+  private accept(message: Message<unknown, unknown>): message is EvaluateHandlerInput {
     if (isEmitEffectValuesMessage(message)) return true;
-    if (isSubscribeEffectsMessage(message)) return message.effects.has(EFFECT_TYPE_EVALUATE);
-    if (isUnsubscribeEffectsMessage(message)) return message.effects.has(EFFECT_TYPE_EVALUATE);
+    if (isSubscribeEffectsMessage(message))
+      return message.payload.effects.has(EFFECT_TYPE_EVALUATE);
+    if (isUnsubscribeEffectsMessage(message))
+      return message.payload.effects.has(EFFECT_TYPE_EVALUATE);
     return false;
   }
 
@@ -115,7 +119,7 @@ export class EvaluateHandler implements Actor<Message<unknown>, Message<unknown>
     message: SubscribeEffectsMessage,
     context: HandlerContext<EvaluateHandlerInput>,
   ): EvaluateHandlerOutput {
-    const { effects } = message;
+    const { effects } = message.payload;
     const typedEffects = getTypedEffects<EvaluateEffect<Hashable>>(EFFECT_TYPE_EVALUATE, effects);
     if (!typedEffects || typedEffects.length === 0) return null;
     const addedSubscriptions = typedEffects.flatMap((effect) => {
@@ -156,14 +160,16 @@ export class EvaluateHandler implements Actor<Message<unknown>, Message<unknown>
       newlySubscribedEffects.size > 0
         ? HandlerAction.Send(
             this.next,
-            createSubscribeEffectsMessage(groupEffectsByType(newlySubscribedEffects)),
+            createSubscribeEffectsMessage({ effects: groupEffectsByType(newlySubscribedEffects) }),
           )
         : null;
     const emitResultsAction =
       emittedValues.size > 0
         ? HandlerAction.Send(
             this.next,
-            createEmitEffectValuesMessage(new Map([[EFFECT_TYPE_EVALUATE, emittedValues]])),
+            createEmitEffectValuesMessage({
+              updates: new Map([[EFFECT_TYPE_EVALUATE, emittedValues]]),
+            }),
           )
         : null;
     const combinedActions = [
@@ -178,7 +184,7 @@ export class EvaluateHandler implements Actor<Message<unknown>, Message<unknown>
     context: HandlerContext<EvaluateHandlerInput>,
   ): EvaluateHandlerOutput {
     // FIXME: Ensure top-level evaluations are not unsubscribed due to a different query unsubscribing a sub-query for the same evaluation
-    const { effects } = message;
+    const { effects } = message.payload;
     const typedEffects = getTypedEffects<EvaluateEffect<unknown>>(EFFECT_TYPE_EVALUATE, effects);
     if (!typedEffects || typedEffects.length === 0) return null;
     const removedSubscriptions = typedEffects.flatMap((effect) => {
@@ -198,7 +204,9 @@ export class EvaluateHandler implements Actor<Message<unknown>, Message<unknown>
       newlyUnsubscribedEffects.size > 0
         ? HandlerAction.Send(
             this.next,
-            createUnsubscribeEffectsMessage(groupEffectsByType(newlyUnsubscribedEffects)),
+            createUnsubscribeEffectsMessage({
+              effects: groupEffectsByType(newlyUnsubscribedEffects),
+            }),
           )
         : null;
     const combinedActions = unsubscribeEffectsAction ? [unsubscribeEffectsAction] : [];
@@ -209,7 +217,7 @@ export class EvaluateHandler implements Actor<Message<unknown>, Message<unknown>
     message: EmitEffectValuesMessage,
     context: HandlerContext<EvaluateHandlerInput>,
   ): EvaluateHandlerOutput {
-    const { updates } = message;
+    const { updates } = message.payload;
     for (const typedUpdates of updates.values()) {
       for (const [id, value] of typedUpdates) {
         // Store the updated effect value in the handler state
@@ -262,21 +270,27 @@ export class EvaluateHandler implements Actor<Message<unknown>, Message<unknown>
       newlySubscribedEffects.size > 0
         ? HandlerAction.Send(
             this.next,
-            createSubscribeEffectsMessage(groupEffectsByType(newlySubscribedEffects)),
+            createSubscribeEffectsMessage({
+              effects: groupEffectsByType(newlySubscribedEffects),
+            }),
           )
         : null;
     const unsubscribeEffectsAction =
       newlyUnsubscribedEffects.size > 0
         ? HandlerAction.Send(
             this.next,
-            createUnsubscribeEffectsMessage(groupEffectsByType(newlyUnsubscribedEffects)),
+            createUnsubscribeEffectsMessage({
+              effects: groupEffectsByType(newlyUnsubscribedEffects),
+            }),
           )
         : null;
     const emitResultsAction =
       emittedValues.size > 0
         ? HandlerAction.Send(
             this.next,
-            createEmitEffectValuesMessage(new Map([[EFFECT_TYPE_EVALUATE, emittedValues]])),
+            createEmitEffectValuesMessage({
+              updates: new Map([[EFFECT_TYPE_EVALUATE, emittedValues]]),
+            }),
           )
         : null;
     const combinedActions = [
