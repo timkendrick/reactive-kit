@@ -1,13 +1,15 @@
 import {
-  HandlerAction,
-  HandlerActionType,
-  KillHandlerAction,
-  SendHandlerAction,
-  SpawnHandlerAction,
+  type HandlerAction,
+  type HandlerActionType,
+  type KillHandlerAction,
+  type SendHandlerAction,
+  type SpawnHandlerAction,
 } from '@reactive-kit/actor';
 import { VARIANT } from '@reactive-kit/utils';
-import { Predicate } from '../../types';
-import { TestAction } from './types';
+
+import type { Predicate } from '../../types';
+
+import type { TestAction } from './types';
 
 export function hasActionType(
   type: HandlerActionType.Send,

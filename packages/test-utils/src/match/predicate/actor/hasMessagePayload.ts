@@ -1,7 +1,9 @@
-import { Message } from '@reactive-kit/runtime-messages';
-import { SendHandlerAction } from '@reactive-kit/actor';
-import { Predicate } from '../../types';
-import { TestAction } from './types';
+import type { SendHandlerAction } from '@reactive-kit/actor';
+import type { Message } from '@reactive-kit/runtime-messages';
+
+import type { Predicate } from '../../types';
+
+import type { TestAction } from './types';
 
 export function hasMessagePayload<T>(
   predicate: Predicate<T>,

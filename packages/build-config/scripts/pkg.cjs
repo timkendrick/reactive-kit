@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 const fs = require('node:fs');
+const { createRequire } = require('node:module');
 const path = require('node:path');
 const process = require('node:process');
-const { createRequire } = require('node:module');
 
 const [inputPath, outputPath] = process.argv.slice(2);
 

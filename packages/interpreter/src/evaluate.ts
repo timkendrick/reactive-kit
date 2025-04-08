@@ -1,28 +1,29 @@
-import { Hash, hash, Hashable, HashableError, isHashable } from '@reactive-kit/hash';
+import { HashableError, hash, isHashable, type Hash, type Hashable } from '@reactive-kit/hash';
 import {
-  createEvaluationErrorResult,
-  createEvaluationPendingResult,
-  createEvaluationSuccessResult,
-  EffectExpression,
-  EvaluationResult,
-  EvaluationResultType,
+  EXPRESSION_TYPE,
   EXPRESSION_TYPE_ASYNC,
   EXPRESSION_TYPE_EFFECT,
   EXPRESSION_TYPE_FALLBACK,
   EXPRESSION_TYPE_PENDING,
   EXPRESSION_TYPE_RESULT,
   EXPRESSION_TYPE_SUSPENSE,
-  EXPRESSION_TYPE,
-  Expression,
-  GeneratorContinuation,
-  ResultExpression,
+  EvaluationResultType,
+  createEvaluationErrorResult,
+  createEvaluationPendingResult,
+  createEvaluationSuccessResult,
   createResult,
-  EvaluationErrorResult,
-  SuspenseExpression,
   createSuspense,
+  type EffectExpression,
+  type EvaluationErrorResult,
+  type EvaluationResult,
+  type Expression,
+  type GeneratorContinuation,
+  type ResultExpression,
+  type SuspenseExpression,
 } from '@reactive-kit/types';
-import { EvaluationCache, EvaluationCacheNode } from './types';
-import { createAsyncState, updateAsyncState, next } from './generator';
+
+import { createAsyncState, next, updateAsyncState } from './generator';
+import type { EvaluationCache, EvaluationCacheNode } from './types';
 
 /*
 A simple TypeScript interpreter / evaluation engine implementation for an asynchronous fiber-based task scheduling system.
@@ -47,6 +48,7 @@ See the `Expression` type for a list of expressions supported by the interpreter
  */
 
 interface Fiber {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   expression: Expression<any>;
   expressionHash: Hash;
   // Fiber that spawned this fiber, either via a fork or a tail call
@@ -116,7 +118,7 @@ export function* evaluate<T>(
       throw new InterpreterError('Tail call limit exceeded');
     }
 
-    let fiberResult: EvaluationCacheNode<Hashable>;
+    let fiberResult: EvaluationCacheNode<Hashable> | null = null;
     const { expressionHash, expression } = currentFiber;
     // Determine whether the current expression has already been evaluated,
     // either in a preceding branch of the current evaluation, or in a previous evaluation
@@ -125,9 +127,9 @@ export function* evaluate<T>(
       // If the cached fiber originates from the current evaluation, we can safely reuse the result
       // Otherwise if it originates from a previous evaluation, we can only reuse results that are still valid
       if (cachedResult && !cachedResult.isDirty) {
-        fiberResult = cachedResult;
         // Mark the cached node and all its active dependencies as having been visited in this tick
         cache.visitAll(cachedResult, cachedResult.visited);
+        fiberResult = cachedResult;
         break result;
       }
 
@@ -137,7 +139,7 @@ export function* evaluate<T>(
           case EXPRESSION_TYPE_RESULT:
           case EXPRESSION_TYPE_PENDING: {
             // If the current expression is an atomic expression, we can return the result immediately
-            const result: EvaluationResult<unknown> =
+            const result: EvaluationResult<Hashable> =
               expression[EXPRESSION_TYPE] === EXPRESSION_TYPE_PENDING
                 ? createEvaluationPendingResult()
                 : createEvaluationSuccessResult(expression);
@@ -154,6 +156,14 @@ export function* evaluate<T>(
             const effectValue = yield expression;
             // Evaluate the tail expression
             pushStackFrame(createTailCallStackFrame(effectValue, currentFiber), stack);
+            continue loop;
+          }
+
+          case EXPRESSION_TYPE_FALLBACK: {
+            const { attempt: attemptedExpression } = expression;
+            // Evaluate the inner expression (the fallback expression will be evaluated during stack unwinding
+            // only if the inner expression evaluates to a Pending value)
+            pushStackFrame(createTailCallStackFrame(attemptedExpression, currentFiber), stack);
             continue loop;
           }
 
@@ -274,14 +284,6 @@ export function* evaluate<T>(
               }
             }
           }
-
-          case EXPRESSION_TYPE_FALLBACK: {
-            const { attempt: attemptedExpression } = expression;
-            // Evaluate the inner expression (the fallback expression will be evaluated during stack unwinding
-            // only if the inner expression evaluates to a Pending value)
-            pushStackFrame(createTailCallStackFrame(attemptedExpression, currentFiber), stack);
-            continue loop;
-          }
         }
       } catch (error) {
         const result = createEvaluationErrorResult(createResult(createHashableError(error)));
@@ -293,6 +295,9 @@ export function* evaluate<T>(
         });
       }
     }
+    // A result is assigned in every possible code path;
+    // assert that this is the case here to keep the linter happy
+    assertNonNull(fiberResult);
 
     // Now that we have reached a fully-resolved result, we can update the cached result for the current expression
     // If we arrived at the same result as an existing invalidated cached state, the invalidated state can still be reused,
@@ -479,7 +484,7 @@ function createSuspendedStackFrame(existingFiber: Fiber): Fiber {
   };
 }
 
-function createFallbackStackFrame(existingFiber: Fiber, fallback: Expression<any>): Fiber {
+function createFallbackStackFrame(existingFiber: Fiber, fallback: Expression<unknown>): Fiber {
   return {
     expressionHash: hash(fallback),
     expression: fallback,
@@ -547,4 +552,10 @@ function resultsAreEqual<T>(left: ResultExpression<T>, right: ResultExpression<T
 function errorsAreEqual(left: Hashable, right: Hashable): boolean {
   if (left === right) return true;
   return hash(left) === hash(right);
+}
+
+function assertNonNull<T>(value: T): asserts value is NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new TypeError('Expected non-null value');
+  }
 }

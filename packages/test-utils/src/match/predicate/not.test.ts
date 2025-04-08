@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { not } from './not';
 
 describe('not', () => {
@@ -34,7 +35,7 @@ describe('not', () => {
 
   it('works with complex object predicates', () => {
     // Define a predicate for object properties
-    const isPremiumUser = (obj: any) => obj.tier === 'premium';
+    const isPremiumUser = (obj: Record<string, unknown>) => obj.tier === 'premium';
     const isNonPremiumUser = not(isPremiumUser);
 
     // Test with premium users (should return false)

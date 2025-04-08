@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { or } from './or';
 
 describe('or', () => {
@@ -33,9 +34,10 @@ describe('or', () => {
 
   it('works with complex object predicates', () => {
     // Define predicates for object properties
-    const isPremium = (obj: any) => obj.tier === 'premium';
-    const hasHighScore = (obj: any) => typeof obj.score === 'number' && obj.score > 90;
-    const isAdmin = (obj: any) => obj.role === 'admin';
+    const isPremium = (obj: Record<string, unknown>) => obj.tier === 'premium';
+    const hasHighScore = (obj: Record<string, unknown>) =>
+      typeof obj.score === 'number' && obj.score > 90;
+    const isAdmin = (obj: Record<string, unknown>) => obj.role === 'admin';
 
     const canAccessFeature = or(isPremium, hasHighScore, isAdmin);
 

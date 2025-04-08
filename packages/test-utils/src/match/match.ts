@@ -1,4 +1,4 @@
-import { MatchState, Pattern, PatternMatchResults } from './types';
+import { type MatchState, type Pattern, type PatternMatchResults } from './types';
 
 export function matchPattern<T>(input: Array<T>, pattern: Pattern<T>): PatternMatchResults<T> {
   const state: MatchState<T> = {

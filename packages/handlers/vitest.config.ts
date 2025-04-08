@@ -1,4 +1,5 @@
 import { join, resolve } from 'path';
+
 import { defineConfig, mergeConfig } from 'vitest/config';
 
 import base from './vite.config';

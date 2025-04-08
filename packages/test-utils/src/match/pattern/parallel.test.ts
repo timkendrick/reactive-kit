@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
+import { matchPattern } from '../match';
+import type { PatternMatchResults } from '../types';
+
 import { parallel } from './parallel';
 import { predicate } from './predicate';
-import { PatternMatchResults } from '../types';
-import { matchPattern } from '../match';
 import { sequence } from './sequence';
 
 describe(parallel, () => {

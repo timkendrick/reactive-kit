@@ -1,4 +1,4 @@
-import { MatchState, Pattern } from '../types';
+import type { MatchState, Pattern } from '../types';
 
 export function repeat<T>(count: number, pattern: Pattern<T>): Pattern<T> {
   return {
@@ -6,7 +6,7 @@ export function repeat<T>(count: number, pattern: Pattern<T>): Pattern<T> {
       let currentStates: Array<MatchState<T>> = [initialState];
 
       for (let i = 0; i < count; i++) {
-        let nextStates: Array<MatchState<T>> = [];
+        const nextStates: Array<MatchState<T>> = [];
         for (const state of currentStates) {
           const results = pattern.match(state);
           nextStates.push(...results);

@@ -1,6 +1,7 @@
 import { HASH, assignCustomHash, hash, type CustomHashable, type Hash } from '@reactive-kit/hash';
 import { map, useReactive } from '@reactive-kit/reactive-utils';
 import type { Uid } from '@reactive-kit/utils';
+
 import { createFetchEffect, type FetchEffectValue } from '../effects';
 import type { FetchRequest, FetchResponse } from '../types';
 
@@ -14,7 +15,7 @@ interface CoercedInitValues {
   body: string | Uint8Array | null;
 }
 
-interface FetchResult extends FetchResponse {
+interface FetchResultPayload extends FetchResponse {
   text(): string;
   json(): unknown;
 }
@@ -31,7 +32,7 @@ const handleFetchResponse = assignCustomHash(
   },
 );
 
-export function useFetch(request: string | FetchRequestInit): Promise<FetchResult> {
+export function useFetch(request: string | FetchRequestInit): Promise<FetchResultPayload> {
   const init = typeof request === 'string' ? { url: request } : request;
   const effect = createFetchEffect({
     url: init.url,
@@ -48,7 +49,7 @@ export function useFetch(request: string | FetchRequestInit): Promise<FetchResul
   return useReactive(map(effect, handleFetchResponse));
 }
 
-class FetchResult implements CustomHashable {
+class FetchResult implements CustomHashable, FetchResultPayload {
   private readonly response: FetchResponse;
   private readonly hash: Hash;
 
@@ -71,6 +72,10 @@ class FetchResult implements CustomHashable {
 
   public get token(): Uid {
     return this.response.token;
+  }
+
+  public get body(): Uint8Array | null {
+    return this.response.body;
   }
 
   public text(): string {

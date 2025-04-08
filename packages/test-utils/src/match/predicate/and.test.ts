@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { and } from './and';
 
 describe('and', () => {
@@ -33,9 +34,10 @@ describe('and', () => {
 
   it('works with complex object predicates', () => {
     // Define predicates for object properties
-    const hasName = (obj: any) => Boolean(obj.name);
-    const hasPositiveAge = (obj: any) => typeof obj.age === 'number' && obj.age > 0;
-    const isActive = (obj: any) => obj.active === true;
+    const hasName = (obj: Record<string, unknown>) => Boolean(obj.name);
+    const hasPositiveAge = (obj: Record<string, unknown>) =>
+      typeof obj.age === 'number' && obj.age > 0;
+    const isActive = (obj: Record<string, unknown>) => obj.active === true;
 
     const isValidUser = and(hasName, hasPositiveAge, isActive);
 

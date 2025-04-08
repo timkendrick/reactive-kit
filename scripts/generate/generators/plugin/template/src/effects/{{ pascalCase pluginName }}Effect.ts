@@ -1,4 +1,4 @@
-import { type HashableObject } from '@reactive-kit/hash';
+import type { HashableObject } from '@reactive-kit/hash';
 import { createEffect, type EffectExpression } from '@reactive-kit/types';
 
 export const EFFECT_TYPE_{{ constantCase pluginName }} = '@reactive-kit/effect-{{ pluginName }}';

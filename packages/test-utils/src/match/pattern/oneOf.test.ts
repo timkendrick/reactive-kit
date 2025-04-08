@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { oneOf } from './oneOf';
-import { PatternMatchResults } from '../types';
-import { predicate } from './predicate';
+import { describe, expect, it } from 'vitest';
+
 import { matchPattern } from '../match';
+import type { PatternMatchResults } from '../types';
+
+import { oneOf } from './oneOf';
+import { predicate } from './predicate';
 
 describe(oneOf, () => {
   it('should match any of the patterns', () => {

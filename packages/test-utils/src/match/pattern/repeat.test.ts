@@ -1,10 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
+import { matchPattern } from '../match';
+import { and } from '../predicate/and';
+import type { PatternMatchResults, Predicate } from '../types';
+
+import { predicate } from './predicate';
 import { repeat } from './repeat';
 import { sequence } from './sequence';
-import { and } from '../predicate/and';
-import { predicate } from './predicate';
-import { matchPattern } from '../match';
-import { PatternMatchResults, Predicate } from '../types';
 
 describe(repeat, () => {
   it('should match exactly n occurrences within a sequence (future implementation)', () => {

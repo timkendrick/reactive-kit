@@ -1,22 +1,22 @@
 import type { ActorFactory, ActorHandle } from '@reactive-kit/actor';
 import { BroadcastActor } from '@reactive-kit/actor-utils';
+import type { Hashable } from '@reactive-kit/hash';
 import {
-  createEvaluateEffect,
   EFFECT_TYPE_EVALUATE,
   EvaluateHandler,
+  createEvaluateEffect,
   type ReadyEvaluationResult,
   type StateValues,
 } from '@reactive-kit/plugin-evaluate';
-import { type Hashable } from '@reactive-kit/hash';
 import {
   MESSAGE_EMIT_EFFECT_VALUES,
-  Message,
   createSubscribeEffectsMessage,
   createUnsubscribeEffectsMessage,
+  type Message,
   type RuntimeMessage,
 } from '@reactive-kit/runtime-messages';
 import { AsyncScheduler } from '@reactive-kit/scheduler';
-import { type Expression, type EffectId, isResultExpression } from '@reactive-kit/types';
+import { isResultExpression, type EffectId, type Expression } from '@reactive-kit/types';
 import { createAsyncTrigger, type AsyncTrigger } from '@reactive-kit/utils';
 
 export type RuntimeEffectHandlers = Iterable<
@@ -45,6 +45,7 @@ export const ACTOR_TYPE_RUNTIME = '@reactive-kit/actor/runtime';
 
 export class Runtime {
   private scheduler: AsyncScheduler<RuntimeMessage>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private subscriptionResults = new Map<EffectId, Subscription<any>>();
   private unsubscribeTrigger: AsyncTrigger<IteratorReturnResult<null>> | undefined;
 

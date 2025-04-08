@@ -36,15 +36,15 @@
     "@reactive-kit/babel-plugin-reactive-jsx": "workspace:*",
     "@reactive-kit/build-config": "workspace:*",
     "@reactive-kit/babel-test-utils": "workspace:*",
-    "@reactive-kit/babel-types": "workspace:*",
-    "@babel/core": "7.24.4",
-    "@types/babel__core": "7.20.5"
+    "@reactive-kit/babel-types": "workspace:*"
   },
   "peerDependencies": {
+    "@babel/core": "^7",
+    "@types/babel__core": "^7",
     "eslint": "^8",
-    "typedoc": "^0.27",
+    "typedoc": "^0.28",
     "typescript": "^5",
     "vite": "^6",
-    "vitest": "^2"
+    "vitest": "^3"
   }
 }

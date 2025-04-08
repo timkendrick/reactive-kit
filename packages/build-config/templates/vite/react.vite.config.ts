@@ -1,5 +1,5 @@
-import { defineConfig, mergeConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
+import { defineConfig, mergeConfig } from 'vite';
 
 import base from './base.vite.config';
 

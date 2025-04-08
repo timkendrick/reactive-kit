@@ -1,7 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { matchPattern } from '../match';
-import { PatternMatchResults } from '../types';
 import { predicate } from '../pattern/predicate';
+import type { PatternMatchResults } from '../types';
+
 import { any } from './any';
 
 describe(any, () => {

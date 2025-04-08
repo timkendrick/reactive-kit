@@ -1,17 +1,19 @@
-import {
-  EffectExpression,
-  Expression,
-  InterpreterResult,
-  createPending,
-} from '@reactive-kit/types';
-import { EvaluationCache } from './types';
-import { evaluate } from './evaluate';
 import { DependencyGraph } from '@reactive-kit/cache';
+import { HASH, hash, type Hash } from '@reactive-kit/hash';
+import {
+  createPending,
+  type EffectExpression,
+  type Expression,
+  type InterpreterResult,
+} from '@reactive-kit/types';
+
+import { evaluate } from './evaluate';
 import { gc } from './gc';
-import { HASH, hash, Hash } from '@reactive-kit/hash';
+import type { EvaluationCache } from './types';
 
 export class Interpreter {
   private cache: EvaluationCache;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private subscriptions: Array<InterpreterSubscription<any>>;
 
   public constructor() {

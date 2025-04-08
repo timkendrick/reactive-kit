@@ -1,4 +1,4 @@
-import { CustomHashable, hash, HASH, Hash } from './hash';
+import { HASH, hash, type CustomHashable, type Hash } from './hash';
 
 export class HashableError extends Error implements CustomHashable {
   public [HASH]: Hash;

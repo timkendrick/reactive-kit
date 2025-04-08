@@ -1,16 +1,16 @@
 import {
-  AsyncTaskHandle,
   HandlerAction,
+  type AsyncTaskFactory,
+  type AsyncTaskHandle,
   type HandlerContext,
-  AsyncTaskFactory,
 } from '@reactive-kit/actor';
-import { type Message } from '@reactive-kit/runtime-messages';
-import { EffectExpression, type EffectId } from '@reactive-kit/types';
-import { EffectHandler } from './EffectHandler';
-import type { EffectHandlerInput, EffectHandlerOutput } from './EffectHandler';
+import type { Message } from '@reactive-kit/runtime-messages';
+import type { EffectExpression, EffectId } from '@reactive-kit/types';
+
+import { EffectHandler, type EffectHandlerInput, type EffectHandlerOutput } from './EffectHandler';
 export type AsyncTaskId = number;
 
-export interface AsyncTaskMessage<T, V extends AsyncTaskMessagePayload> extends Message<T, V> {}
+export type AsyncTaskMessage<T, V extends AsyncTaskMessagePayload> = Message<T, V>;
 
 export interface AsyncTaskMessagePayload {
   taskId: AsyncTaskId;
@@ -63,7 +63,7 @@ export abstract class AsyncTaskHandler<
 
   protected override onUnsubscribe(
     effect: T,
-    context: HandlerContext<EffectHandlerInput<M>>,
+    _context: HandlerContext<EffectHandlerInput<M>>,
   ): EffectHandlerOutput<M> {
     const stateToken = effect.id;
     const taskId = this.subscriptions.get(stateToken);

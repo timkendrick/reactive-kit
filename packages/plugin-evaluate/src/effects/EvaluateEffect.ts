@@ -1,4 +1,4 @@
-import { type HashableObject, type Hashable } from '@reactive-kit/hash';
+import type { Hashable, HashableObject } from '@reactive-kit/hash';
 import { createEffect, type EffectExpression, type Expression } from '@reactive-kit/types';
 
 export const EFFECT_TYPE_EVALUATE = '@reactive-kit/effect-evaluate';

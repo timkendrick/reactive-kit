@@ -60,9 +60,9 @@
   },
   "peerDependencies": {
     "eslint": "^8",
-    "typedoc": "^0.27",
+    "typedoc": "^0.28",
     "typescript": "^5",
     "vite": "^6",
-    "vitest": "^2"
+    "vitest": "^3"
   }
 }

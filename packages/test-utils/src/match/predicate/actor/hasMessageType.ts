@@ -1,7 +1,9 @@
-import { SendHandlerAction } from '@reactive-kit/actor';
-import { Message } from '@reactive-kit/runtime-messages';
-import { Predicate, TypeNarrowingPredicate } from '../../types';
-import { TestAction } from './types';
+import type { SendHandlerAction } from '@reactive-kit/actor';
+import type { Message } from '@reactive-kit/runtime-messages';
+
+import type { Predicate, TypeNarrowingPredicate } from '../../types';
+
+import type { TestAction } from './types';
 
 export function hasMessageType<T extends Message<unknown, unknown>>(
   type: T['type'],

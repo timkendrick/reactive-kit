@@ -1,6 +1,6 @@
+import { render } from '@reactive-kit/dom';
 import { hash } from '@reactive-kit/hash';
 import { useFetch, useTime } from '@reactive-kit/hooks';
-import { render } from '@reactive-kit/dom';
 
 async function Main() {
   // Opaque idempotency token that changes every 1000ms

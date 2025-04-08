@@ -1,11 +1,13 @@
-import { describe, it, expect } from 'vitest';
-import { sequence } from './sequence';
-import { predicate } from './predicate';
+import { describe, expect, it } from 'vitest';
+
 import { matchPattern } from '../match';
-import { PatternMatchResults } from '../types';
-import { zeroOrMore } from './zeroOrMore';
-import { oneOrMore } from './oneOrMore';
 import { any } from '../predicate/any';
+import type { PatternMatchResults } from '../types';
+
+import { oneOrMore } from './oneOrMore';
+import { predicate } from './predicate';
+import { sequence } from './sequence';
+import { zeroOrMore } from './zeroOrMore';
 
 describe('sequence', () => {
   it('should match an exact sequence of items', () => {
@@ -134,7 +136,7 @@ describe('sequence', () => {
 
     type HandlerAction = {
       type: HandlerActionType;
-      target?: any;
+      target?: unknown;
       message?: Message;
     };
 

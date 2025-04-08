@@ -1,4 +1,4 @@
-import { MatchState, Pattern } from '../types';
+import type { MatchState, Pattern } from '../types';
 
 export function sequence<T>(...patterns: Array<Pattern<T>>): Pattern<T> {
   return {
@@ -8,7 +8,7 @@ export function sequence<T>(...patterns: Array<Pattern<T>>): Pattern<T> {
 
       // Iterate through each pattern in the sequence
       for (const pattern of patterns) {
-        let nextStates: Array<MatchState<T>> = [];
+        const nextStates: Array<MatchState<T>> = [];
         // For each current possible state, try to match the next pattern in the sequence
         for (const state of currentStates) {
           const results = pattern.match(state);

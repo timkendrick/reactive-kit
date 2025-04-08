@@ -1,5 +1,11 @@
-import { BabelPlugin, NodePath, PluginObj, PluginPass, Scope } from '@reactive-kit/babel-types';
 import type { types as t } from '@reactive-kit/babel-test-utils';
+import {
+  type BabelPlugin,
+  type NodePath,
+  type PluginObj,
+  type PluginPass,
+  type Scope,
+} from '@reactive-kit/babel-types';
 
 /**
  * Hoist all async functions to top-level functions, with free variables passed as arguments
@@ -108,7 +114,7 @@ export const hoistAsyncFunctions: BabelPlugin = (babel): PluginObj<PluginPass> =
     switch (param.type) {
       case 'Identifier':
         return param;
-      case 'RestElement':
+      case 'RestElement': {
         let argument = param.argument;
         while (true) {
           switch (argument.type) {
@@ -132,6 +138,7 @@ export const hoistAsyncFunctions: BabelPlugin = (babel): PluginObj<PluginPass> =
               continue;
           }
         }
+      }
       default:
         return null;
     }

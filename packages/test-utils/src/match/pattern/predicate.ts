@@ -1,4 +1,4 @@
-import { Pattern, Predicate } from '../types';
+import type { Pattern, Predicate } from '../types';
 
 export function predicate<T>(pattern: Predicate<T>): Pattern<T> {
   return {

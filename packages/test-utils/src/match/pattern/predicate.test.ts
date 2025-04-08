@@ -1,7 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { predicate } from './predicate';
-import { PatternMatchResults } from '../types';
+import { describe, expect, it } from 'vitest';
+
 import { matchPattern } from '../match';
+import type { PatternMatchResults } from '../types';
+
+import { predicate } from './predicate';
 
 describe(predicate, () => {
   it('should match items that satisfy the predicate', () => {

@@ -1,4 +1,5 @@
 import type { Hashable } from '@reactive-kit/hash';
+
 import type { EffectExpression, ResultExpression } from './expression';
 
 export interface InterpreterResult<T> {

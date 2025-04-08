@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { printAst, transform, template } from '@reactive-kit/babel-test-utils';
+
+import { printAst, template, transform } from '@reactive-kit/babel-test-utils';
 
 import { hoistAsyncFunctions } from './hoistAsyncFunctions';
 

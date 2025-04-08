@@ -1,14 +1,17 @@
 import {
-  Actor,
-  ActorFactory,
-  ActorHandle,
   HandlerAction,
-  HandlerContext,
-  HandlerResult,
+  type Actor,
+  type ActorFactory,
+  type ActorHandle,
+  type HandlerContext,
+  type HandlerResult,
 } from '@reactive-kit/actor';
-import { hash, Hashable, isHashable, type Hash } from '@reactive-kit/hash';
-import { Interpreter, InterpreterSubscription } from '@reactive-kit/interpreter';
+import { hash, isHashable, type Hash, type Hashable } from '@reactive-kit/hash';
+import { Interpreter, type InterpreterSubscription } from '@reactive-kit/interpreter';
 import {
+  MESSAGE_EMIT_EFFECT_VALUES,
+  MESSAGE_SUBSCRIBE_EFFECTS,
+  MESSAGE_UNSUBSCRIBE_EFFECTS,
   createEmitEffectValuesMessage,
   createSubscribeEffectsMessage,
   createUnsubscribeEffectsMessage,
@@ -17,25 +20,23 @@ import {
   isEmitEffectValuesMessage,
   isSubscribeEffectsMessage,
   isUnsubscribeEffectsMessage,
-  MESSAGE_EMIT_EFFECT_VALUES,
-  MESSAGE_SUBSCRIBE_EFFECTS,
-  MESSAGE_UNSUBSCRIBE_EFFECTS,
   type EmitEffectValuesMessage,
   type Message,
   type SubscribeEffectsMessage,
   type UnsubscribeEffectsMessage,
 } from '@reactive-kit/runtime-messages';
 import {
-  EffectExpression,
-  Expression,
-  EffectId,
   EvaluationResultType,
-  EvaluationErrorResult,
-  EvaluationSuccessResult,
-  ResultExpression,
-  EvaluationResult,
+  type EffectExpression,
+  type EffectId,
+  type EvaluationErrorResult,
+  type EvaluationResult,
+  type EvaluationSuccessResult,
+  type Expression,
+  type ResultExpression,
 } from '@reactive-kit/types';
-import { EFFECT_TYPE_EVALUATE, EvaluateEffect } from '../effects';
+
+import { EFFECT_TYPE_EVALUATE, type EvaluateEffect } from '../effects';
 
 export const ACTOR_TYPE_EVALUATE_HANDLER = '@reactive-kit/actor/evaluate-handler';
 
@@ -117,7 +118,7 @@ export class EvaluateHandler
 
   private handleSubscribeEffects(
     message: SubscribeEffectsMessage,
-    context: HandlerContext<EvaluateHandlerInput>,
+    _context: HandlerContext<EvaluateHandlerInput>,
   ): EvaluateHandlerOutput {
     const { effects } = message.payload;
     const typedEffects = getTypedEffects<EvaluateEffect<Hashable>>(EFFECT_TYPE_EVALUATE, effects);
@@ -181,7 +182,7 @@ export class EvaluateHandler
 
   private handleUnsubscribeEffects(
     message: UnsubscribeEffectsMessage,
-    context: HandlerContext<EvaluateHandlerInput>,
+    _context: HandlerContext<EvaluateHandlerInput>,
   ): EvaluateHandlerOutput {
     // FIXME: Ensure top-level evaluations are not unsubscribed due to a different query unsubscribing a sub-query for the same evaluation
     const { effects } = message.payload;
@@ -215,7 +216,7 @@ export class EvaluateHandler
 
   private handleEmitEffectValues(
     message: EmitEffectValuesMessage,
-    context: HandlerContext<EvaluateHandlerInput>,
+    _context: HandlerContext<EvaluateHandlerInput>,
   ): EvaluateHandlerOutput {
     const { updates } = message.payload;
     for (const typedUpdates of updates.values()) {

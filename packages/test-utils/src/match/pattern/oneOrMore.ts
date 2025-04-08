@@ -1,4 +1,4 @@
-import { MatchState, Pattern } from '../types';
+import type { MatchState, Pattern } from '../types';
 
 export function oneOrMore<T>(pattern: Pattern<T>): Pattern<T> {
   return {

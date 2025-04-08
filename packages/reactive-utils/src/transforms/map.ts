@@ -1,9 +1,9 @@
-import { assignCustomHash, hash, Hashable, type CustomHashable } from '@reactive-kit/hash';
+import { assignCustomHash, hash, type CustomHashable, type Hashable } from '@reactive-kit/hash';
 import {
-  type Expression,
   createAsync,
   createGeneratorStateMachine,
-  GeneratorStateMachine,
+  type Expression,
+  type GeneratorStateMachine,
 } from '@reactive-kit/types';
 
 interface MapGeneratorStateMachine<T extends Hashable, V extends Hashable>
@@ -29,10 +29,11 @@ interface MapGeneratorLocals<T extends Hashable> extends Record<string, Hashable
   value: T;
 }
 
-interface MapGeneratorIntermediates extends Record<string, Hashable> {}
+type MapGeneratorIntermediates = Record<string, Hashable>;
 
-interface MapGeneratorStatics extends Record<string, unknown> {}
+type MapGeneratorStatics = Record<string, unknown>;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MAP_GENERATOR: MapGeneratorStateMachine<any, any> = assignCustomHash(
   hash('@reactive-kit/symbols/transform/map'),
   createGeneratorStateMachine<

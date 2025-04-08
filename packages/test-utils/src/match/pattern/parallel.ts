@@ -1,4 +1,4 @@
-import { MatchState, Pattern } from '../types';
+import type { MatchState, Pattern } from '../types';
 
 export function parallel<T>(...patterns: Array<Pattern<T>>): Pattern<T> {
   const numPatterns = patterns.length;

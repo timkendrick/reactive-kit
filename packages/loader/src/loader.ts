@@ -1,3 +1,5 @@
+import { compile } from '@reactive-kit/compiler';
+
 import type {
   LoaderContext,
   LoaderNext,
@@ -6,7 +8,6 @@ import type {
   ResolverNext,
   ResolverResult,
 } from './types';
-import { compile } from '@reactive-kit/compiler';
 
 export function resolve(
   specifier: string,

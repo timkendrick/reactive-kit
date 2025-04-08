@@ -1,5 +1,5 @@
-import { Predicate } from '../types';
+import type { Predicate } from '../types';
 
 export function any<T>(): Predicate<T> {
-  return (item) => true;
+  return (_item: unknown) => true;
 }

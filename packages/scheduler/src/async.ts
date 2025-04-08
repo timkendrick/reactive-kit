@@ -1,21 +1,21 @@
 import {
-  ActorHandle,
-  AsyncActor,
   HandlerActionType,
-  HandlerContext,
-  HandlerResult,
-  Actor,
-  ActorType,
-  ActorCreator,
-  ActorFactory,
+  type Actor,
+  type ActorCreator,
+  type ActorFactory,
+  type ActorHandle,
+  type ActorType,
+  type AsyncActor,
+  type HandlerContext,
+  type HandlerResult,
 } from '@reactive-kit/actor';
 import {
   AsyncQueue,
-  Enum,
-  EnumVariant,
   VARIANT,
   instantiateEnum,
   subscribeAsyncIterator,
+  type Enum,
+  type EnumVariant,
 } from '@reactive-kit/utils';
 
 enum ActorStateType {
@@ -101,14 +101,14 @@ export const ROOT_ACTOR_TYPE: ActorType = '@reactive-kit/async-scheduler/root';
 
 export class AsyncScheduler<T> implements AsyncIterator<T, null> {
   private handlers: Map<unknown, ActorState<T>>;
-  private phase: AsyncSchedulerPhase<T> = instantiateEnum<AsyncSchedulerPhase<T>>('Idle', {});
+  private phase: AsyncSchedulerPhase<T>;
   private inputHandle: SchedulerActorHandle<T>;
   private outputHandle: SchedulerActorHandle<T>;
   private outputQueue: AsyncQueue<T>;
   private nextHandleId: number = 1;
 
   public constructor(factory: (context: HandlerContext<T>) => ActorFactory<ActorHandle<T>, T, T>) {
-    this.phase;
+    this.phase = instantiateEnum<AsyncSchedulerPhase<T>>('Idle', {});
     this.handlers = new Map();
     const inputHandle = this.generateHandle<T>();
     const outputHandle = this.generateHandle<T>();
@@ -405,8 +405,10 @@ class SchedulerHandlerContext<T> implements HandlerContext<T> {
   public readonly spawned = new Array<{
     // These are not typed because the spawned child might expect different message types from the parent,
     // however this is incompatible with the type system of the scheduler, which assumes all actors have the same message type
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     handle: SchedulerActorHandle<any>;
     actor: ActorCreator<any, any, any>;
+    /* eslint-enable @typescript-eslint/no-explicit-any */
   }>();
 
   public constructor(
@@ -430,6 +432,7 @@ class SchedulerHandlerContext<T> implements HandlerContext<T> {
 
 function collectSpawnedActors<T>(
   context: SchedulerHandlerContext<T>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Map<ActorHandle<T>, ActorCreator<any, any, any>> | null {
   const { spawned } = context;
   if (spawned.length === 0) return null;

@@ -1,4 +1,4 @@
-import { ActorHandle, HandlerAction } from '@reactive-kit/actor';
+import type { ActorHandle, HandlerAction } from '@reactive-kit/actor';
 
 export interface TestAction<T extends HandlerAction<unknown>> {
   action: T;

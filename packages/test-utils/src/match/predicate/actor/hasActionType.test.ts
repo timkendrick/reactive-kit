@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
+import { HandlerAction, HandlerActionType, type ActorHandle } from '@reactive-kit/actor';
+import type { Message } from '@reactive-kit/runtime-messages';
+
 import { hasActionType } from './hasActionType';
-import { TestAction } from './types';
-import { ActorHandle, HandlerAction, HandlerActionType } from '@reactive-kit/actor';
-import { Message } from '@reactive-kit/runtime-messages';
+import type { TestAction } from './types';
 
 describe(hasActionType, () => {
   it('should match the correct action type', () => {

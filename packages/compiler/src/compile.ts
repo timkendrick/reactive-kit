@@ -1,6 +1,7 @@
 import { transformSync, type TransformOptions } from '@babel/core';
-import { type CompilerOptions } from './types';
+
 import plugins from './plugins';
+import type { CompilerOptions } from './types';
 
 const SYNTAX_TYPESCRIPT = ['typescript'] as const;
 const SYNTAX_JSX = ['jsx'] as const;

@@ -1,7 +1,7 @@
 import {
-  Enum,
   VARIANT,
   instantiateEnum,
+  type Enum,
   type EnumVariant,
   type PhantomType,
 } from '@reactive-kit/utils';
@@ -74,12 +74,11 @@ export type MaybeAsyncActor<I, O = unknown> = Actor<I, O> | AsyncActor<I, O>;
 
 export type AsyncTaskType = ActorType;
 
-export interface AsyncTaskFactory<C, I, O> extends AsyncActorFactory<C, I, O, AsyncActor<I, O>> {}
+export type AsyncTaskFactory<C, I, O> = AsyncActorFactory<C, I, O, AsyncActor<I, O>>;
 
 export type AsyncTaskHandle = ActorHandle<never>;
 
-export interface AsyncActor<I, O = unknown>
-  extends AsyncIterator<HandlerResult<O>, HandlerResult<O>, I> {}
+export type AsyncActor<I, O = unknown> = AsyncIterator<HandlerResult<O>, HandlerResult<O>, I>;
 
 export type AsyncTaskResult<T = unknown> = IteratorResult<HandlerResult<T>, HandlerResult<T>>;
 export type AsyncTaskYieldResult<T> = IteratorYieldResult<HandlerResult<T>>;

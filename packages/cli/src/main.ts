@@ -1,7 +1,8 @@
 import { register } from 'node:module';
 import { join } from 'node:path';
+
 import { handlers } from '@reactive-kit/handlers';
-import { type Hashable } from '@reactive-kit/hash';
+import type { Hashable } from '@reactive-kit/hash';
 import { Runtime } from '@reactive-kit/runtime';
 import type { Expression } from '@reactive-kit/types';
 import { subscribeAsyncIterator } from '@reactive-kit/utils';
@@ -12,7 +13,7 @@ declare module 'node:module' {
     parentUrl?: string | URL,
     options?: {
       parentUrl?: string | URL;
-      data?: any;
+      data?: unknown;
       transferList?: Array<Transferable>;
     },
   ): void;

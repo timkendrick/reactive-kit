@@ -11,8 +11,6 @@ test('module exports', () => {
     enumVariantConstructor: lib.enumVariantConstructor,
     instantiateEnum: lib.instantiateEnum,
     isEnumVariant: lib.isEnumVariant,
-    isGenerator: lib.isGenerator,
-    isGeneratorFunction: lib.isGeneratorFunction,
     isNonEmptyArray: lib.isNonEmptyArray,
     match: lib.match,
     nonNull: lib.nonNull,

@@ -1,6 +1,8 @@
-import { ActorHandle, HandlerAction } from '@reactive-kit/actor';
-import { Predicate } from '../../types';
-import { TestAction } from './types';
+import type { ActorHandle, HandlerAction } from '@reactive-kit/actor';
+
+import type { Predicate } from '../../types';
+
+import type { TestAction } from './types';
 
 export function sentTo(
   target: ActorHandle<unknown>,

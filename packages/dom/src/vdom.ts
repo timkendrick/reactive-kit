@@ -1,5 +1,5 @@
 import type { JSX } from '@reactive-kit/component';
-import { hash, Hashable } from '@reactive-kit/hash';
+import { hash, type Hashable } from '@reactive-kit/hash';
 
 export type RenderedNode =
   | RenderedEmptyPlaceholder
@@ -9,7 +9,7 @@ export type RenderedNode =
 
 export interface RenderedEmptyPlaceholder {
   type: 'empty';
-  node: null | undefined | JSX.Element<JSX.Component<{}>>;
+  node: null | undefined | JSX.Element<JSX.Component<object>>;
   dom: EmptyDomPlaceholder;
 }
 
@@ -38,7 +38,7 @@ export interface RenderedDomRange {
   end: EmptyDomPlaceholder;
 }
 
-export interface EmptyDomPlaceholder extends Comment {}
+export type EmptyDomPlaceholder = Comment;
 
 /**
  * Render the contents of a Virtual DOM node into the target DOM node container
@@ -68,7 +68,7 @@ function renderDomNode(
 }
 
 function renderEmpty(
-  node: null | undefined | JSX.Element<JSX.Component<{}>>,
+  node: null | undefined | JSX.Element<JSX.Component<object>>,
   container: Element | DocumentFragment,
   previous: RenderedNode | null,
   nextSibling: Node | RenderedDomRange | null,
@@ -123,7 +123,12 @@ function renderElement(
   if (isIntrinsicElement(node)) {
     return renderIntrinsicElement(node, container, previous, nextSibling);
   } else {
-    return renderEmpty(node as JSX.Element<JSX.Component<{}>>, container, previous, nextSibling);
+    return renderEmpty(
+      node as JSX.Element<JSX.Component<object>>,
+      container,
+      previous,
+      nextSibling,
+    );
   }
 }
 
@@ -262,7 +267,9 @@ function renderChildNodes(
     // Attempt to retrieve an existing node by key, or by index if no key is present
     const key = getNodeKey(itemNode);
     const existingItem =
-      key !== undefined ? existingKeyedItems.get(key) ?? null : existingUnkeyedItems.get(i) ?? null;
+      key !== undefined
+        ? (existingKeyedItems.get(key) ?? null)
+        : (existingUnkeyedItems.get(i) ?? null);
     // Mark the key as used
     if (key !== undefined) {
       existingKeyedItems.delete(key);

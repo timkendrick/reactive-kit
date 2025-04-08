@@ -1,13 +1,14 @@
-import { ActorFactory, type ActorHandle, type HandlerContext } from '@reactive-kit/actor';
+import { type ActorFactory, type ActorHandle, type HandlerContext } from '@reactive-kit/actor';
 import {
   AsyncTaskHandler,
-  AsyncTaskId,
+  type AsyncTaskId,
   type EffectHandlerInput,
   type EffectHandlerOutput,
   type EffectHandlerOutputMessage,
 } from '@reactive-kit/handler-utils';
-import { type Message } from '@reactive-kit/runtime-messages';
+import type { Message } from '@reactive-kit/runtime-messages';
 import { createResult, type Expression } from '@reactive-kit/types';
+
 import { EFFECT_TYPE_TIME, type TimeEffect } from '../effects';
 import { isTimeHandlerEmitMessage, type TimeHandlerEmitMessage } from '../messages';
 import { TIME_TASK, type TimeTaskConfig, type TimeTaskFactory } from '../tasks/TimeTask';
@@ -40,7 +41,7 @@ export class TimeHandler extends AsyncTaskHandler<
     super(EFFECT_TYPE_TIME, next);
   }
 
-  protected override getInitialValue(effect: TimeEffect): Expression<any> | null {
+  protected override getInitialValue(_effect: TimeEffect): Expression<unknown> | null {
     return null;
   }
 
@@ -70,9 +71,9 @@ export class TimeHandler extends AsyncTaskHandler<
 
   protected override handleTaskMessage(
     message: TimeHandlerInternalMessage,
-    state: TimeTaskConfig,
+    _state: TimeTaskConfig,
     effect: TimeEffect,
-    context: HandlerContext<EffectHandlerInput<TimeHandlerInternalMessage>>,
+    _context: HandlerContext<EffectHandlerInput<TimeHandlerInternalMessage>>,
   ): EffectHandlerOutput<TimeHandlerInternalMessage> {
     const { time } = message.payload;
     const effectValue = createResult(time);

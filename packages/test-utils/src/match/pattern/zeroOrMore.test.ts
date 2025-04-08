@@ -1,10 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { zeroOrMore } from './zeroOrMore';
-import { sequence } from './sequence';
-import { and } from '../predicate/and';
-import { predicate } from './predicate';
+import { describe, expect, it } from 'vitest';
+
 import { matchPattern } from '../match';
-import { PatternMatchResults } from '../types';
+import { and } from '../predicate/and';
+import type { PatternMatchResults } from '../types';
+
+import { predicate } from './predicate';
+import { sequence } from './sequence';
+import { zeroOrMore } from './zeroOrMore';
 
 describe('zeroOrMore', () => {
   it('should match when there are zero or more matching items', () => {

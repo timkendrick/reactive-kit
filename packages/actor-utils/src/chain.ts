@@ -1,4 +1,5 @@
-import { ActorHandle, HandlerContext } from '@reactive-kit/actor';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { ActorHandle, HandlerContext } from '@reactive-kit/actor';
 
 type PipedActorFactory<I extends T, O extends T, T = I | O> = (
   next: ActorHandle<O>,

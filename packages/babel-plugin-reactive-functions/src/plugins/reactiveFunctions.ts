@@ -1,4 +1,5 @@
-import { BabelPlugin, PluginObj, PluginPass } from '@reactive-kit/babel-types';
+import { type BabelPlugin, type PluginObj, type PluginPass } from '@reactive-kit/babel-types';
+
 import { hoistAsyncFunctions } from './hoistAsyncFunctions';
 import { transformAsyncFunctions } from './transformAsyncFunctions';
 

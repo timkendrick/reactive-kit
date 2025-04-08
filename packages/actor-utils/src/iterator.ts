@@ -1,10 +1,10 @@
 import {
-  AsyncTaskResult,
-  AsyncTaskReturnResult,
   HandlerAction,
-  HandlerResult,
-  AsyncTaskFactory,
-  AsyncTaskType,
+  type AsyncTaskFactory,
+  type AsyncTaskResult,
+  type AsyncTaskReturnResult,
+  type AsyncTaskType,
+  type HandlerResult,
 } from '@reactive-kit/actor';
 
 interface AsyncIteratorOperation<T> {

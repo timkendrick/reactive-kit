@@ -1,5 +1,6 @@
-import { type Hashable } from '@reactive-kit/hash';
+import type { Hashable } from '@reactive-kit/hash';
 import { createEffect, type EffectExpression } from '@reactive-kit/types';
+
 import type { StateId } from '../types';
 
 export const EFFECT_TYPE_SET_STATE = '@reactive-kit/effect-state/set';

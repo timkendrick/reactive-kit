@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
+import { HandlerAction, type ActorHandle, type SendHandlerAction } from '@reactive-kit/actor';
+import type { Message } from '@reactive-kit/runtime-messages';
+
 import { sentFrom } from './sentFrom';
-import { TestAction } from './types';
-import { HandlerAction, ActorHandle, SendHandlerAction } from '@reactive-kit/actor';
-import { Message } from '@reactive-kit/runtime-messages';
+import type { TestAction } from './types';
 
 describe('sentFrom', () => {
   it('should match the correct actor', () => {

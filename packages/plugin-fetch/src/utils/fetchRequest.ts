@@ -1,6 +1,12 @@
+import { HASH, HashableError, hash, type CustomHashable, type Hash } from '@reactive-kit/hash';
 import { generateUid } from '@reactive-kit/utils';
-import { FetchHeaders, FetchRequest, FetchResponse, FetchResponseState } from '../types';
-import { CustomHashable, hash, HASH, Hash, HashableError } from '@reactive-kit/hash';
+
+import {
+  type FetchHeaders,
+  type FetchRequest,
+  type FetchResponse,
+  type FetchResponseState,
+} from '../types';
 
 class FetchResponseError extends Error implements CustomHashable {
   public readonly response: FetchResponse;
