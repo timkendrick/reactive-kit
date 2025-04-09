@@ -4,7 +4,7 @@ import {
   type AsyncTaskHandle,
   type HandlerContext,
 } from '@reactive-kit/actor';
-import type { Message } from '@reactive-kit/runtime-messages';
+import type { Message } from '@reactive-kit/plugin-evaluate';
 import type { EffectExpression, EffectId } from '@reactive-kit/types';
 
 import { EffectHandler, type EffectHandlerInput, type EffectHandlerOutput } from './EffectHandler';

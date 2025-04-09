@@ -17,7 +17,7 @@
 - `packages/actor`: Core actor framework types
 - `packages/actor-utils`: Actor utility helpers
 - `packages/scheduler`: Actor scheduler implementation
-- `packages/runtime-messages`: Well-known runtime message types
+- `packages/plugin-evaluate/src/messages`: Well-known runtime message types
 
 ### Development Tools
 - `packages/cli`: CLI runtime environment

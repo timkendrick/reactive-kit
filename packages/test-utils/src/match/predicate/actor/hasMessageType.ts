@@ -1,5 +1,5 @@
 import type { SendHandlerAction } from '@reactive-kit/actor';
-import type { Message } from '@reactive-kit/runtime-messages';
+import type { Message } from '@reactive-kit/plugin-evaluate';
 
 import type { Predicate, TypeNarrowingPredicate } from '../../types';
 

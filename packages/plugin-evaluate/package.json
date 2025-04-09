@@ -40,6 +40,18 @@
       "./hooks": {
         "import": "./lib/hooks.lib.js",
         "require": "./lib/hooks.lib.cjs"
+      },
+      "./messages": {
+        "import": "./lib/messages.lib.js",
+        "require": "./lib/messages.lib.cjs"
+      },
+      "./types": {
+        "import": "./lib/types.lib.js",
+        "require": "./lib/types.lib.cjs"
+      },
+      "./utils": {
+        "import": "./lib/utils.lib.js",
+        "require": "./lib/utils.lib.cjs"
       }
     }
   },
@@ -49,7 +61,6 @@
     "@reactive-kit/hash": "workspace:*",
     "@reactive-kit/interpreter": "workspace:*",
     "@reactive-kit/reactive-utils": "workspace:*",
-    "@reactive-kit/runtime-messages": "workspace:*",
     "@reactive-kit/types": "workspace:*",
     "@reactive-kit/utils": "workspace:*"
   },

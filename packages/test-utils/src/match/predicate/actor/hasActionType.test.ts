@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { HandlerAction, HandlerActionType, type ActorHandle } from '@reactive-kit/actor';
-import type { Message } from '@reactive-kit/runtime-messages';
+import type { Message } from '@reactive-kit/plugin-evaluate';
 
 import { hasActionType } from './hasActionType';
 import type { TestAction } from './types';
