@@ -33,7 +33,7 @@ describe(oneOrMore, () => {
 
     // Should match when there is at least one PROGRESS message
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'START' },
         { type: 'PROGRESS', progress: 0.5 },
         { type: 'COMPLETE' },
@@ -45,7 +45,7 @@ describe(oneOrMore, () => {
 
     // Should match when there are multiple PROGRESS messages
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'START' },
         { type: 'PROGRESS', progress: 0.25 },
         { type: 'PROGRESS', progress: 0.5 },
@@ -59,7 +59,7 @@ describe(oneOrMore, () => {
 
     // Should not match when there are no PROGRESS messages
     {
-      const input: Message[] = [{ type: 'START' }, { type: 'COMPLETE' }];
+      const input: Array<Message> = [{ type: 'START' }, { type: 'COMPLETE' }];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<Message> = [];
       expect(actual).toEqual(expected);
@@ -67,7 +67,7 @@ describe(oneOrMore, () => {
 
     // Should not match if required messages are missing
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'START' },
         { type: 'PROGRESS', progress: 0.5 },
         // Missing COMPLETE
@@ -78,7 +78,7 @@ describe(oneOrMore, () => {
     }
 
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         // Missing START
         { type: 'PROGRESS', progress: 0.5 },
         { type: 'COMPLETE' },
@@ -90,7 +90,7 @@ describe(oneOrMore, () => {
 
     // Should not match if there are unexpected messages
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'START' },
         { type: 'PROGRESS', progress: 0.25 },
         { type: 'ERROR' }, // Unexpected message
@@ -135,7 +135,7 @@ describe(oneOrMore, () => {
 
     // Should match with one progress message
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'START' } },
         { type: 'Send', message: { type: 'PROGRESS', progress: 0.5 } },
         { type: 'Send', message: { type: 'COMPLETE' } },
@@ -147,7 +147,7 @@ describe(oneOrMore, () => {
 
     // Should match with multiple progress messages
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'START' } },
         { type: 'Send', message: { type: 'PROGRESS', progress: 0.25 } },
         { type: 'Send', message: { type: 'PROGRESS', progress: 0.5 } },
@@ -161,7 +161,7 @@ describe(oneOrMore, () => {
 
     // Should not match with no progress messages
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'START' } },
         { type: 'Send', message: { type: 'COMPLETE' } },
       ];
@@ -172,7 +172,7 @@ describe(oneOrMore, () => {
 
     // Should not match with interrupted progress sequence
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'START' } },
         { type: 'Send', message: { type: 'PROGRESS', progress: 0.25 } },
         { type: 'Send', message: { type: 'ERROR' } }, // Interruption

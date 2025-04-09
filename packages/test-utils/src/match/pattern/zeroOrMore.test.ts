@@ -33,7 +33,7 @@ describe('zeroOrMore', () => {
 
     // Should match when there are no UPDATE messages
     {
-      const input: Message[] = [{ type: 'START' }, { type: 'END' }];
+      const input: Array<Message> = [{ type: 'START' }, { type: 'END' }];
       const expected: PatternMatchResults<Message> = [{ input, nextIndex: 2, captures: [] }];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
@@ -41,7 +41,7 @@ describe('zeroOrMore', () => {
 
     // Should match when there are some UPDATE messages
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'START' },
         { type: 'UPDATE', payload: 1 },
         { type: 'UPDATE', payload: 2 },
@@ -54,7 +54,7 @@ describe('zeroOrMore', () => {
 
     // Should not match if required messages are missing
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'START' },
         { type: 'UPDATE', payload: 1 },
         // Missing END
@@ -65,7 +65,7 @@ describe('zeroOrMore', () => {
     }
 
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         // Missing START
         { type: 'UPDATE', payload: 1 },
         { type: 'END' },
@@ -77,7 +77,7 @@ describe('zeroOrMore', () => {
 
     // Should not match if there are unexpected messages
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'START' },
         { type: 'UPDATE', payload: 1 },
         { type: 'ERROR' }, // Unexpected message
@@ -121,7 +121,7 @@ describe('zeroOrMore', () => {
 
     // Should match with no debug messages
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'START' } },
         { type: 'Send', message: { type: 'COMPLETE' } },
       ];
@@ -132,7 +132,7 @@ describe('zeroOrMore', () => {
 
     // Should match with some debug messages
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'START' } },
         { type: 'Send', message: { type: 'LOG', level: 'debug' } },
         { type: 'Send', message: { type: 'LOG', level: 'debug' } },
@@ -145,7 +145,7 @@ describe('zeroOrMore', () => {
 
     // Should match with some debug messages
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'START' } },
         { type: 'Send', message: { type: 'LOG', level: 'debug' } },
         { type: 'Send', message: { type: 'LOG', level: 'debug' } },
@@ -158,7 +158,7 @@ describe('zeroOrMore', () => {
 
     // Should not match with other messages mixed in
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'START' } },
         { type: 'Send', message: { type: 'LOG', level: 'debug' } },
         { type: 'Send', message: { type: 'ERROR' } }, // Unexpected message
@@ -177,7 +177,7 @@ describe('zeroOrMore', () => {
 
     // Should match when array has even numbers
     {
-      const input: number[] = [2];
+      const input: Array<number> = [2];
       // Expect both zero matches (nextIndex: 0) and one match (nextIndex: 1)
       const expected: PatternMatchResults<number> = [
         { input, nextIndex: 0, captures: [] },
@@ -190,7 +190,7 @@ describe('zeroOrMore', () => {
 
     // Should match when array has multiple even numbers
     {
-      const input: number[] = [2, 4, 6];
+      const input: Array<number> = [2, 4, 6];
       // Expect states for 0, 1, 2, and 3 matches
       const expected: PatternMatchResults<number> = [
         { input, nextIndex: 0, captures: [] },
@@ -205,7 +205,7 @@ describe('zeroOrMore', () => {
 
     // Should also match when array has no even numbers or is empty
     {
-      const input: number[] = [1];
+      const input: Array<number> = [1];
       // Expect only the zero-match state as it fails immediately
       const expected: PatternMatchResults<number> = [{ input, nextIndex: 0, captures: [] }];
       const actual = pattern.match(initialMatchState(input));
@@ -213,7 +213,7 @@ describe('zeroOrMore', () => {
       expect(actual.length).toBe(expected.length);
     }
     {
-      const input: number[] = [1, 3, 5];
+      const input: Array<number> = [1, 3, 5];
       // Expect only the zero-match state
       const expected: PatternMatchResults<number> = [{ input, nextIndex: 0, captures: [] }];
       const actual = pattern.match(initialMatchState(input));
@@ -223,7 +223,7 @@ describe('zeroOrMore', () => {
 
     // Should match when array is empty
     {
-      const input: number[] = [];
+      const input: Array<number> = [];
       const expected: PatternMatchResults<number> = [{ input, nextIndex: 0, captures: [] }];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
@@ -244,7 +244,7 @@ describe('zeroOrMore', () => {
 
     // Should match when there are debug messages
     {
-      const input: Message[] = [{ type: 'DEBUG' }];
+      const input: Array<Message> = [{ type: 'DEBUG' }];
       // Expect both zero matches (nextIndex: 0) and one match (nextIndex: 1)
       const expected: PatternMatchResults<Message> = [
         { input, nextIndex: 0, captures: [] },
@@ -256,7 +256,7 @@ describe('zeroOrMore', () => {
     }
 
     {
-      const input: Message[] = [{ type: 'DEBUG' }, { type: 'DEBUG' }];
+      const input: Array<Message> = [{ type: 'DEBUG' }, { type: 'DEBUG' }];
       // Expect states for 0, 1, and 2 matches
       const expected: PatternMatchResults<Message> = [
         { input, nextIndex: 0, captures: [] },
@@ -269,7 +269,7 @@ describe('zeroOrMore', () => {
     }
 
     {
-      const input: Message[] = [{ type: 'START' }, { type: 'DEBUG' }, { type: 'END' }];
+      const input: Array<Message> = [{ type: 'START' }, { type: 'DEBUG' }, { type: 'END' }];
       // 'START' doesn't match isDebug, so only zero-match state.
       const expected: PatternMatchResults<Message> = [{ input, nextIndex: 0, captures: [] }];
       const actual = pattern.match(initialMatchState(input));
@@ -279,7 +279,7 @@ describe('zeroOrMore', () => {
 
     // Should also match when there are no debug messages
     {
-      const input: Message[] = [{ type: 'START' }, { type: 'PROGRESS' }, { type: 'END' }];
+      const input: Array<Message> = [{ type: 'START' }, { type: 'PROGRESS' }, { type: 'END' }];
       // 'START' doesn't match isDebug, so only zero-match state.
       const expected: PatternMatchResults<Message> = [{ input, nextIndex: 0, captures: [] }];
       const actual = pattern.match(initialMatchState(input));
@@ -289,7 +289,7 @@ describe('zeroOrMore', () => {
 
     // Should match when array is empty
     {
-      const input: Message[] = [];
+      const input: Array<Message> = [];
       const expected: PatternMatchResults<Message> = [{ input, nextIndex: 0, captures: [] }];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);

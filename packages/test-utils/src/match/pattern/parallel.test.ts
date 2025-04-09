@@ -17,50 +17,50 @@ describe(parallel, () => {
 
     // Should match different orderings
     {
-      const input: string[] = ['A', 'B', 'C'];
+      const input: Array<string> = ['A', 'B', 'C'];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, captures: [] }];
       expect(actual).toEqual(expected);
     }
     {
-      const input: string[] = ['A', 'C', 'B'];
+      const input: Array<string> = ['A', 'C', 'B'];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, captures: [] }];
       expect(actual).toEqual(expected);
     }
     {
-      const input: string[] = ['B', 'A', 'C'];
+      const input: Array<string> = ['B', 'A', 'C'];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, captures: [] }];
       expect(actual).toEqual(expected);
     }
     {
-      const input: string[] = ['B', 'C', 'A'];
+      const input: Array<string> = ['B', 'C', 'A'];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, captures: [] }];
       expect(actual).toEqual(expected);
     }
     {
-      const input: string[] = ['C', 'A', 'B'];
+      const input: Array<string> = ['C', 'A', 'B'];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, captures: [] }];
       expect(actual).toEqual(expected);
     }
     // Should not match if missing items or with extra items
     {
-      const input: string[] = ['A', 'B'];
+      const input: Array<string> = ['A', 'B'];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [];
       expect(actual).toEqual(expected);
     }
     {
-      const input: string[] = ['A', 'C'];
+      const input: Array<string> = ['A', 'C'];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [];
       expect(actual).toEqual(expected);
     }
     {
-      const input: string[] = ['A', 'B', 'C', 'D'];
+      const input: Array<string> = ['A', 'B', 'C', 'D'];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, captures: [] }];
       expect(actual).toEqual(expected);
@@ -91,7 +91,7 @@ describe(parallel, () => {
 
     // Should match different orderings
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'WARNING', priority: 'high' },
         { type: 'ERROR', priority: 'medium' },
         { type: 'INFO', priority: 'low' },
@@ -101,7 +101,7 @@ describe(parallel, () => {
       expect(actual).toEqual(expected);
     }
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'ERROR', priority: 'medium' },
         { type: 'INFO', priority: 'low' },
         { type: 'WARNING', priority: 'high' },
@@ -111,7 +111,7 @@ describe(parallel, () => {
       expect(actual).toEqual(expected);
     }
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'INFO', priority: 'low' },
         { type: 'WARNING', priority: 'high' },
         { type: 'ERROR', priority: 'medium' },
@@ -123,7 +123,7 @@ describe(parallel, () => {
 
     // Should not match if requirements not met
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'WARNING', priority: 'medium' }, // Not high priority
         { type: 'ERROR', priority: 'medium' },
         { type: 'INFO', priority: 'low' },
@@ -134,7 +134,7 @@ describe(parallel, () => {
     }
 
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'WARNING', priority: 'high' },
         { type: 'WARNING', priority: 'medium' }, // Not ERROR
         { type: 'INFO', priority: 'low' },
@@ -169,7 +169,7 @@ describe(parallel, () => {
 
     // This should match - any order is fine
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'PROGRESS' } },
         { type: 'Send', message: { type: 'UPDATE' } },
       ];
@@ -179,7 +179,7 @@ describe(parallel, () => {
     }
 
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'UPDATE' } },
         { type: 'Send', message: { type: 'PROGRESS' } },
       ];
@@ -190,7 +190,7 @@ describe(parallel, () => {
 
     // This should not match - missing required message
     {
-      const input: HandlerAction[] = [{ type: 'Send', message: { type: 'PROGRESS' } }];
+      const input: Array<HandlerAction> = [{ type: 'Send', message: { type: 'PROGRESS' } }];
       const expected: PatternMatchResults<HandlerAction> = [];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
@@ -198,7 +198,7 @@ describe(parallel, () => {
 
     // This should match - next match begins with extra message
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'PROGRESS' } },
         { type: 'Send', message: { type: 'UPDATE' } },
         { type: 'Send', message: { type: 'EXTRA' } },
@@ -233,7 +233,7 @@ describe(parallel, () => {
       predicate(isEndMessage),
     );
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'PROGRESS' } },
         { type: 'Send', message: { type: 'UPDATE' } },
         { type: 'Send', message: { type: 'END' } },

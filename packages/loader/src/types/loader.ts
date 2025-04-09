@@ -7,7 +7,7 @@ export interface Resolver {
 }
 
 export interface ResolverContext {
-  conditions: string[];
+  conditions: Array<string>;
   importAttributes: Record<string, string>;
   parentURL: string;
 }
@@ -24,7 +24,7 @@ export interface ResolverResult {
 }
 
 export interface LoaderContext {
-  conditions: string[];
+  conditions: Array<string>;
   format: string | null | undefined;
   importAttributes: Record<string, string>;
 }

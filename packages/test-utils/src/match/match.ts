@@ -6,7 +6,7 @@ export function matchPattern<T>(input: Array<T>, pattern: Pattern<T>): PatternMa
   return results.filter((result) => result.nextIndex === input.length);
 }
 
-export function initialMatchState<T>(input: T[]): MatchState<T> {
+export function initialMatchState<T>(input: Array<T>): MatchState<T> {
   return {
     input,
     nextIndex: 0,

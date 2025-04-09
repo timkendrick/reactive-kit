@@ -33,7 +33,7 @@ describe(repeat, () => {
 
     // Should match when there are exactly 3 PROGRESS messages
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'START' },
         { type: 'PROGRESS', progress: 0.25 },
         { type: 'PROGRESS', progress: 0.5 },
@@ -47,7 +47,7 @@ describe(repeat, () => {
 
     // Should not match when there are fewer than 3 PROGRESS messages
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'START' },
         { type: 'PROGRESS', progress: 0.5 },
         { type: 'PROGRESS', progress: 1.0 },
@@ -60,7 +60,7 @@ describe(repeat, () => {
 
     // Should not match when there are more than 3 PROGRESS messages
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'START' },
         { type: 'PROGRESS', progress: 0.25 },
         { type: 'PROGRESS', progress: 0.5 },
@@ -75,7 +75,7 @@ describe(repeat, () => {
 
     // Should not match if required messages are missing
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'START' },
         { type: 'PROGRESS', progress: 0.25 },
         { type: 'PROGRESS', progress: 0.5 },
@@ -88,7 +88,7 @@ describe(repeat, () => {
     }
 
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         // Missing START
         { type: 'PROGRESS', progress: 0.25 },
         { type: 'PROGRESS', progress: 0.5 },
@@ -123,7 +123,7 @@ describe(repeat, () => {
 
     // Should match when there are no PROGRESS messages
     {
-      const input: Message[] = [{ type: 'START' }, { type: 'COMPLETE' }];
+      const input: Array<Message> = [{ type: 'START' }, { type: 'COMPLETE' }];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<Message> = [{ input, nextIndex: 2, captures: [] }];
       expect(actual).toEqual(expected);
@@ -131,7 +131,7 @@ describe(repeat, () => {
 
     // Should not match when there are any PROGRESS messages
     {
-      const input: Message[] = [{ type: 'START' }, { type: 'PROGRESS' }, { type: 'COMPLETE' }];
+      const input: Array<Message> = [{ type: 'START' }, { type: 'PROGRESS' }, { type: 'COMPLETE' }];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<Message> = [];
       expect(actual).toEqual(expected);
@@ -170,7 +170,7 @@ describe(repeat, () => {
 
     // Should match with exactly 3 progress messages
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'START' } },
         { type: 'Send', message: { type: 'PROGRESS', progress: 0.25 } },
         { type: 'Send', message: { type: 'PROGRESS', progress: 0.5 } },
@@ -184,7 +184,7 @@ describe(repeat, () => {
 
     // Should not match with fewer progress messages
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'START' } },
         { type: 'Send', message: { type: 'PROGRESS', progress: 0.5 } },
         { type: 'Send', message: { type: 'PROGRESS', progress: 0.75 } },
@@ -197,7 +197,7 @@ describe(repeat, () => {
 
     // Should not match with more progress messages
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'START' } },
         { type: 'Send', message: { type: 'PROGRESS', progress: 0.25 } },
         { type: 'Send', message: { type: 'PROGRESS', progress: 0.5 } },
@@ -212,7 +212,7 @@ describe(repeat, () => {
 
     // Should not match with interrupted sequence
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: 'Send', message: { type: 'START' } },
         { type: 'Send', message: { type: 'PROGRESS', progress: 0.25 } },
         { type: 'Send', message: { type: 'ERROR' } }, // Interruption

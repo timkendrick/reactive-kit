@@ -19,7 +19,7 @@ describe('sequence', () => {
 
     // This should pass when sequence is implemented - digit, lowercase, uppercase
     {
-      const input: string[] = ['1', 'a', 'Z'];
+      const input: Array<string> = ['1', 'a', 'Z'];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, captures: [] }];
       expect(actual).toEqual(expected);
@@ -27,19 +27,19 @@ describe('sequence', () => {
 
     // These should fail - wrong order or wrong items
     {
-      const input: string[] = ['a', '1', 'Z'];
+      const input: Array<string> = ['a', '1', 'Z'];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [];
       expect(actual).toEqual(expected);
     }
     {
-      const input: string[] = ['1', 'A', 'z'];
+      const input: Array<string> = ['1', 'A', 'z'];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [];
       expect(actual).toEqual(expected);
     }
     {
-      const input: string[] = ['1', 'a'];
+      const input: Array<string> = ['1', 'a'];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [];
       expect(actual).toEqual(expected); // Too short
@@ -69,7 +69,7 @@ describe('sequence', () => {
 
     // The nested sequence operates on the same flat array - it doesn't expect nested arrays
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'INIT' }, // Matches first part of outer sequence
         { type: 'START' }, // Start of nested sequence
         { type: 'PROCESS' }, // Middle of nested sequence
@@ -83,7 +83,7 @@ describe('sequence', () => {
 
     // These should fail - wrong order, missing elements, etc.
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'INIT' },
         { type: 'PROCESS' }, // Wrong order within nested sequence
         { type: 'START' },
@@ -96,7 +96,7 @@ describe('sequence', () => {
     }
 
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'INIT' },
         { type: 'START' },
         { type: 'PROCESS' },
@@ -108,7 +108,7 @@ describe('sequence', () => {
     }
 
     {
-      const input: Message[] = [
+      const input: Array<Message> = [
         { type: 'INIT' },
         { type: 'START' },
         { type: 'ERROR' }, // Unexpected message in the middle
@@ -188,7 +188,7 @@ describe('sequence', () => {
     );
 
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: HandlerActionType.Send, message: { type: MESSAGE_START } },
         { type: HandlerActionType.Send, message: { type: MESSAGE_PROGRESS } },
         { type: HandlerActionType.Send, message: { type: MESSAGE_TICK } },
@@ -203,7 +203,7 @@ describe('sequence', () => {
 
     // Should fail if tick sequence is interrupted
     {
-      const input: HandlerAction[] = [
+      const input: Array<HandlerAction> = [
         { type: HandlerActionType.Send, message: { type: MESSAGE_START } },
         { type: HandlerActionType.Send, message: { type: MESSAGE_PROGRESS } },
         { type: HandlerActionType.Send, message: { type: MESSAGE_TICK } },

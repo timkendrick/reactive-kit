@@ -9,7 +9,7 @@ import { any } from './any';
 describe(any, () => {
   it('should match any item', () => {
     const pattern = predicate(any());
-    const input: string[] = ['a', 'b', 'c'];
+    const input: Array<string> = ['a', 'b', 'c'];
     const actual = pattern.match(initialMatchState(input));
     const expected: PatternMatchResults<string> = [{ input, nextIndex: 1, captures: [] }];
     expect(actual).toEqual(expected);

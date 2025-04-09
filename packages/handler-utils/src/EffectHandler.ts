@@ -42,7 +42,7 @@ export abstract class EffectHandler<
   protected readonly next: ActorHandle<EffectHandlerOutputMessage>;
 
   protected constructor(
-    effectTypes: T['type'] | T['type'][],
+    effectTypes: T['type'] | Array<T['type']>,
     next: ActorHandle<EffectHandlerOutputMessage>,
   ) {
     this.effectTypes = new Set(Array.isArray(effectTypes) ? effectTypes : [effectTypes]);
@@ -98,7 +98,7 @@ export abstract class EffectHandler<
     context: HandlerContext<EffectHandlerInput<TInternal>>,
   ): EffectHandlerOutput<TInternal> {
     const { effects } = message.payload;
-    const effectsByType = new Map<T['type'], T[]>();
+    const effectsByType = new Map<T['type'], Array<T>>();
 
     for (const effectType of this.effectTypes) {
       const typedEffects = getTypedEffects<T>(effectType, effects);

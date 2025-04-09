@@ -37,6 +37,12 @@ module.exports = {
         allowArguments: true,
       },
     ],
+    '@typescript-eslint/array-type': [
+      'error',
+      {
+        default: 'generic',
+      },
+    ],
     '@typescript-eslint/no-unused-vars': [
       'error',
       {

@@ -10,7 +10,7 @@ describe(predicate, () => {
     const isEven = (n: number) => n % 2 === 0;
     const pattern = predicate(isEven);
 
-    const input: number[] = [2, 4, 6];
+    const input: Array<number> = [2, 4, 6];
     const actual = pattern.match(initialMatchState(input));
     const expected: PatternMatchResults<number> = [{ input, nextIndex: 1, captures: [] }];
     expect(actual).toEqual(expected);
@@ -20,7 +20,7 @@ describe(predicate, () => {
     const isEven = (n: number) => n % 2 === 0;
     const pattern = predicate(isEven);
 
-    const input: number[] = [1, 3, 5];
+    const input: Array<number> = [1, 3, 5];
     const actual = pattern.match(initialMatchState(input));
     const expected: PatternMatchResults<number> = [];
     expect(actual).toEqual(expected);
