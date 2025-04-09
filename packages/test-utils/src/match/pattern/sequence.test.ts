@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { matchPattern } from '../match';
+import { initialMatchState } from '../match';
 import { any } from '../predicate/any';
 import type { PatternMatchResults } from '../types';
 
@@ -20,7 +20,7 @@ describe('sequence', () => {
     // This should pass when sequence is implemented - digit, lowercase, uppercase
     {
       const input: string[] = ['1', 'a', 'Z'];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, captures: [] }];
       expect(actual).toEqual(expected);
     }
@@ -28,19 +28,19 @@ describe('sequence', () => {
     // These should fail - wrong order or wrong items
     {
       const input: string[] = ['a', '1', 'Z'];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [];
       expect(actual).toEqual(expected);
     }
     {
       const input: string[] = ['1', 'A', 'z'];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [];
       expect(actual).toEqual(expected);
     }
     {
       const input: string[] = ['1', 'a'];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<string> = [];
       expect(actual).toEqual(expected); // Too short
     }
@@ -76,7 +76,7 @@ describe('sequence', () => {
         { type: 'END' }, // End of nested sequence
         { type: 'COMPLETE' }, // Matches final part of outer sequence
       ];
-      const actual = matchPattern(input, outerSequence);
+      const actual = outerSequence.match(initialMatchState(input));
       const expected: PatternMatchResults<Message> = [{ input, nextIndex: 5, captures: [] }];
       expect(actual).toEqual(expected);
     }
@@ -90,7 +90,7 @@ describe('sequence', () => {
         { type: 'END' },
         { type: 'COMPLETE' },
       ];
-      const actual = matchPattern(input, outerSequence);
+      const actual = outerSequence.match(initialMatchState(input));
       const expected: PatternMatchResults<Message> = [];
       expect(actual).toEqual(expected);
     }
@@ -102,7 +102,7 @@ describe('sequence', () => {
         { type: 'PROCESS' },
         // Missing 'END' and 'COMPLETE'
       ];
-      const actual = matchPattern(input, outerSequence);
+      const actual = outerSequence.match(initialMatchState(input));
       const expected: PatternMatchResults<Message> = [];
       expect(actual).toEqual(expected);
     }
@@ -116,7 +116,7 @@ describe('sequence', () => {
         { type: 'END' },
         { type: 'COMPLETE' },
       ];
-      const actual = matchPattern(input, outerSequence);
+      const actual = outerSequence.match(initialMatchState(input));
       const expected: PatternMatchResults<Message> = [];
       expect(actual).toEqual(expected);
     }
@@ -196,7 +196,7 @@ describe('sequence', () => {
         { type: HandlerActionType.Send, message: { type: MESSAGE_TICK } },
         { type: HandlerActionType.Send, message: { type: MESSAGE_END } },
       ];
-      const actual = matchPattern(input, complexSequence);
+      const actual = complexSequence.match(initialMatchState(input));
       const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 6, captures: [] }];
       expect(actual).toEqual(expected);
     }
@@ -212,7 +212,7 @@ describe('sequence', () => {
         { type: HandlerActionType.Send, message: { type: MESSAGE_TICK } },
         { type: HandlerActionType.Send, message: { type: MESSAGE_END } },
       ];
-      const actual = matchPattern(input, complexSequence);
+      const actual = complexSequence.match(initialMatchState(input));
       const expected: PatternMatchResults<HandlerAction> = [];
       expect(actual).toEqual(expected);
     }

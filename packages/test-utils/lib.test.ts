@@ -10,6 +10,7 @@ test('module exports', () => {
     hasField: lib.hasField,
     hasMessagePayload: lib.hasMessagePayload,
     hasMessageType: lib.hasMessageType,
+    initialMatchState: lib.initialMatchState,
     matchPattern: lib.matchPattern,
     not: lib.not,
     oneOf: lib.oneOf,

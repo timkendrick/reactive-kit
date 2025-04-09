@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { matchPattern } from '../match';
+import { initialMatchState } from '../match';
 import { and } from '../predicate/and';
 import type { PatternMatchResults } from '../types';
 
@@ -38,7 +38,7 @@ describe(oneOrMore, () => {
         { type: 'PROGRESS', progress: 0.5 },
         { type: 'COMPLETE' },
       ];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<Message> = [{ input, nextIndex: 3, captures: [] }];
       expect(actual).toEqual(expected);
     }
@@ -52,7 +52,7 @@ describe(oneOrMore, () => {
         { type: 'PROGRESS', progress: 0.75 },
         { type: 'COMPLETE' },
       ];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<Message> = [{ input, nextIndex: 5, captures: [] }];
       expect(actual).toEqual(expected);
     }
@@ -60,7 +60,7 @@ describe(oneOrMore, () => {
     // Should not match when there are no PROGRESS messages
     {
       const input: Message[] = [{ type: 'START' }, { type: 'COMPLETE' }];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<Message> = [];
       expect(actual).toEqual(expected);
     }
@@ -72,7 +72,7 @@ describe(oneOrMore, () => {
         { type: 'PROGRESS', progress: 0.5 },
         // Missing COMPLETE
       ];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<Message> = [];
       expect(actual).toEqual(expected);
     }
@@ -83,7 +83,7 @@ describe(oneOrMore, () => {
         { type: 'PROGRESS', progress: 0.5 },
         { type: 'COMPLETE' },
       ];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<Message> = [];
       expect(actual).toEqual(expected);
     }
@@ -97,7 +97,7 @@ describe(oneOrMore, () => {
         { type: 'PROGRESS', progress: 0.75 },
         { type: 'COMPLETE' },
       ];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<Message> = [];
       expect(actual).toEqual(expected);
     }
@@ -140,7 +140,7 @@ describe(oneOrMore, () => {
         { type: 'Send', message: { type: 'PROGRESS', progress: 0.5 } },
         { type: 'Send', message: { type: 'COMPLETE' } },
       ];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 3, captures: [] }];
       expect(actual).toEqual(expected);
     }
@@ -154,7 +154,7 @@ describe(oneOrMore, () => {
         { type: 'Send', message: { type: 'PROGRESS', progress: 0.75 } },
         { type: 'Send', message: { type: 'COMPLETE' } },
       ];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 5, captures: [] }];
       expect(actual).toEqual(expected);
     }
@@ -165,7 +165,7 @@ describe(oneOrMore, () => {
         { type: 'Send', message: { type: 'START' } },
         { type: 'Send', message: { type: 'COMPLETE' } },
       ];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<HandlerAction> = [];
       expect(actual).toEqual(expected);
     }
@@ -179,7 +179,7 @@ describe(oneOrMore, () => {
         { type: 'Send', message: { type: 'PROGRESS', progress: 0.75 } },
         { type: 'Send', message: { type: 'COMPLETE' } },
       ];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<HandlerAction> = [];
       expect(actual).toEqual(expected);
     }

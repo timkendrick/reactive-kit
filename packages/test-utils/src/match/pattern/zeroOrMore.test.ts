@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { matchPattern } from '../match';
+import { initialMatchState } from '../match';
 import { and } from '../predicate/and';
 import type { PatternMatchResults } from '../types';
 
@@ -35,7 +35,7 @@ describe('zeroOrMore', () => {
     {
       const input: Message[] = [{ type: 'START' }, { type: 'END' }];
       const expected: PatternMatchResults<Message> = [{ input, nextIndex: 2, captures: [] }];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
 
@@ -48,7 +48,7 @@ describe('zeroOrMore', () => {
         { type: 'END' },
       ];
       const expected: PatternMatchResults<Message> = [{ input, nextIndex: 4, captures: [] }];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
 
@@ -60,7 +60,7 @@ describe('zeroOrMore', () => {
         // Missing END
       ];
       const expected: PatternMatchResults<Message> = [];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
 
@@ -71,7 +71,7 @@ describe('zeroOrMore', () => {
         { type: 'END' },
       ];
       const expected: PatternMatchResults<Message> = [];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
 
@@ -85,7 +85,7 @@ describe('zeroOrMore', () => {
         { type: 'END' },
       ];
       const expected: PatternMatchResults<Message> = [];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
   });
@@ -126,7 +126,7 @@ describe('zeroOrMore', () => {
         { type: 'Send', message: { type: 'COMPLETE' } },
       ];
       const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 2, captures: [] }];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
 
@@ -139,7 +139,7 @@ describe('zeroOrMore', () => {
         { type: 'Send', message: { type: 'COMPLETE' } },
       ];
       const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 4, captures: [] }];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
 
@@ -152,7 +152,7 @@ describe('zeroOrMore', () => {
         { type: 'Send', message: { type: 'COMPLETE' } },
       ];
       const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 4, captures: [] }];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
 
@@ -166,14 +166,14 @@ describe('zeroOrMore', () => {
         { type: 'Send', message: { type: 'COMPLETE' } },
       ];
       const expected: PatternMatchResults<HandlerAction> = [];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
   });
 
   it('should match empty arrays and arrays without matching items', () => {
     const isEven = (n: number) => n % 2 === 0;
-    const matcher = zeroOrMore<number>(predicate(isEven));
+    const pattern = zeroOrMore<number>(predicate(isEven));
 
     // Should match when array has even numbers
     {
@@ -183,7 +183,7 @@ describe('zeroOrMore', () => {
         { input, nextIndex: 0, captures: [] },
         { input, nextIndex: 1, captures: [] },
       ];
-      const actual = matchPattern(input, matcher);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected));
       expect(actual.length).toBe(expected.length);
     }
@@ -198,7 +198,7 @@ describe('zeroOrMore', () => {
         { input, nextIndex: 2, captures: [] },
         { input, nextIndex: 3, captures: [] },
       ];
-      const actual = matchPattern(input, matcher);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected));
       expect(actual.length).toBe(expected.length);
     }
@@ -208,7 +208,7 @@ describe('zeroOrMore', () => {
       const input: number[] = [1];
       // Expect only the zero-match state as it fails immediately
       const expected: PatternMatchResults<number> = [{ input, nextIndex: 0, captures: [] }];
-      const actual = matchPattern(input, matcher);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected)); // Use arrayContaining
       expect(actual.length).toBe(expected.length);
     }
@@ -216,7 +216,7 @@ describe('zeroOrMore', () => {
       const input: number[] = [1, 3, 5];
       // Expect only the zero-match state
       const expected: PatternMatchResults<number> = [{ input, nextIndex: 0, captures: [] }];
-      const actual = matchPattern(input, matcher);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected)); // Use arrayContaining
       expect(actual.length).toBe(expected.length);
     }
@@ -225,7 +225,7 @@ describe('zeroOrMore', () => {
     {
       const input: number[] = [];
       const expected: PatternMatchResults<number> = [{ input, nextIndex: 0, captures: [] }];
-      const actual = matchPattern(input, matcher);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
   });
@@ -240,7 +240,7 @@ describe('zeroOrMore', () => {
     const isDebugMessage = (msg: Message) => msg.type === 'DEBUG';
 
     // Create a pattern that matches zero or more debug messages
-    const hasDebugMessages = zeroOrMore<Message>(predicate(isDebugMessage));
+    const pattern = zeroOrMore<Message>(predicate(isDebugMessage));
 
     // Should match when there are debug messages
     {
@@ -250,7 +250,7 @@ describe('zeroOrMore', () => {
         { input, nextIndex: 0, captures: [] },
         { input, nextIndex: 1, captures: [] },
       ];
-      const actual = matchPattern(input, hasDebugMessages);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected));
       expect(actual.length).toBe(expected.length);
     }
@@ -263,16 +263,16 @@ describe('zeroOrMore', () => {
         { input, nextIndex: 1, captures: [] },
         { input, nextIndex: 2, captures: [] },
       ];
-      const actual = matchPattern(input, hasDebugMessages);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected));
       expect(actual.length).toBe(expected.length);
     }
 
     {
       const input: Message[] = [{ type: 'START' }, { type: 'DEBUG' }, { type: 'END' }];
-      // matchPattern starts at 0. 'START' doesn't match isDebug, so only zero-match state.
+      // 'START' doesn't match isDebug, so only zero-match state.
       const expected: PatternMatchResults<Message> = [{ input, nextIndex: 0, captures: [] }];
-      const actual = matchPattern(input, hasDebugMessages);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected)); // Use arrayContaining
       expect(actual.length).toBe(expected.length);
     }
@@ -280,9 +280,9 @@ describe('zeroOrMore', () => {
     // Should also match when there are no debug messages
     {
       const input: Message[] = [{ type: 'START' }, { type: 'PROGRESS' }, { type: 'END' }];
-      // matchPattern starts at 0. 'START' doesn't match isDebug, so only zero-match state.
+      // 'START' doesn't match isDebug, so only zero-match state.
       const expected: PatternMatchResults<Message> = [{ input, nextIndex: 0, captures: [] }];
-      const actual = matchPattern(input, hasDebugMessages);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected)); // Use arrayContaining
       expect(actual.length).toBe(expected.length);
     }
@@ -291,7 +291,7 @@ describe('zeroOrMore', () => {
     {
       const input: Message[] = [];
       const expected: PatternMatchResults<Message> = [{ input, nextIndex: 0, captures: [] }];
-      const actual = matchPattern(input, hasDebugMessages);
+      const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
   });

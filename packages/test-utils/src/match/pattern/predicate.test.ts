@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { matchPattern } from '../match';
+import { initialMatchState } from '../match';
 import type { PatternMatchResults } from '../types';
 
 import { predicate } from './predicate';
@@ -11,7 +11,7 @@ describe(predicate, () => {
     const pattern = predicate(isEven);
 
     const input: number[] = [2, 4, 6];
-    const actual = matchPattern(input, pattern);
+    const actual = pattern.match(initialMatchState(input));
     const expected: PatternMatchResults<number> = [{ input, nextIndex: 1, captures: [] }];
     expect(actual).toEqual(expected);
   });
@@ -21,7 +21,7 @@ describe(predicate, () => {
     const pattern = predicate(isEven);
 
     const input: number[] = [1, 3, 5];
-    const actual = matchPattern(input, pattern);
+    const actual = pattern.match(initialMatchState(input));
     const expected: PatternMatchResults<number> = [];
     expect(actual).toEqual(expected);
   });

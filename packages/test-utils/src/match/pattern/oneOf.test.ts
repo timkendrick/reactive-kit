@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { matchPattern } from '../match';
+import { initialMatchState } from '../match';
 import type { PatternMatchResults } from '../types';
 
 import { oneOf } from './oneOf';
@@ -13,13 +13,13 @@ describe(oneOf, () => {
     const pattern = oneOf(predicate(isEven), predicate(isOdd));
     {
       const input = [1, 2, 3, 4, 5];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<number> = [{ input, nextIndex: 1, captures: [] }];
       expect(actual).toEqual(expected);
     }
     {
       const input = [2, 4, 6, 8, 10];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<number> = [{ input, nextIndex: 1, captures: [] }];
       expect(actual).toEqual(expected);
     }
@@ -31,7 +31,7 @@ describe(oneOf, () => {
     const pattern = oneOf(predicate(isDivisibleBy3), predicate(isDivisibleBy5));
     {
       const input = [1, 2, 4, 7, 8];
-      const actual = matchPattern(input, pattern);
+      const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<number> = [];
       expect(actual).toEqual(expected);
     }
