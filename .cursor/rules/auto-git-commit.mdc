@@ -40,11 +40,14 @@ Follow the [Conventional Commits](mdc:https:/www.conventionalcommits.org) specif
 2. **Body**:
    - Leave one blank line after the title
    - Explain what was changed and why
-   - Reference the prompts that led to the changes
+   - Summarize the prompts that led to the changes
    - Wrap at 72 characters
    - Use bullet points for multiple changes
 
-3. **Footer**:
+3. **Additional observations**:
+   - Highlight specific implementation details that arose during prompting
+   
+4. **Footer**:
    - Reference related issues/tickets if applicable
    - Include breaking changes notifications if any
 
@@ -59,7 +62,9 @@ Implement password reset flow based on user requirements:
 - Create API endpoint for password reset
 - Add email notification service
 
-Prompted by: "Add password reset capability to auth system"
+Additional observations:
+- Passwords are validated server-side
+- New password must not equal existing password
 ```
 
 For a bug fix:
