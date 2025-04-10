@@ -4,5 +4,6 @@ export * from './any';
 export * from './equals';
 export * from './hasField';
 export * from './is';
+export * from './lazy';
 export * from './not';
 export * from './or';

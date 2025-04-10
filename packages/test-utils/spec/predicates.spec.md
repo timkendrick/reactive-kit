@@ -191,4 +191,23 @@ This section provides a detailed breakdown of each predicate's behavior based on
         // hasField("c", is(1))({ a: 1 }) -> Runtime Error (field 'c' doesn't exist, assumes field exists)
         ```
 
-``` 
+### Deferred Execution
+
+*   **`lazy<T>(predicate: Predicate<T>)`**
+    *   **Description:** Defers the execution of the inner predicate until the lazy predicate is actually evaluated. Useful for computations that depend on runtime values or previously captured references (see Capture & Reference spec).
+    *   **Matches:**
+        ```typescript
+        let condition = false;
+        const checkCondition = lazy((input) => input === condition);
+        // Later, before checkCondition is evaluated:
+        condition = true;
+        checkCondition(true) // Evaluates to true because condition is now true
+        ```
+    *   **Does Not Match:**
+        ```typescript
+        let condition = true;
+        const checkCondition = lazy((input) => input === condition);
+        // Later, before checkCondition is evaluated:
+        condition = false;
+        checkCondition(true) // Evaluates to false because condition is now false
+        ```
