@@ -6,6 +6,7 @@ import type { PatternMatchResults } from '../types';
 import { parallel } from './parallel';
 import { predicate } from './predicate';
 import { sequence } from './sequence';
+import { zeroOrMore } from './zeroOrMore';
 
 describe(parallel, () => {
   it('should match items regardless of order', () => {
@@ -239,6 +240,66 @@ describe(parallel, () => {
         { type: 'Send', message: { type: 'END' } },
       ];
       const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 3, captures: [] }];
+      const actual = pattern.match(initialMatchState(input));
+      expect(actual).toEqual(expected);
+    }
+  });
+
+  it('should handle variable-length sub-patterns', () => {
+    const isA = (s: string) => s === 'A';
+    const isB = (s: string) => s === 'B';
+
+    // Pattern: Match one 'A' and zero or more consecutive 'B's, in any order relative to each other.
+    const pattern = parallel<string>(predicate(isA), zeroOrMore(predicate(isB)));
+
+    {
+      const input = ['A', 'B', 'B'];
+      const expected: PatternMatchResults<string> = [
+        { input, nextIndex: 1, captures: [] }, // 'A' matched, zero 'B's
+        { input, nextIndex: 2, captures: [] }, // 'A' matched, one 'B'
+        { input, nextIndex: 3, captures: [] }, // 'A' matched, two 'B's
+      ];
+      const actual = pattern.match(initialMatchState(input));
+      expect(actual).toEqual(expected);
+    }
+    {
+      const input = ['B', 'A', 'B'];
+      const expected: PatternMatchResults<string> = [
+        { input, nextIndex: 2, captures: [] }, // 'B', 'A' consumed
+      ];
+      const actual = pattern.match(initialMatchState(input));
+      expect(actual).toEqual(expected);
+    }
+    {
+      const input = ['B', 'B', 'A'];
+      const expected: PatternMatchResults<string> = [
+        { input, nextIndex: 3, captures: [] }, // 'B', 'B', 'A' consumed
+      ];
+      const actual = pattern.match(initialMatchState(input));
+      expect(actual).toEqual(expected);
+    }
+
+    {
+      const input = ['A'];
+      const expected: PatternMatchResults<string> = [
+        { input, nextIndex: 1, captures: [] }, // 'A' consumed
+      ];
+      const actual = pattern.match(initialMatchState(input));
+      expect(actual).toEqual(expected);
+    }
+
+    {
+      const input = ['B', 'B'];
+      const expected: PatternMatchResults<string> = []; // Missing 'A'
+      const actual = pattern.match(initialMatchState(input));
+      expect(actual).toEqual(expected);
+    }
+
+    {
+      const input = ['A', 'C', 'B'];
+      const expected: PatternMatchResults<string> = [
+        { input, nextIndex: 1, captures: [] }, // 'A' consumed, no 'B's
+      ];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
