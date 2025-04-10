@@ -40,14 +40,22 @@ Follow the [Conventional Commits](mdc:https:/www.conventionalcommits.org) specif
 2. **Body**:
    - Leave one blank line after the title
    - Explain what was changed and why
-   - Summarize the prompts that led to the changes
+   - This section follows the Title Line directly and does *not* start with a `Body:` heading.
    - Wrap at 72 characters
    - Use bullet points for multiple changes
 
-3. **Additional observations**:
+3. **User requirements**:
+   - Leave one blank line after the Body
+   - Summarize the prompts that led to the changes
+   - Use bullet points
+
+4. **Additional observations**:
+   - Leave one blank line after the User requirements
    - Highlight specific implementation details that arose during prompting
-   
-4. **Footer**:
+   - Use bullet points
+
+5. **Footer**:
+   - Leave one blank line after the last section (Body, User requirements, or Additional observations)
    - Reference related issues/tickets if applicable
    - Include breaking changes notifications if any
 
@@ -57,10 +65,13 @@ For a feature addition:
 ```
 feat(auth): add password reset functionality
 
-Implement password reset flow based on user requirements:
+Implement password reset flow
 - Add reset password form component
 - Create API endpoint for password reset
 - Add email notification service
+
+User requirements:
+- User requested the implementation of a standard password reset feature.
 
 Additional observations:
 - Passwords are validated server-side
@@ -71,10 +82,14 @@ For a bug fix:
 ```
 fix(validation): correct email format checking
 
-Fix email validation regex to properly handle all valid email formats.
-Previous implementation was rejecting valid addresses with plus signs.
+Improve email validation regex to properly handle all valid email formats,
+addressing an issue where addresses with plus signs were incorrectly rejected.
 
-Prompted by: "Fix email validation to accept plus signs"
+User requirements:
+- User reported that email validation failed for addresses containing '+'.
+
+Additional observations:
+- The previous regex failed to account for the '+' character in the local part of email addresses.
 ```
 
 For a refactor:
@@ -84,7 +99,12 @@ refactor(components): extract button styles to shared module
 Move common button styles to a shared stylesheet to reduce duplication
 and improve maintainability.
 
-Prompted by: "Refactor button styles to be more consistent"
+User requirements:
+- User requested refactoring button styles for better consistency across the application.
+
+Additional observations:
+- Shared stylesheet contains existing class names
+- `.btn-disabled` class name is no longer needed and has been removed
 ```
 
 ## Implementation Notes
@@ -97,14 +117,16 @@ Prompted by: "Refactor button styles to be more consistent"
 2. Generate appropriate commit message:
    - Select the most appropriate type
    - Include relevant scope
-   - Write clear description
-   - Add detailed explanation in body
-   - Reference the original prompt
+   - Write clear description (Title Line)
+   - Add detailed explanation in Body (without a 'Body:' prefix)
+   - Add a prompt summary in User requirements
+   - Optionally include Additional observations and Footer sections
 
 3. Execute git commands:
    ```bash
    git add [changed files]
-   git commit -m "type(scope): description" -m "detailed explanation"
+   # Note: Use multiple -m flags for separate paragraphs in the Body
+   git commit -m "type(scope): description" -m "<body paragraph 1>" -m "<body paragraph 2>" -m "User requirements: ..." -m "Additional observations: ..."
    ```
 
 4. Handle Multiple Changes:
