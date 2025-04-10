@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { HandlerAction, type ActorHandle, type SendHandlerAction } from '@reactive-kit/actor';
 import type { Message } from '@reactive-kit/plugin-evaluate';
 
+import { is } from '../is';
+
 import { sentTo } from './sentTo';
 import type { TestAction } from './types';
 
@@ -17,7 +19,7 @@ describe('sentTo', () => {
       state: {},
       from: {} as ActorHandle<unknown>,
     };
-    const result = sentTo(target)(action);
+    const result = sentTo(is(target))(action);
     expect(result).toBe(true);
   });
 
@@ -31,7 +33,7 @@ describe('sentTo', () => {
       state: {},
       from: {} as ActorHandle<unknown>,
     };
-    const result = sentTo(target)(action);
+    const result = sentTo(is(target))(action);
     expect(result).toBe(false);
   });
 });

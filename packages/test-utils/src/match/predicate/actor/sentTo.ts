@@ -5,7 +5,7 @@ import type { Predicate } from '../../types';
 import type { TestAction } from './types';
 
 export function sentTo(
-  target: ActorHandle<unknown>,
+  target: Predicate<ActorHandle<unknown>>,
 ): Predicate<TestAction<HandlerAction<unknown>>> {
-  return (value) => value.action.target === target;
+  return (value) => target(value.action.target);
 }

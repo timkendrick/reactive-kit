@@ -23,7 +23,10 @@ export interface TypeNarrowingPredicate<I, O extends I> extends Predicate<I> {
 any() // matches any single item
 
 // Exact equality
-equals(expected) // matches if item === expected
+is(expected) // matches if item === expected
+
+// Deep equality
+equals(expected) // matches if item is strucurally equivalent to expected
 ```
 
 ### Logical Combinators
@@ -65,7 +68,7 @@ Predicates can inspect nested fields within complex objects:
 
 ```typescript
 // Match specific fields in an object
-hasField("status", equals("ready"))
+hasField("status", is("ready"))
 
 // Match fields with predicate functions
 hasField("count", n => n > 0)

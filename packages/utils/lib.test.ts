@@ -7,6 +7,7 @@ test('module exports', () => {
     AsyncQueue: lib.AsyncQueue,
     Enum: lib.Enum,
     createAsyncTrigger: lib.createAsyncTrigger,
+    deepEqual: lib.deepEqual,
     enumConstructor: lib.enumConstructor,
     enumVariantConstructor: lib.enumVariantConstructor,
     instantiateEnum: lib.instantiateEnum,

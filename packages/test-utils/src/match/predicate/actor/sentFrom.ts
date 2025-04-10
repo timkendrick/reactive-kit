@@ -5,7 +5,7 @@ import type { Predicate } from '../../types';
 import type { TestAction } from './types';
 
 export function sentFrom(
-  source: ActorHandle<unknown>,
+  source: Predicate<ActorHandle<unknown>>,
 ): Predicate<TestAction<HandlerAction<unknown>>> {
-  return (value) => value.from === source;
+  return (value) => source(value.from);
 }
