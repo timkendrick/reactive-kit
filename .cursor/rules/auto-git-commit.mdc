@@ -114,7 +114,7 @@ Additional observations:
    - The nature of the changes
    - The original prompt that triggered the changes
 
-2. Check for unstaged changes: Run `git status --porcelain | cat`. If this command produces any output (indicating unstaged changes), **STOP** and ask the user how to proceed (e.g., stage the changes, stash them, abort the commit).
+2. Check for unstaged changes: Run `git diff --quiet`. If the command exits with a non-zero status code (indicating unstaged changes), **STOP** and ask the user how to proceed (e.g., stage the changes, stash them, abort the commit).
 
 3. Run `git diff --staged | cat` to review the specific changes being committed. This context should inform the commit message generation.
 
@@ -136,6 +136,7 @@ Additional observations:
    **Alternative for Complex/Long Messages:**
    If the commit message body is long or contains special characters (like backticks `) that might cause issues with shell interpretation when using multiple `-m` flags, use the following robust workflow:
    1.  **Write/Overwrite Message:** Programmatically write the complete commit message (including title, body, user requirements, observations, footers) to the `.git/COMMIT_EDITMSG` file. **Ensure this operation overwrites the file content, not appends to it.**
+       - **Important:** Before passing the message string to the shell command (e.g., `echo '[message]' > ...`), any literal single quotes (`'`) within the `[message]` itself MUST be replaced with the sequence `'"'"'` to prevent shell interpretation errors. 
    2.  **Stage Files:** Use `git add [changed files]`.
    3.  **Commit from File:** Use `git commit -F .git/COMMIT_EDITMSG`. This tells Git to take the entire commit message from the specified file, bypassing potential shell escaping issues.
 
