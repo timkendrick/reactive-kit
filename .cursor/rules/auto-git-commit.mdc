@@ -114,7 +114,11 @@ Additional observations:
    - The nature of the changes
    - The original prompt that triggered the changes
 
-2. Generate appropriate commit message:
+2. Check for unstaged changes: Run `git status --porcelain | cat`. If this command produces any output (indicating unstaged changes), **STOP** and ask the user how to proceed (e.g., stage the changes, stash them, abort the commit).
+
+3. Run `git diff --staged | cat` to review the specific changes being committed. This context should inform the commit message generation.
+
+4. Generate appropriate commit message:
    - Select the most appropriate type
    - Include relevant scope
    - Write clear description (Title Line)
@@ -122,7 +126,7 @@ Additional observations:
    - Add a prompt summary in User requirements
    - Optionally include Additional observations and Footer sections
 
-3. Execute git commands:
+5. Execute git commands:
    ```bash
    git add [changed files]
    # Note: Use multiple -m flags for separate paragraphs in the Body
@@ -135,7 +139,7 @@ Additional observations:
    2.  **Stage Files:** Use `git add [changed files]`.
    3.  **Commit from File:** Use `git commit -F .git/COMMIT_EDITMSG`. This tells Git to take the entire commit message from the specified file, bypassing potential shell escaping issues.
 
-4. Handle Multiple Changes:
+6. Handle Multiple Changes:
    - If changes span multiple distinct features/fixes, create separate commits
    - Group related changes into single, logical commits
 
