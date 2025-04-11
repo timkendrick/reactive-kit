@@ -393,6 +393,4 @@ describe(withRefs, () => {
     const expected: PatternMatchResults<number> = [];
     expect(actual).toEqual(expected);
   });
-
-  // TODO: More tests will be added here...
 });
