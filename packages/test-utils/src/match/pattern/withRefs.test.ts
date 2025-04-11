@@ -31,9 +31,13 @@ describe(withRefs, () => {
       const actual = pattern.match(initialMatchState(input));
       // Expectation: Matches the first two items
       const expected: PatternMatchResults<number> = [
-        { input, nextIndex: 2, captures: [] }, // Captures managed internally by withRefs
+        { input, nextIndex: 2, refContext: expect.any(Map) }, // Captures managed internally by withRefs
       ];
       expect(actual).toEqual(expected);
+      // Check context details separately
+      expect(actual[0].refContext).toBeInstanceOf(Map);
+      expect(actual[0].refContext.size).toBe(1);
+      expect(Array.from(actual[0].refContext.values())).toEqual([42]);
     }
 
     // Test case 2: Non-matching input (second item differs)
@@ -72,8 +76,14 @@ describe(withRefs, () => {
     {
       const input = [10, 10, 20];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<number> = [{ input, nextIndex: 2, captures: [] }];
+      const expected: PatternMatchResults<number> = [
+        { input, nextIndex: 2, refContext: expect.any(Map) },
+      ];
       expect(actual).toEqual(expected);
+      // Check context details separately
+      expect(actual[0].refContext).toBeInstanceOf(Map);
+      expect(actual[0].refContext.size).toBe(1);
+      expect(Array.from(actual[0].refContext.values())).toEqual([10]);
     }
 
     // Test Case 2: Non-matching input (capture fails)
@@ -121,8 +131,16 @@ describe(withRefs, () => {
     {
       const input: Array<TestObject> = [{ id: 'A' }, { id: 'A_suffix' }, { id: 'B' }];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<TestObject> = [{ input, nextIndex: 2, captures: [] }];
+      const expected: PatternMatchResults<TestObject> = [
+        { input, nextIndex: 2, refContext: expect.any(Map) },
+      ];
       expect(actual).toEqual(expected);
+      // Check context details separately
+      expect(actual[0].refContext).toBeInstanceOf(Map);
+      expect(actual[0].refContext.size).toBe(1);
+      expect(Array.from(actual[0].refContext.values())).toEqual([
+        expect.objectContaining({ id: 'A' }),
+      ]);
     }
 
     // Test Case 2: Non-matching input (second object's id is wrong)
@@ -155,8 +173,8 @@ describe(withRefs, () => {
     {
       const input = [5, 10]; // Should match the first item
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<number> = [{ input, nextIndex: 1, captures: [] }];
-      expect(actual).toEqual(expected);
+      expect(actual[0].refContext.size).toBe(0);
+      expect(Array.from(actual[0].refContext.values())).toEqual([]);
     }
 
     // Test Case 2: Non-matching input
@@ -194,9 +212,14 @@ describe(withRefs, () => {
       const input = [100, 'alpha', 100, 'alpha', 999];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<number | string> = [
-        { input, nextIndex: 4, captures: [] },
+        { input, nextIndex: 4, refContext: expect.any(Map) },
       ];
       expect(actual).toEqual(expected);
+      // Check context details separately
+      const actualContext = actual[0].refContext;
+      expect(actualContext).toBeInstanceOf(Map);
+      expect(actualContext.size).toBe(2); // Should contain captures from both number and string
+      expect(Array.from(actualContext.values())).toEqual(expect.arrayContaining([100, 'alpha']));
     }
 
     // Test Case 2: Non-matching (third item mismatch)
@@ -282,8 +305,15 @@ describe(withRefs, () => {
     // Test 1: Combined pattern matches expected sequence
     {
       const input = [10, 10, 20, 20, 30]; // A matches [10, 10], B matches [20, 20]
-      const expected: PatternMatchResults<number> = [{ input, nextIndex: 4, captures: [] }];
+      const expected: PatternMatchResults<number> = [
+        { input, nextIndex: 4, refContext: expect.any(Map) },
+      ];
       expect(combinedPattern.match(initialMatchState(input))).toEqual(expected);
+      // Check context details separately
+      const actualContext = combinedPattern.match(initialMatchState(input))[0].refContext;
+      expect(actualContext).toBeInstanceOf(Map);
+      expect(actualContext.size).toBe(2); // Should contain captures from both A and B
+      expect(Array.from(actualContext.values())).toEqual(expect.arrayContaining([10, 20]));
     }
 
     // Test 2: Combined pattern fails if A's second part fails
@@ -351,8 +381,14 @@ describe(withRefs, () => {
         { type: 'other', value: 99 },
       ];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 2, captures: [] }];
+      const expected: PatternMatchResults<Message> = [
+        { input, nextIndex: 2, refContext: expect.any(Map) },
+      ];
       expect(actual).toEqual(expected);
+      // Check context details separately
+      expect(actual[0].refContext).toBeInstanceOf(Map);
+      expect(actual[0].refContext.size).toBe(1);
+      expect(Array.from(actual[0].refContext.values())).toEqual([5]);
     }
 
     // Test Case 2: Non-matching (end value incorrect)

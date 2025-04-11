@@ -15,7 +15,7 @@ describe(equals, () => {
     {
       const input: Array<symbol> = [foo, bar, baz];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<symbol> = [{ input, nextIndex: 1, captures: [] }];
+      const expected: PatternMatchResults<symbol> = [{ input, nextIndex: 1, refContext: new Map() }];
       expect(actual).toEqual(expected);
     }
   });
@@ -42,7 +42,7 @@ describe(equals, () => {
       const input: Array<{ value: string }> = [bar, baz];
       const actual = pattern.match(initialMatchState(input));
       const expected: PatternMatchResults<{ value: string }> = [
-        { input, nextIndex: 1, captures: [] },
+        { input, nextIndex: 1, refContext: new Map() },
       ];
       expect(actual).toEqual(expected);
     }
