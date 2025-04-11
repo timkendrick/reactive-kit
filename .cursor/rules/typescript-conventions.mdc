@@ -14,3 +14,4 @@ alwaysApply: true
 - Use JSDoc summary for function description instead of inline comments
 - Use function hoisting; declare helper functions below their usage if it helps top-to-bottom module structure
 - Don't use unnecessary abbreviations in variable names
+- Prefer `function foo() {}` over `const foo = () => {}` for named function declarations

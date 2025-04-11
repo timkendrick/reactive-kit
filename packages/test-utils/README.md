@@ -24,29 +24,27 @@ test("counter handler", async () => {
   const handler = new CounterHandler();
 
   await verifyHandlerBehavior(handler, {
-    verify: withRefs((finalState) => sequence([
-      // Verify initial state
-      hasResultingState(
+    verify: sequence([
+      predicate(hasResultingState(
         and(
           hasField("count", equals(0)),
           hasField("status", equals("ready"))
         )
-      ),
+      )),
 
-      // Test increment operations
       sequence([
-        and(
+        predicate(and(
           hasActionType(HandlerActionType.Send),
           hasMessageType(MESSAGE_INCREMENT),
           hasResultingState(hasField("count", equals(1)))
-        ),
-        and(
+        )),
+        predicate(and(
           hasActionType(HandlerActionType.Send),
           hasMessageType(MESSAGE_INCREMENT),
           hasResultingState(hasField("count", equals(2)))
-        )
+        ))
       ])
-    ]))
+    ])
   });
 });
 ```
@@ -71,21 +69,21 @@ and(
 
 // Sequence matching
 sequence([
-  exactMessage({ type: MESSAGE_START }),
-  zeroOrMore(any()),
-  oneOrMore(hasMessageType(MESSAGE_PROGRESS))
+  predicate(hasMessageType(MESSAGE_START)),
+  zeroOrMore(predicate(any())),
+  oneOrMore(predicate(hasMessageType(MESSAGE_PROGRESS)))
 ])
 
 // Support for unpredictable message order
 parallel([
-  and(
+  predicate(and(
     hasActionType(HandlerActionType.Send),
     hasMessageType(MESSAGE_INCREMENT)
-  ),
-  and(
+  )),
+  predicate(and(
     hasActionType(HandlerActionType.Send),
     hasMessageType(MESSAGE_DECREMENT)
-  )
+  ))
 ])
 ```
 
@@ -133,26 +131,33 @@ hasResultingState(
 ```typescript
 test("parent-child interaction", async () => {
   await verifyHandlerBehavior(parentHandler, {
-    verify: withRefs((childHandle, result) => sequence([
-      // Verify child spawn
-      and(
-        hasActionType(HandlerActionType.Spawn),
-        hasSpawnHandlerType(ChildHandler),
-        capture(childHandle, sentTo(any()))
-      ),
+    verify: withRefs((helpers) => {
+      const { createRef, refPredicate, captureRef, ref, any } = helpers;
 
-      // Verify message exchange
-      sequence([
-        and(
-          hasActionType(HandlerActionType.Send),
-          sentTo(ref(childHandle))
+      const childHandle = createRef<ActorHandle>();
+
+      return sequence([
+        refPredicate(
+          and(
+            hasActionType(HandlerActionType.Spawn),
+            hasSpawnHandlerType(ChildHandler),
+            sentTo(captureRef(childHandle, any()))
+          )
         ),
-        and(
-          hasActionType(HandlerActionType.Send),
-          sentFrom(ref(childHandle))
+        refPredicate(
+          and(
+            hasActionType(HandlerActionType.Send),
+            sentTo(ref(childHandle))
+          )
+        ),
+        refPredicate(
+          and(
+            hasActionType(HandlerActionType.Send),
+            sentFrom(ref(childHandle))
+          )
         )
-      ])
-    ]))
+      ]);
+    })
   });
 });
 ```

@@ -34,7 +34,7 @@ describe('zeroOrMore', () => {
     // Should match when there are no UPDATE messages
     {
       const input: Array<Message> = [{ type: 'START' }, { type: 'END' }];
-      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 2, captures: [] }];
+      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 2, refContext: new Map() }];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
@@ -47,7 +47,7 @@ describe('zeroOrMore', () => {
         { type: 'UPDATE', payload: 2 },
         { type: 'END' },
       ];
-      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 4, captures: [] }];
+      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 4, refContext: new Map() }];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
@@ -125,7 +125,7 @@ describe('zeroOrMore', () => {
         { type: 'Send', message: { type: 'START' } },
         { type: 'Send', message: { type: 'COMPLETE' } },
       ];
-      const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 2, captures: [] }];
+      const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 2, refContext: new Map() }];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
@@ -138,7 +138,7 @@ describe('zeroOrMore', () => {
         { type: 'Send', message: { type: 'LOG', level: 'debug' } },
         { type: 'Send', message: { type: 'COMPLETE' } },
       ];
-      const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 4, captures: [] }];
+      const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 4, refContext: new Map() }];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
@@ -151,7 +151,7 @@ describe('zeroOrMore', () => {
         { type: 'Send', message: { type: 'LOG', level: 'debug' } },
         { type: 'Send', message: { type: 'COMPLETE' } },
       ];
-      const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 4, captures: [] }];
+      const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 4, refContext: new Map() }];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
@@ -180,8 +180,8 @@ describe('zeroOrMore', () => {
       const input: Array<number> = [2];
       // Expect both zero matches (nextIndex: 0) and one match (nextIndex: 1)
       const expected: PatternMatchResults<number> = [
-        { input, nextIndex: 0, captures: [] },
-        { input, nextIndex: 1, captures: [] },
+        { input, nextIndex: 0, refContext: new Map() },
+        { input, nextIndex: 1, refContext: new Map() },
       ];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected));
@@ -193,10 +193,10 @@ describe('zeroOrMore', () => {
       const input: Array<number> = [2, 4, 6];
       // Expect states for 0, 1, 2, and 3 matches
       const expected: PatternMatchResults<number> = [
-        { input, nextIndex: 0, captures: [] },
-        { input, nextIndex: 1, captures: [] },
-        { input, nextIndex: 2, captures: [] },
-        { input, nextIndex: 3, captures: [] },
+        { input, nextIndex: 0, refContext: new Map() },
+        { input, nextIndex: 1, refContext: new Map() },
+        { input, nextIndex: 2, refContext: new Map() },
+        { input, nextIndex: 3, refContext: new Map() },
       ];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected));
@@ -207,7 +207,7 @@ describe('zeroOrMore', () => {
     {
       const input: Array<number> = [1];
       // Expect only the zero-match state as it fails immediately
-      const expected: PatternMatchResults<number> = [{ input, nextIndex: 0, captures: [] }];
+      const expected: PatternMatchResults<number> = [{ input, nextIndex: 0, refContext: new Map() }];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected)); // Use arrayContaining
       expect(actual.length).toBe(expected.length);
@@ -215,7 +215,7 @@ describe('zeroOrMore', () => {
     {
       const input: Array<number> = [1, 3, 5];
       // Expect only the zero-match state
-      const expected: PatternMatchResults<number> = [{ input, nextIndex: 0, captures: [] }];
+      const expected: PatternMatchResults<number> = [{ input, nextIndex: 0, refContext: new Map() }];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected)); // Use arrayContaining
       expect(actual.length).toBe(expected.length);
@@ -224,7 +224,7 @@ describe('zeroOrMore', () => {
     // Should match when array is empty
     {
       const input: Array<number> = [];
-      const expected: PatternMatchResults<number> = [{ input, nextIndex: 0, captures: [] }];
+      const expected: PatternMatchResults<number> = [{ input, nextIndex: 0, refContext: new Map() }];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
@@ -247,8 +247,8 @@ describe('zeroOrMore', () => {
       const input: Array<Message> = [{ type: 'DEBUG' }];
       // Expect both zero matches (nextIndex: 0) and one match (nextIndex: 1)
       const expected: PatternMatchResults<Message> = [
-        { input, nextIndex: 0, captures: [] },
-        { input, nextIndex: 1, captures: [] },
+        { input, nextIndex: 0, refContext: new Map() },
+        { input, nextIndex: 1, refContext: new Map() },
       ];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected));
@@ -259,9 +259,9 @@ describe('zeroOrMore', () => {
       const input: Array<Message> = [{ type: 'DEBUG' }, { type: 'DEBUG' }];
       // Expect states for 0, 1, and 2 matches
       const expected: PatternMatchResults<Message> = [
-        { input, nextIndex: 0, captures: [] },
-        { input, nextIndex: 1, captures: [] },
-        { input, nextIndex: 2, captures: [] },
+        { input, nextIndex: 0, refContext: new Map() },
+        { input, nextIndex: 1, refContext: new Map() },
+        { input, nextIndex: 2, refContext: new Map() },
       ];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected));
@@ -271,7 +271,7 @@ describe('zeroOrMore', () => {
     {
       const input: Array<Message> = [{ type: 'START' }, { type: 'DEBUG' }, { type: 'END' }];
       // 'START' doesn't match isDebug, so only zero-match state.
-      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 0, captures: [] }];
+      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 0, refContext: new Map() }];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected)); // Use arrayContaining
       expect(actual.length).toBe(expected.length);
@@ -281,7 +281,7 @@ describe('zeroOrMore', () => {
     {
       const input: Array<Message> = [{ type: 'START' }, { type: 'PROGRESS' }, { type: 'END' }];
       // 'START' doesn't match isDebug, so only zero-match state.
-      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 0, captures: [] }];
+      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 0, refContext: new Map() }];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expect.arrayContaining(expected)); // Use arrayContaining
       expect(actual.length).toBe(expected.length);
@@ -290,7 +290,7 @@ describe('zeroOrMore', () => {
     // Should match when array is empty
     {
       const input: Array<Message> = [];
-      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 0, captures: [] }];
+      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 0, refContext: new Map() }];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }

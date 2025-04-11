@@ -12,7 +12,7 @@ describe(predicate, () => {
 
     const input: Array<number> = [2, 4, 6];
     const actual = pattern.match(initialMatchState(input));
-    const expected: PatternMatchResults<number> = [{ input, nextIndex: 1, captures: [] }];
+    const expected: PatternMatchResults<number> = [{ input, nextIndex: 1, refContext: new Map() }];
     expect(actual).toEqual(expected);
   });
 

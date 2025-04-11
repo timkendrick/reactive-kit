@@ -21,7 +21,7 @@ describe('sequence', () => {
     {
       const input: Array<string> = ['1', 'a', 'Z'];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, captures: [] }];
+      const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, refContext: new Map() }];
       expect(actual).toEqual(expected);
     }
 
@@ -77,7 +77,7 @@ describe('sequence', () => {
         { type: 'COMPLETE' }, // Matches final part of outer sequence
       ];
       const actual = outerSequence.match(initialMatchState(input));
-      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 5, captures: [] }];
+      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 5, refContext: new Map() }];
       expect(actual).toEqual(expected);
     }
 
@@ -197,7 +197,7 @@ describe('sequence', () => {
         { type: HandlerActionType.Send, message: { type: MESSAGE_END } },
       ];
       const actual = complexSequence.match(initialMatchState(input));
-      const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 6, captures: [] }];
+      const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 6, refContext: new Map() }];
       expect(actual).toEqual(expected);
     }
 

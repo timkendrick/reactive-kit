@@ -10,6 +10,6 @@ export function initialMatchState<T>(input: Array<T>): MatchState<T> {
   return {
     input,
     nextIndex: 0,
-    captures: [],
+    refContext: new Map(),
   };
 }

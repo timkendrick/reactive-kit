@@ -23,8 +23,14 @@ export interface MatchState<T> {
   /** Index of the next element in the input array to be matched, or null if no match was found */
   nextIndex: number;
   /** Captured sub-sequences from the input */
-  captures: Array<unknown>;
+  refContext: Map<RefHandle<unknown>, unknown>;
 }
+
+declare const RefTypeTag: unique symbol;
+
+export type RefHandle<T> = symbol & {
+  readonly [RefTypeTag]: T;
+};
 
 export type PatternMatchResults<T> = Array<MatchState<T>>;
 

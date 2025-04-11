@@ -11,7 +11,7 @@ describe(any, () => {
     const pattern = predicate(any());
     const input: Array<string> = ['a', 'b', 'c'];
     const actual = pattern.match(initialMatchState(input));
-    const expected: PatternMatchResults<string> = [{ input, nextIndex: 1, captures: [] }];
+    const expected: PatternMatchResults<string> = [{ input, nextIndex: 1, refContext: new Map() }];
     expect(actual).toEqual(expected);
   });
 });
