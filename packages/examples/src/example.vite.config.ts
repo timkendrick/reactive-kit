@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { babel } from '@rollup/plugin-babel';
@@ -13,6 +13,8 @@ const __dirname = dirname(__filename);
 const INDEX_HTML_TEMPLATE = resolve(__dirname, './example.index.html');
 
 const template = readFileSync(INDEX_HTML_TEMPLATE, 'utf-8');
+
+const WORKSPACE_ROOT = join(__dirname, '../..');
 
 export default mergeConfig(
   base,
@@ -44,9 +46,15 @@ export default mergeConfig(
       },
       babel({
         presets: ['@reactive-kit/babel-preset-reactive'],
-        ignore: [/\bnode_modules\b/],
+        ignore: [
+          /\bnode_modules\b/,
+          new RegExp(`^${escapeRegExp(WORKSPACE_ROOT)}(?!/examples\\b)`),
+        ],
         babelHelpers: 'bundled',
       }) as Plugin,
     ],
   }),
 );
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
