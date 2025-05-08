@@ -17,7 +17,7 @@ act((self, { fail }) => fail(new Error("Task failed")))
 // Wait for specific message
 act((self, { outbox }) => actions(() => [
   waitFor((msg): msg is Extract<MyMessage, { type: "START" }> => msg.type === "START",
-    (msgHandle) => send(outbox, readState(msgHandle, (startMsg: Extract<MyMessage, { type: "START" }>) => ({ type: "ACK_START", payload: startMsg.payload })))
+    (msgHandle) => send(outbox, readState(msgHandle, (startMsg) => ({ type: "ACK_START", payload: startMsg.payload })))
   ),
   send(outbox, { type: "READY" })
 ]))
@@ -169,7 +169,7 @@ A `StateHandle<S>` is an opaque handle to a state of type `S`.
             actions(() => [
               waitFor((msg): msg is Extract<MyMessage, { type: "INIT_DATA" }> => msg.type === "INIT_DATA",
                 (msgHandle) => actions(() => [
-                  send(outbox, readState(msgHandle, (initMsg: Extract<MyMessage, { type: "INIT_DATA" }>) => ({ type: "PONG", payload: initMsg.payload }))),
+                  send(outbox, readState(msgHandle, (initMsg) => ({ type: "PONG", payload: initMsg.payload }))),
                   modifyState(stateHandle, readState(msgHandle, (initMsg) => (s) => ({ ...s, initialized: true, data: initMsg.payload })))
                 ])
               ),
@@ -227,9 +227,7 @@ This section provides a detailed breakdown of each mock task action's behavior.
         ```typescript
         waitFor<MyMessage, StartMsg>(
           (msg): msg is StartMsg => msg.type === 'START',
-          (msgHandle) => { // msgHandle is StateHandle<StartMsg>
-            return send(outbox, readState(msgHandle, (startMsg) => ({ type: 'ACK', id: startMsg.payload.id })));
-          }
+          (msgHandle) => send(outbox, readState(msgHandle, (startMsg) => ({ type: 'ACK', id: startMsg.payload.id })))
         )
         ```
     *   **Example (Wait Only):**
@@ -268,10 +266,10 @@ This section provides a detailed breakdown of each mock task action's behavior.
     *   **Behavior:** Executes commands in the provided order. If `controls.done()` is called, execution of the current `actions` block halts, and control passes to the command following the `actions` block. If `done()` is not called, the sequence completes after the last command in the array, and then control proceeds.
     *   **Example:** (See various examples throughout)
 
-*   **`withState<S, T>(initialState: () => S, factory: (stateHandle: StateHandle<S>) => MockAsyncTaskCommand<T>)`**
+*   **`withState<S, T>(initialState: () => S | StateValueResolver<() => S>, factory: (stateHandle: StateHandle<S>) => MockAsyncTaskCommand<T>)`**
     *   **Description:** Defines a stateful command scope. It creates an initial state and provides a `stateHandle` to the `factory` function. The `factory` returns a command that operates within this state scope.
     *   **Behavior:**
-        1.  Invokes `initialState()` to get the state value.
+        1.  Invokes `initialState()` to get the state value (resolving it first if it's a `StateValueResolver`).
         2.  Creates a `stateHandle` for this state.
         3.  Invokes `factory(stateHandle)` to get the command body for this stateful block.
         4.  Commands like `modifyState`, `readState`, and `computeState` use this `stateHandle`.
@@ -303,7 +301,7 @@ This section provides a detailed breakdown of each mock task action's behavior.
         ```
 
 *   **`readState<S, V>(stateHandle: StateHandle<S>, selector: (currentState: S) => V): StateValueResolver<V>`**
-    *   **Description:** Creates a `StateValueResolver`. This is not a command itself, but a helper to produce a placeholder that the interpreter resolves at runtime to get a value from state. This resolved value is then used as an argument to another command (e.g., `send`, `delay`).
+    *   **Description:** Creates a `StateValueResolver`. This is not a command itself, but a helper to produce a placeholder that is dynamically resolved at runtime to retrieve a value from state. This resolved value is then used as an argument to another command (e.g., `send`, `delay`).
     *   **Behavior:** Returns an opaque `StateValueResolver` object containing the `stateHandle` and the `selector`. The command execution engine uses this to fetch the actual value from state when needed.
     *   **Example:**
         ```typescript
@@ -341,7 +339,7 @@ This section provides a detailed breakdown of each mock task action's behavior.
           withState(() => ({ isLocked: true }), itemStateHandle => 
             actions<MyMessage>([
               whenState(
-                computeState( // predicateResolver
+                computeState(
                   [appStateHandle, itemStateHandle],
                   (appState, itemState) => 
                     appState.status === 'active' && 
@@ -367,7 +365,7 @@ This section provides a detailed breakdown of each mock task action's behavior.
     *   **Example:**
         ```typescript
         actions<MyMessage>([
-          when<MyMessage, MyMessage>(
+          when<MyMessage, StartMsg>(
             (msg): msg is StartMsg => msg.type === 'START',
             (msgHandle) => send(outbox, readState(msgHandle, (startMsg: StartMsg) => ({ type: 'STARTED', id: startMsg.payload.id }))),
             (msgHandle) => send(outbox, readState(msgHandle, (msg: MyMessage) => ({ type: 'UNEXPECTED_MSG', receivedType: msg.type })))
