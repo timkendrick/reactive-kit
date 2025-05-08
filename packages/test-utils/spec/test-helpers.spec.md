@@ -8,7 +8,7 @@ The test helpers provide utilities for setting up and validating tests for React
 // Basic handler test
 await verifyHandlerBehavior(handler, {
   verify: /* pattern */,
-  asyncTasks: /* task mocks */
+  taskOverrides: /* task mocks */
 });
 
 // With initial state
@@ -23,11 +23,20 @@ await verifyHandlerBehavior(handler, {
   verify: /* pattern */
 });
 
-// With async tasks
+// With async task mocks
 await verifyHandlerBehavior(handler, {
-  asyncTasks: {
-    [TASK_TYPE]: () => mockAsyncTask(actions([
-      emit([HandlerAction.Send(parent, { type: "READY" })])
+  taskOverrides: {
+    [TASK_TYPE_FETCH]: ({ taskId, effect, output }) => act((self) => actions([
+      delay(10),
+      send(output, createFetchHandlerResponseMessage(taskId, {
+        success: true,
+        response: {
+          status: 200,
+          headers: {},
+          body: Uint8Array.from(`Hello from ${effect.payload.url}!`),
+          token: BigInt(Math.random() * Number.MAX_VALUE)
+        }
+      }))
     ]))
   },
   verify: /* pattern */

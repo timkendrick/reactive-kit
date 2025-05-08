@@ -16,6 +16,6 @@ The framework is built around three core capabilities:
 
 1. Pattern Matching: A composable system for describing and verifying message sequences, supporting both exact matches and flexible patterns with back-references.
 
-2. Async Task Mocking: A declarative API for mocking asynchronous operations, allowing precise control over timing and message sequences.
+2. Async Task Mocking: An escape hatch for mocking asynchronous operations, allowing precise control over timing and message sequences.
 
 3. State Verification: Tools for validating handler state transitions while maintaining encapsulation of internal implementation details. 

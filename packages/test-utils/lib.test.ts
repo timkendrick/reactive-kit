@@ -6,11 +6,14 @@ test('module exports', () => {
   expect({ ...lib }).toEqual({
     and: lib.and,
     any: lib.any,
+    equals: lib.equals,
     hasActionType: lib.hasActionType,
     hasField: lib.hasField,
     hasMessagePayload: lib.hasMessagePayload,
     hasMessageType: lib.hasMessageType,
+    is: lib.is,
     initialMatchState: lib.initialMatchState,
+    lazy: lib.lazy,
     matchPattern: lib.matchPattern,
     not: lib.not,
     oneOf: lib.oneOf,
@@ -22,6 +25,7 @@ test('module exports', () => {
     sentFrom: lib.sentFrom,
     sentTo: lib.sentTo,
     sequence: lib.sequence,
+    withRefs: lib.withRefs,
     zeroOrMore: lib.zeroOrMore,
   });
 });
