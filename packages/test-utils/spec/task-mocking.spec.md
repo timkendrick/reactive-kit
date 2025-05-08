@@ -137,41 +137,27 @@ act<MyMessage>((self, { outbox }) => (
 ))
 ```
 
-### 2.4 Custom Implementation
-
-```typescript
-createIterator<MyMessage>(async function* () {
-  // Custom implementation with full control
-  while (true) {
-    const msg = await this.next();
-    if (msg.type === "STOP") {
-      yield [HandlerAction.Kill(this.inbox)];
-      break;
-    }
-    yield [HandlerAction.Send(this.outbox, { type: "ECHO", msg })];
-  }
-})
-```
-
 ## Implementation Details
 
 Mock tasks are defined using the `act` factory function. This function provides a context and helper utilities to construct the task's behavior declaratively.
 
-A `StateValueResolver<V>` is an opaque type representing a value that will be resolved from state at runtime.
-A `StateHandle<S>` is an opaque handle to a state of type `S`, typically provided by `withState`.
+A `StateValueResolver<V>` is an opaque type representing a value that will be resolved from state at runtime. Many command parameters can accept either a direct value (e.g., a `number` for a duration) or a `StateValueResolver<V>` for that value type, allowing for dynamic values derived from state. This dual capability is noted in individual command descriptions where applicable.
+A `StateHandle<S>` is an opaque handle to a state of type `S`. 
+    *   When created by `withState`, the `stateHandle` is valid for all lexically nested commands within that `withState` block and its factory function.
+    *   When provided to a factory by commands like `waitFor` or `when` (representing a consumed message), this `messageHandle` is a temporary handle valid only within the scope of that specific factory function callback.
 
-*   **`act<T>(definition: (self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => MockAsyncTaskCommand<T>, fail: (error: Error) => MockAsyncTaskCommand<unknown, never> }) => MockAsyncTaskCommand<T>) -> MockAsyncTaskDefinition<T>`**
+*   **`act<T>(definition: (self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => MockAsyncTaskCommand<T>, fail: (error: Error) => MockAsyncTaskCommand<unknown> }) => MockAsyncTaskCommand<T>) -> MockAsyncTaskDefinition<T>`**
     *   **Description:** The main factory function for creating a declarative mock task definition. It accepts a `definition` function callback that outlines the task's lifecycle, interactions, and responses to incoming messages. The `definition` function must return a single `MockAsyncTaskCommand` (commonly `actions(...)` or `withState(...)`) which serves as the root of the task's behavior tree.
     *   **Type Parameters:**
-        *   `T`: The union type of messages that the mock task can receive and (typically) send.
+        *   `T`: The union type of messages that the mock task can receive and (typically) send. The `self` handle represents this actor.
     *   **Parameters:**
-        *   `definition`: `(self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => MockAsyncTaskCommand<T>, fail: (error: Error) => MockAsyncTaskCommand<unknown, never> }) => MockAsyncTaskCommand<T>`
+        *   `definition`: `(self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => MockAsyncTaskCommand<T>, fail: (error: Error) => MockAsyncTaskCommand<unknown> }) => MockAsyncTaskCommand<T>`
             A callback function invoked to build the task's behavior. It receives two arguments:
             *   `self: ActorHandle<T>`: An `ActorHandle` representing the mock task itself.
             *   `helpers`: An object containing essential helper utilities: `outbox`, `complete`, `fail`.
                 *   `outbox: ActorHandle<T>`: Handle for the actor receiving messages from this mock task.
                 *   **`complete(): MockAsyncTaskCommand<T>`**: Command to terminate the task normally.
-                *   **`fail(error: Error): MockAsyncTaskCommand<unknown, never>`**: Command to terminate the task with an error.
+                *   **`fail(error: Error): MockAsyncTaskCommand<unknown>`**: Command to terminate the task with an error.
     *   **Return Value:** `MockAsyncTaskDefinition<T>`: An opaque definition object.
     *   **Example (Overall Structure):**
         ```typescript
@@ -184,7 +170,7 @@ A `StateHandle<S>` is an opaque handle to a state of type `S`, typically provide
               waitFor((msg): msg is Extract<MyMessage, { type: "INIT_DATA" }> => msg.type === "INIT_DATA",
                 (msgHandle) => actions(() => [
                   send(outbox, readState(msgHandle, (initMsg: Extract<MyMessage, { type: "INIT_DATA" }>) => ({ type: "PONG", payload: initMsg.payload }))),
-                  modifyState(stateHandle, (s) => ({ ...s, initialized: true, data: readState(msgHandle, (initMsg) => initMsg.payload) }))
+                  modifyState(stateHandle, readState(msgHandle, (initMsg) => (s) => ({ ...s, initialized: true, data: initMsg.payload })))
                 ])
               ),
               whenState(
@@ -214,7 +200,7 @@ This section provides a detailed breakdown of each mock task action's behavior.
         )
         ```
 
-*   **`kill<T>(target: ActorHandle<T>) -> MockAsyncTaskCommand<unknown, never>`**
+*   **`kill<T>(target: ActorHandle<T>) -> MockAsyncTaskCommand<unknown>`**
     *   **Description:** Immediately yields a `HandlerAction.Kill` for the specified `target` actor handle.
     *   **Behavior:** The mock task's underlying async generator yields `[HandlerAction.Kill(target)]`.
     *   **Example:**
@@ -227,19 +213,19 @@ This section provides a detailed breakdown of each mock task action's behavior.
         ])
         ```
 
-*   **`waitFor<TMessage, TNarrowedMessage extends TMessage, TCommandOutput>(predicate: ((message: TMessage) => message is TNarrowedMessage) | StateValueResolver<((message: TMessage) => message is TNarrowedMessage)>, processorFactory?: (messageHandle: StateHandle<TNarrowedMessage>) => MockAsyncTaskCommand<TCommandOutput>) -> MockAsyncTaskCommand<TCommandOutput>`**
-    *   **Description:** Pauses task execution until an incoming message satisfies the `predicate`. If a `processorFactory` is provided, it's invoked with a `StateHandle` for the consumed message (type-narrowed). The factory returns a command to be executed. To access message fields within the factory, use `readState(messageHandle, msg => ...)`.
+*   **`waitFor<T, TNarrowed extends T>(predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>, commandIfTrue?: (messageHandle: StateHandle<TNarrowed>) => MockAsyncTaskCommand<T>) -> MockAsyncTaskCommand<T>`**
+    *   **Description:** Pauses task execution until an incoming message satisfies the `predicate`. If a `commandIfTrue` is provided, it's invoked with a `StateHandle` for the consumed message (type-narrowed). The factory returns a command to be executed. To access message fields within the factory, use `readState(messageHandle, msg => ...)`. The `messageHandle` is temporary and valid only within the `commandIfTrue` callback.
     *   **Behavior:**
         1.  Task pauses. If `predicate` is a `StateValueResolver`, it's resolved.
         2.  On message arrival, evaluate `resolvedPredicate(message)`.
         3.  **If `false`:** Consume and discard. Continue waiting.
         4.  **If `true`:**
             *   Consume message. Create a temporary `StateHandle` for it.
-            *   If `processorFactory` exists, call `processorFactory(messageHandle)`. Execute the returned command.
+            *   If `commandIfTrue` exists, call `commandIfTrue(messageHandle)`. Execute the returned command.
             *   Proceed to the next action.
     *   **Example (Type Guard & Processor Factory):**
         ```typescript
-        waitFor<MyMessage, StartMsg, MyMessage>(
+        waitFor<MyMessage, StartMsg>(
           (msg): msg is StartMsg => msg.type === 'START',
           (msgHandle) => { // msgHandle is StateHandle<StartMsg>
             return send(outbox, readState(msgHandle, (startMsg) => ({ type: 'ACK', id: startMsg.payload.id })));
@@ -248,12 +234,12 @@ This section provides a detailed breakdown of each mock task action's behavior.
         ```
     *   **Example (Wait Only):**
         ```typescript
-        waitFor<MyMessage, MyMessage, MyMessage>(msg => msg.type === 'COMPLETE')
+        waitFor<MyMessage>(msg => msg.type === 'COMPLETE')
         ```
 
 *   **`delay<T>(durationMs: number | StateValueResolver<number>) -> MockAsyncTaskCommand<T>`**
-    *   **Description:** Pauses execution for the specified duration (either a literal number or resolved from state).
-    *   **Behavior:** If `durationMs` is a `StateValueResolver`, it's resolved. The task waits for the resolved duration.
+    *   **Description:** Pauses execution for the specified duration. This duration can be a literal `number` (in milliseconds) or a `StateValueResolver<number>` to dynamically determine the delay from state at runtime.
+    *   **Behavior:** If `durationMs` is a `StateValueResolver`, it's resolved. The task then waits for the resolved duration. Commands in a sequence are executed sequentially; for instance, a `delay` command will fully complete before any subsequent command (like `waitFor` or `when`) begins execution. Messages arriving from external sources while a `delay` (or any other non-message-consuming command) is active are typically buffered by the underlying actor system and will be processed by the next relevant message-consuming command (e.g., `waitFor`, `when`) once it becomes active.
     *   **Example:**
         ```typescript
         // Literal duration
@@ -278,8 +264,8 @@ This section provides a detailed breakdown of each mock task action's behavior.
         ```
 
 *   **`actions<T>(commands: (controls: { done: () => MockAsyncTaskCommand<T> }) => Array<MockAsyncTaskCommand<T>>)`**
-    *   **Description:** Executes a sequence of commands. The factory function receives `controls.done()` to terminate the current `actions` block.
-    *   **Behavior:** Executes commands in order. `done()` stops the current `actions` sequence.
+    *   **Description:** Executes a sequence of commands. The factory function receives `controls.done()` which can be called to terminate the current `actions` block early.
+    *   **Behavior:** Executes commands in the provided order. If `controls.done()` is called, execution of the current `actions` block halts, and control passes to the command following the `actions` block. If `done()` is not called, the sequence completes after the last command in the array, and then control proceeds.
     *   **Example:** (See various examples throughout)
 
 *   **`withState<S, T>(initialState: () => S, factory: (stateHandle: StateHandle<S>) => MockAsyncTaskCommand<T>)`**
@@ -370,14 +356,14 @@ This section provides a detailed breakdown of each mock task action's behavior.
         )
         ```
 
-*   **`when<TMessage, TCommandOutput>(predicate: ((message: TMessage) => boolean) | StateValueResolver<((message: TMessage) => boolean)>, commandFactoryIfTrue: (messageHandle: StateHandle<TMessage>) => MockAsyncTaskCommand<TCommandOutput>, commandFactoryIfFalse?: (messageHandle: StateHandle<TMessage>) => MockAsyncTaskCommand<TCommandOutput>): MockAsyncTaskCommand<TCommandOutput>`**
-    *   **Description:** Waits for the next incoming message, consumes it, and then conditionally executes a command returned by one of two factories based on the `predicate`. The factories receive a `StateHandle<TMessage>` for the incoming message, allowing message fields to be accessed via `readState(messageHandle, ...)`.
+*   **`when<T, TNarrowed extends T>(predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>, commandIfTrue: (messageHandle: StateHandle<TNarrowed>) => MockAsyncTaskCommand<T>, commandIfFalse?: (messageHandle: StateHandle<T>) => MockAsyncTaskCommand<T>): MockAsyncTaskCommand<T>`**
+    *   **Description:** Waits for the next incoming message from the actor's inbox, consumes it, and then conditionally executes a command returned by one of two factories based on the `predicate`. This command *always* consumes one message upon invocation, regardless of whether its predicate is state-based or directly uses the message content. The factories receive a `StateHandle<T>` for the incoming message (type-narrowed to `TNarrowed` for `commandIfTrue` if the predicate is a type guard), allowing message fields to be accessed via `readState(messageHandle, ...)`. This `messageHandle` is temporary and valid only within its respective factory callback (`commandIfTrue` or `commandIfFalse`).
     *   **Behavior:**
-        1.  Awaits incoming message.
+        1.  Awaits an incoming message and consumes it from the inbox.
         2.  Creates temporary `StateHandle` for the message.
         3.  Evaluates `predicate` (resolving it first if it's a `StateValueResolver`) with the message.
-        4.  If `true`, calls `commandFactoryIfTrue(messageHandle)` and executes the returned command.
-        5.  If `false`, calls `commandFactoryIfFalse(messageHandle)` (if provided) and executes its result.
+        4.  If `true`, calls `commandIfTrue(messageHandle)` and executes the returned command.
+        5.  If `false`, calls `commandIfFalse(messageHandle)` (if provided) and executes its result.
     *   **Example:**
         ```typescript
         actions<MyMessage>([
@@ -391,8 +377,8 @@ This section provides a detailed breakdown of each mock task action's behavior.
         ```
 
 *   **`whileLoop<T>(factory: (commands: { break: () => MockAsyncTaskCommand<T>, continue: () => MockAsyncTaskCommand<T> }) => MockAsyncTaskCommand<T>) -> MockAsyncTaskCommand<T>`**
-    *   **Description:** Creates a command that repeatedly executes a body command sequence. Loop control (`break`, `continue`) is explicit. State-dependent logic within the loop body should use `whenState` or `readState` with a lexically captured `StateHandle`.
-    *   **Behavior:** Executes the command from `factory` repeatedly. `break()` terminates the loop. `continue()` skips to the next iteration.
+    *   **Description:** Creates a command that repeatedly executes a body command sequence provided by the `factory` function. Loop control (`break`, `continue`) is explicit via the `commands` object passed to the factory. State-dependent logic within the loop body should use `whenState` or `readState` with a lexically captured `StateHandle`.
+    *   **Behavior:** Executes the command returned by `factory` repeatedly. `commands.break()` terminates the loop. `commands.continue()` immediately skips to the next iteration, re-evaluating the factory. If the command sequence returned by the `factory` completes without an explicit `commands.break()` or `commands.continue()` being called, the loop implicitly continues to the next iteration.
     *   **Example:**
         ```typescript
         withState(() => ({ count: 0 }), handle =>
@@ -417,17 +403,4 @@ This section provides a detailed breakdown of each mock task action's behavior.
             send(outbox, { type: 'LOOP_ENDED' })
           ])
         )
-        ```
-
-*   **`createIterator<T>(generator: (this: CreateIteratorContext<T>) => AsyncGenerator<Array<HandlerAction<T>>, void, T>)`**
-    *   **Description:** Allows defining a custom async generator for maximum flexibility, bypassing the declarative command structure.
-    *   **Behavior:** The runner iterates over the provided async generator. `yield` actions, `await this.next()` receives messages.
-    *   **Context (`this`):** Provides `inbox`, `outbox`, `next()`.
-    *   **Example:** (Remains the same as in original spec)
-        ```typescript
-        createIterator<MyMessage>(async function* () {
-          const { inbox, outbox, next } = this;
-          yield [HandlerAction.Send(outbox, { type: 'READY' })];
-          // ... rest of custom logic
-        })
         ```
