@@ -1,10 +1,10 @@
 import {
   HandlerAction,
   type Actor,
-  type ActorFactory,
   type ActorHandle,
   type HandlerContext,
   type HandlerResult,
+  type SyncActorFactory,
 } from '@reactive-kit/actor';
 import { hash, isHashable, type Hash, type Hashable } from '@reactive-kit/hash';
 import { Interpreter, type InterpreterSubscription } from '@reactive-kit/interpreter';
@@ -73,14 +73,15 @@ export class EvaluateHandler
   private interpreter: Interpreter;
   private subscriptions: Map<Hash, EvaluateHandlerSubscription<Hashable>>;
 
-  public static readonly FACTORY: ActorFactory<
+  public static readonly FACTORY: SyncActorFactory<
     EvaluateHandlerConfig,
     Message<unknown, unknown>,
     Message<unknown, unknown>
   > = {
     type: ACTOR_TYPE_EVALUATE_HANDLER,
     async: false,
-    factory: (config: EvaluateHandlerConfig) => new EvaluateHandler(config),
+    factory: (config: EvaluateHandlerConfig, _self: ActorHandle<Message<unknown, unknown>>) =>
+      new EvaluateHandler(config),
   };
 
   public constructor(config: EvaluateHandlerConfig) {
