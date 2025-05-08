@@ -64,7 +64,8 @@ describe(AsyncScheduler, () => {
     const APP_ACTOR = {
       type: 'AppActor',
       async: false,
-      factory: (output: ActorHandle<ResultMessage>) => new AppActor(output),
+      factory: (output: ActorHandle<AppMessage>, _self: ActorHandle<AppMessage>) =>
+        new AppActor(output),
     } satisfies ActorFactory<ActorHandle<AppMessage>, AppMessage, AppMessage>;
     const scheduler = new AsyncScheduler<AppMessage>(() => APP_ACTOR);
     scheduler.dispatch({ type: AppMessageType.Increment, payload: null });
@@ -102,7 +103,7 @@ describe(AsyncScheduler, () => {
     scheduler.dispatch({ type: AppMessageType.Destroy, payload: null });
     {
       const result = await scheduler.next();
-      expect(result).toEqual({ done: true, value: null });
+      expect(result).toEqual({ done: true, value: undefined });
     }
   });
 });

@@ -1,4 +1,4 @@
-import { type ActorFactory, type ActorHandle, type HandlerContext } from '@reactive-kit/actor';
+import { type ActorHandle, type HandlerContext, type SyncActorFactory } from '@reactive-kit/actor';
 import {
   AsyncTaskHandler,
   type AsyncTaskId,
@@ -26,14 +26,15 @@ export class FetchHandler extends AsyncTaskHandler<
   FetchHandlerInternalMessage,
   FetchTaskConfig
 > {
-  public static readonly FACTORY: ActorFactory<
+  public static readonly FACTORY: SyncActorFactory<
     FetchHandlerConfig,
     Message<unknown, unknown>,
     EffectHandlerOutputMessage | FetchHandlerInternalMessage
   > = {
     type: ACTOR_TYPE_FETCH_HANDLER,
     async: false,
-    factory: (config: FetchHandlerConfig) => new FetchHandler(config),
+    factory: (config: FetchHandlerConfig, _self: ActorHandle<Message<unknown, unknown>>) =>
+      new FetchHandler(config),
   };
 
   public constructor(config: FetchHandlerConfig) {

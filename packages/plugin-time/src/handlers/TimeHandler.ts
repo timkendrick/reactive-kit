@@ -1,4 +1,4 @@
-import { type ActorFactory, type ActorHandle, type HandlerContext } from '@reactive-kit/actor';
+import { type ActorHandle, type HandlerContext, type SyncActorFactory } from '@reactive-kit/actor';
 import {
   AsyncTaskHandler,
   type AsyncTaskId,
@@ -26,14 +26,15 @@ export class TimeHandler extends AsyncTaskHandler<
   TimeHandlerInternalMessage,
   TimeTaskConfig
 > {
-  public static readonly FACTORY: ActorFactory<
+  public static readonly FACTORY: SyncActorFactory<
     TimeHandlerConfig,
     Message<unknown, unknown>,
     EffectHandlerOutputMessage | TimeHandlerInternalMessage
   > = {
     type: ACTOR_TYPE_TIME_HANDLER,
     async: false,
-    factory: (config: TimeHandlerConfig) => new TimeHandler(config),
+    factory: (config: TimeHandlerConfig, _self: ActorHandle<Message<unknown, unknown>>) =>
+      new TimeHandler(config),
   };
 
   public constructor(config: TimeHandlerConfig) {

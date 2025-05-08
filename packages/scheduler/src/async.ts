@@ -5,7 +5,7 @@ import {
   type ActorFactory,
   type ActorHandle,
   type ActorType,
-  type AsyncActor,
+  type AsyncTask,
   type HandlerContext,
   type HandlerResult,
 } from '@reactive-kit/actor';
@@ -36,7 +36,7 @@ interface SyncActorState<T> {
 
 interface AsyncActorState<T> {
   handle: ActorHandle<T>;
-  actor: AsyncActor<T>;
+  actor: AsyncTask<T, T>;
   inbox: AsyncQueue<T>;
   outbox: AsyncQueue<HandlerResult<T>>;
 }
@@ -99,7 +99,7 @@ type AsyncSchedulerCommand<T> = Enum<{
 
 export const ROOT_ACTOR_TYPE: ActorType = '@reactive-kit/async-scheduler/root';
 
-export class AsyncScheduler<T> implements AsyncIterator<T, null> {
+export class AsyncScheduler<T> implements AsyncIterator<T, undefined> {
   private handlers: Map<unknown, ActorState<T>>;
   private phase: AsyncSchedulerPhase<T>;
   private inputHandle: SchedulerActorHandle<T>;
@@ -120,7 +120,12 @@ export class AsyncScheduler<T> implements AsyncIterator<T, null> {
     const spawnedActors = collectSpawnedActors(context);
     this.handlers.set(
       inputHandle,
-      this.spawnActor(inputHandle, { actor: rootActor, config: outputHandle }),
+      this.spawnActor(
+        inputHandle,
+        rootActor.async
+          ? { actor: rootActor, config: outputHandle }
+          : { actor: rootActor, config: outputHandle },
+      ),
     );
     for (const [handle, spawner] of spawnedActors ?? []) {
       this.handlers.set(handle, this.spawnActor(handle as SchedulerActorHandle<T>, spawner));
@@ -133,7 +138,7 @@ export class AsyncScheduler<T> implements AsyncIterator<T, null> {
   ): ActorState<T> {
     switch (spawner.actor.async) {
       case false: {
-        const actor = spawner.actor.factory(spawner.config);
+        const actor = spawner.actor.factory(spawner.config, handle);
         const context = this.createHandlerContext(handle);
         return ActorState.Sync({ handle, actor, context });
       }
@@ -181,7 +186,7 @@ export class AsyncScheduler<T> implements AsyncIterator<T, null> {
   }
 
   private generateHandle<T>(): SchedulerActorHandle<T> {
-    const uid = ++this.nextHandleId;
+    const uid = this.nextHandleId++;
     return new SchedulerActorHandle(uid);
   }
 
@@ -195,8 +200,10 @@ export class AsyncScheduler<T> implements AsyncIterator<T, null> {
     ]);
   }
 
-  public next(): Promise<IteratorResult<T, null>> {
-    return this.outputQueue.next();
+  public async next(): Promise<IteratorResult<T, undefined>> {
+    const result = await this.outputQueue.next();
+    if (result.done) return { done: true, value: undefined };
+    return result;
   }
 
   private handleCommands(commands: Array<AsyncSchedulerCommand<T>>): void {
@@ -314,7 +321,7 @@ export class AsyncScheduler<T> implements AsyncIterator<T, null> {
 }
 
 function subscribeHandlerEvents<I, O>(
-  handler: AsyncActor<I, O>,
+  handler: AsyncTask<I, O>,
   inbox: AsyncQueue<I>,
   outbox: AsyncQueue<HandlerResult<O>>,
   callback: (results: HandlerResult<unknown>) => void,
@@ -326,64 +333,11 @@ function subscribeHandlerEvents<I, O>(
 }
 
 function subscribeHandlerMessages<I, O>(
-  handler: AsyncActor<I, O>,
+  handler: AsyncTask<I, O>,
   inbox: AsyncQueue<I>,
   outbox: AsyncQueue<HandlerResult<O>>,
 ): Promise<void> {
-  const enum MessageType {
-    Input,
-    Output,
-  }
-  function withMessageType<T extends MessageType, V>(
-    type: T,
-    result: Promise<V>,
-  ): Promise<{ type: T; result: V }> {
-    return result.then((result) => ({ type, result }));
-  }
-  return new Promise<void>((resolve) => {
-    let isInputCompleted = false;
-    let isOutputCompleted = false;
-    let nextInput = withMessageType(MessageType.Input, inbox.next());
-    let nextOutput = withMessageType(MessageType.Output, handler.next());
-    return next();
-
-    function next(): void {
-      Promise.race([nextInput, nextOutput]).then((status) => {
-        switch (status.type) {
-          case MessageType.Input: {
-            const { result } = status;
-            if (result.done) {
-              isInputCompleted = true;
-              nextInput = never();
-              if (isOutputCompleted) return resolve();
-              return next();
-            }
-            const { value: message } = result;
-            nextInput = withMessageType(MessageType.Input, inbox.next());
-            nextOutput = withMessageType(MessageType.Output, handler.next(message));
-            return next();
-          }
-          case MessageType.Output: {
-            const { result } = status;
-            const { value: handlerResult } = result;
-            isOutputCompleted = Boolean(result.done);
-            nextOutput = isOutputCompleted
-              ? never()
-              : withMessageType(MessageType.Output, handler.next());
-            outbox.push(handlerResult);
-            if (isInputCompleted && isOutputCompleted) return resolve();
-            return next();
-          }
-        }
-      });
-    }
-
-    function never(): Promise<never> {
-      return new Promise<never>(() => {});
-    }
-  }).then(() => {
-    handler.return?.();
-  });
+  return handler(inbox, (actions) => outbox.push(actions));
 }
 
 class SchedulerActorHandle<T> implements ActorHandle<T> {

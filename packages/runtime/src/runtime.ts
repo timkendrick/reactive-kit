@@ -62,7 +62,11 @@ export class Runtime {
         config: { state, next: input },
       });
       const effectHandlers = Array.from(handlers, (factory) =>
-        context.spawn({ actor: factory, config: { next: input } }),
+        context.spawn(
+          factory.async
+            ? { actor: factory, config: { next: input } }
+            : { actor: factory, config: { next: input } },
+        ),
       );
       return {
         type: ACTOR_TYPE_RUNTIME,

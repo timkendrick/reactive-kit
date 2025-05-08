@@ -16,19 +16,28 @@ export interface ActorFactoryBase {
 
 export type ActorFactory<C, I, O> =
   | SyncActorFactory<C, I, O, Actor<I, O>>
-  | AsyncActorFactory<C, I, O, AsyncActor<I, O>>;
+  | AsyncActorFactory<C, I, O, AsyncTask<I, O>>;
 
-export interface ActorCreator<C, I, O> {
-  actor: ActorFactory<C, I, O>;
+export type ActorCreator<C, I, O> = SyncActorCreator<C, I, O> | AsyncActorCreator<C, I, O>;
+
+export interface SyncActorCreator<C, I, O> {
+  actor: SyncActorFactory<C, I, O, Actor<I, O>>;
   config: C;
 }
 
-export interface SyncActorFactory<C, I, O, A extends Actor<I, O>> extends ActorFactoryBase {
-  async: false;
-  factory: (config: C) => A;
+export interface AsyncActorCreator<C, I, O> {
+  actor: AsyncActorFactory<C, I, O, AsyncTask<I, O>>;
+  config: C;
 }
 
-export interface AsyncActorFactory<C, I, O, A extends AsyncActor<I, O>> extends ActorFactoryBase {
+export interface SyncActorFactory<C, I, O, A extends Actor<I, O> = Actor<I, O>>
+  extends ActorFactoryBase {
+  async: false;
+  factory: (config: C, self: ActorHandle<I>) => A;
+}
+
+export interface AsyncActorFactory<C, I, O, A extends AsyncTask<I, O> = AsyncTask<I, O>>
+  extends ActorFactoryBase {
   async: true;
   factory: (config: C, self: ActorHandle<I>) => A;
 }
@@ -70,19 +79,21 @@ export type KillHandlerAction<T> = EnumVariant<HandlerAction<T>, HandlerActionTy
 
 export type ActorType = string;
 
-export type MaybeAsyncActor<I, O = unknown> = Actor<I, O> | AsyncActor<I, O>;
+export type MaybeAsyncActor<I, O> = Actor<I, O> | AsyncTask<I, O>;
 
 export type AsyncTaskType = ActorType;
 
-export type AsyncTaskFactory<C, I, O> = AsyncActorFactory<C, I, O, AsyncActor<I, O>>;
+export type AsyncTaskFactory<C, I, O> = AsyncActorFactory<C, I, O, AsyncTask<I, O>>;
 
 export type AsyncTaskHandle = ActorHandle<never>;
 
-export type AsyncActor<I, O = unknown> = AsyncIterator<HandlerResult<O>, HandlerResult<O>, I>;
+export type AsyncTask<I, O> = (
+  inbox: AsyncTaskInbox<I>,
+  outbox: AsyncTaskOutbox<O>,
+) => Promise<void>;
 
-export type AsyncTaskResult<T = unknown> = IteratorResult<HandlerResult<T>, HandlerResult<T>>;
-export type AsyncTaskYieldResult<T> = IteratorYieldResult<HandlerResult<T>>;
-export type AsyncTaskReturnResult<T> = IteratorReturnResult<HandlerResult<T>>;
+export type AsyncTaskInbox<T> = AsyncIterator<T, null, never>;
+export type AsyncTaskOutbox<T> = (value: HandlerResult<T>) => void;
 
 export const HandlerAction = {
   [HandlerActionType.Spawn]: Object.assign(

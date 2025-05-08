@@ -36,7 +36,8 @@ export abstract class AsyncTaskHandler<
     effect: T,
     context: HandlerContext<EffectHandlerInput<M>>,
   ): {
-    task: AsyncTaskFactory<C, M, M>;
+    // FIXME: Allow input message type in async task factory
+    task: AsyncTaskFactory<C, never, M>;
     config: C;
   };
 
