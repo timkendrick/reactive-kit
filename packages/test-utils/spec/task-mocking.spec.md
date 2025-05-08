@@ -2,46 +2,32 @@
 
 The task mocking system provides a declarative API for mocking asynchronous operations in ReactiveKit actors, allowing precise control over timing and message sequences.
 
-### 2.1 Core Task Interface
-
-```typescript
-interface MockAsyncTask<T> extends AsyncActor<T, T> {
-  next(message?: T): Promise<AsyncTaskResult<T>>;
-  return?(value?: T): Promise<AsyncTaskResult<T>>;
-  throw?(error: Error): Promise<AsyncTaskResult<T>>;
-}
-```
-
-### 2.2 Basic Actions
+### 2.1 Basic Actions
 
 ```typescript
 // Basic send action
-act((self, outbox) => actions(() => [
+act((self, { outbox }) => send(outbox, { type: "READY" }))
+
+// Complete task
+act((self, { complete }) => complete())
+
+// Fail with error
+act((self, { fail }) => fail(new Error("Task failed")))
+
+// Wait for specific message
+act((self, { outbox }) => actions(() => [
+  waitFor(msg => msg.type === "START"),
   send(outbox, { type: "READY" })
 ]))
 
-// Wait for specific message
-act((self, outbox) => actions(() => [
-  waitFor(msg => msg.type === "START")
-]))
-
 // Delay execution
-act((self, outbox) => actions(() => [
-  delay(100) // ms
-]))
-
-// Complete task
-act((self, outbox) => actions(() => [
-  complete()
-]))
-
-// Fail with error
-act((self, outbox) => actions(() => [
-  fail(new Error("Task failed"))
+act((self, { outbox }) => actions(() => [
+  delay(100), // ms
+  send(outbox, { type: "READY" })
 ]))
 
 // Combined basic actions
-act((self, outbox) => actions(() => [
+act((self, { outbox }) => actions(() => [
   send(outbox, { type: "STARTING" }),
   delay(100),
   send(outbox, { type: "READY" }),
@@ -52,11 +38,11 @@ act((self, outbox) => actions(() => [
 ]))
 ```
 
-### 2.3 State Management
+### 2.2 State Management
 
 ```typescript
-act((self, outbox) => 
-  withState({ progress: 0 }, state => actions(() => [
+act((self, { outbox }) => 
+  withState(() => ({ progress: 0 }), state => actions(() => [
     // Update state
     modifyState(state, s => ({ progress: s.progress + 0.1 })),
     
@@ -66,8 +52,8 @@ act((self, outbox) =>
 )
 
 // State-based retry logic
-act((self, outbox) => 
-  withState({ retries: 0 }, state => actions(() => [
+act((self, { outbox }) => 
+  withState(() => ({ retries: 0 }), state => actions(() => [
     modifyState(state, s => ({ retries: s.retries + 1 })),
     getState(state, s => actions(() => [
       send(outbox, { type: "ATTEMPT", count: s.retries })
@@ -77,47 +63,37 @@ act((self, outbox) =>
 )
 ```
 
-### 2.4 Control Flow
+### 2.3 Control Flow
 
 ```typescript
 // Conditional execution in response to incoming message
-act((self, outbox) => actions(() => [
-  when(
-    msg => msg.type === "START" && msg.payload.ready,
-    actions(() => [
-      send(outbox, { type: "READY" })
-    ]),
-    actions(() => [
-      send(outbox, { type: "NOT_READY" })
-    ])
-  )
-]))
+act((self, { outbox }) => when(
+  msg => msg.type === "START" && msg.payload.ready,
+  send(outbox, { type: "READY" }),
+  send(outbox, { type: "NOT_READY" })
+))
 
 // State-based conditions in response to incoming message
-act((self, outbox) => 
-  withState({ retries: 0 }, state => actions(() => [
-    when(
-      msg => msg.type === "FAIL",
-      when(
-        msg => state.retries < 3,
-        actions(() => [
+act((self, { outbox }) => 
+  withState(() => ({ retries: 0 }), state => when(
+    msg => msg.type === "FAIL",
+    getState(state, s => {
+      if (s.retries >= 3) {
+        return send(outbox, { type: "FAILED" });
+      } else {
+        return actions(() => [
           modifyState(state, s => ({ retries: s.retries + 1 })),
           send(outbox, { type: "RETRY" })
-        ]),
-        actions(() => [
-          send(outbox, { type: "FAILED" })
         ])
-      ),
-      actions(() => [
-        send(outbox, { type: "SUCCESS" })
-      ])
-    )
-  ]))
+      }
+    }),
+    send(outbox, { type: "SUCCESS" })
+  ))
 )
 
 // While loop for autonomous repeated actions
-act<MyMessage>((self, outbox) => (
-  withState({ count: 0 }, handle =>
+act<MyMessage>((self, { outbox }) => (
+  withState(() => ({ count: 0 }), handle =>
     actions<MyMessage>(() => [
       whileLoop((loop) =>
         actions(() => [
@@ -142,7 +118,7 @@ act<MyMessage>((self, outbox) => (
 ))
 ```
 
-### 2.5 Custom Implementation
+### 2.4 Custom Implementation
 
 ```typescript
 createIterator<MyMessage>(async function* () {
@@ -160,7 +136,69 @@ createIterator<MyMessage>(async function* () {
 
 ## Implementation Details
 
-This section provides a detailed breakdown of each mock task action's behavior. Actions operate within the context of an `act((self, outbox) => ...)` definition and control how the mock task interacts with the system (e.g., yielding `HandlerAction`s) and how it responds to incoming messages or internal state changes.
+Mock tasks are defined using the `act` factory function. This function provides a context and helper utilities to construct the task's behavior declaratively.
+
+*   **`act<T>(definition: (self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => MockAsyncTaskCommand<T>, fail: (error: Error) => MockAsyncTaskCommand<unknown, never> }) => MockAsyncTaskCommand<T>) -> MockAsyncTaskDefinition<T>`**
+    *   **Description:** The main factory function for creating a declarative mock task definition. It accepts a `definition` function callback that outlines the task's lifecycle, interactions, and responses to incoming messages. The `definition` function must return a single `MockAsyncTaskCommand` (commonly `actions(...)` or `withState(...)`) which serves as the root of the task's behavior tree.
+    *   **Type Parameters:**
+        *   `T`: The union type of messages that the mock task can receive and (typically) send.
+    *   **Parameters:**
+        *   `definition`: `(self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => MockAsyncTaskCommand<T>, fail: (error: Error) => MockAsyncTaskCommand<unknown, never> }) => MockAsyncTaskCommand<T>`
+            A callback function invoked to build the task's behavior. It receives two arguments:
+            *   `self: ActorHandle<T>`: An `ActorHandle` representing the mock task itself. This handle can be used by actions like `kill(self)` to allow the task to terminate itself or to be used as a target for messages if the task needs to send messages to itself (though less common in typical mocking scenarios).
+            *   `helpers`: An object containing essential helper utilities and context for defining the task. It includes:
+                *   `outbox: ActorHandle<T>`: An `ActorHandle` for the actor designated to receive messages sent *from* this mock task. Actions like `send(outbox, message)` use this handle to direct output. Typically, this is the parent actor, the test harness, or the system under test that interacts with the mock.
+                *   **`complete(): MockAsyncTaskCommand<T>`**
+                    *   **Description:** A helper function that returns a command to terminate the mock task normally, signaling successful completion of its operation.
+                    *   **Behavior:** When this command is executed, the mock task's underlying async generator function effectively finishes its execution as if by a `return` statement. No further actions in the current sequence or task will be executed. The test runner or task supervisor observes this normal completion.
+                    *   **Example (within `act`):**
+                        ```typescript
+                        act<MyMessage>((self, { complete }) => actions(() => [
+                          // ... other actions
+                          complete() // Signal normal completion
+                        ]))
+                        ```
+                *   **`fail(error: Error): MockAsyncTaskCommand<unknown, never>`**
+                    *   **Description:** A helper function that returns a command to terminate the mock task abnormally by throwing an error, signaling that the task encountered an unrecoverable problem or a deliberate failure condition.
+                    *   **Behavior:** When this command is executed, the mock task's underlying async generator function terminates by throwing the provided `error` object. The test runner or task supervisor observes this exception (e.g., via a rejected promise if awaiting the task's completion, or by catching it if iterating the generator directly). No further actions in the current sequence or task will be executed.
+                    *   **Example (within `act`):**
+                        ```typescript
+                        act<MyMessage>((self, { outbox, fail }) => actions(() => [
+                          waitFor(msg => msg.type === 'PROCESS'),
+                          send(outbox, { type: 'PROCESSING' }),
+                          // Simulate an error during processing
+                          fail(new Error("Processing failed due to invalid input"))
+                        ]))
+                        ```
+    *   **Return Value:** `MockAsyncTaskDefinition<T>`: An opaque definition object. This object is then used by the test runner (e.g., via a testing utility like `TestBed.runAsyncActor`) to instantiate and execute the mock task according to the defined behavior.
+    *   **Example (Overall Structure):**
+        ```typescript
+        interface MyMessage { type: "PING" | "PONG" | "INIT_DATA"; payload?: any; }
+
+        const myMockTaskDefinition = act<MyMessage>((self, { outbox, complete, fail }) =>
+          withState(() => ({ initialized: false }), stateHandle =>
+            actions(() => [
+              waitFor((msg): msg is Extract<MyMessage, { type: "INIT_DATA" }> => msg.type === "INIT_DATA",
+                (initMsg) => actions(() => [
+                  send(outbox, { type: "PONG", payload: initMsg.payload }),
+                  modifyState(stateHandle, () => ({ initialized: true }))
+                ])
+              ),
+              getState(stateHandle, s => {
+                if (!s.initialized) {
+                  return fail(new Error("Task was not initialized before other interactions."));
+                }
+                // Example: send another PONG if initialized, or different logic
+                return send(outbox, { type: "PONG" });
+              }),
+              // Potentially more actions or conditional completion
+              complete()
+            ])
+          )
+        );
+        ```
+
+This section provides a detailed breakdown of each mock task action's behavior. 
 
 *   **`send<T>(target: ActorHandle<T>, message: T) -> MockAsyncTaskCommand<T, HandlerAction<T>>`**
     *   **Description:** Immediately yields the specified message from the mock task's iterator. The message is automatically wrapped in a `HandlerAction.Send(parent, message)` internally. This allows the mock task to send messages as part of its defined behavior. This action does *not* consume any input message sent to the task via `next()`.
@@ -237,9 +275,9 @@ This section provides a detailed breakdown of each mock task action's behavior. 
     *   **Example:**
         ```typescript
         actions(() => [
-          send(outbox, [HandlerAction.Send(parent, { type: 'START' })]),
+          send(outbox, { type: 'START' }),
           delay(100), // Wait 100ms
-          send(outbox, [HandlerAction.Send(parent, { type: 'END' })])
+          send(outbox, { type: 'END' })
         ])
         ```
 
@@ -255,30 +293,6 @@ This section provides a detailed breakdown of each mock task action's behavior. 
           // Otherwise, send an acknowledgement
           (msg) => send(outbox, { type: 'ACK', id: msg.id })
         )
-        ```
-
-*   **`complete<T>() -> MockAsyncTaskCommand<T>`**
-    *   **Description:** Terminates the mock task normally. This signals the successful completion of the task's operation.
-    *   **Behavior:** The mock task's underlying async generator function finishes its execution by executing a `return` statement. No further actions in the sequence will be executed. The test runner observes this completion.
-    *   **Example:**
-        ```typescript
-        actions(() => [
-          // ... other actions ...
-          complete()
-        ])
-        ```
-
-*   **`fail(error: Error)`**
-    *   **Description:** Terminates the mock task abnormally by throwing an error. This signals that the task encountered an unrecoverable problem.
-    *   **Behavior:** The mock task's underlying async generator function terminates by throwing the provided `error` object. The test runner observes this exception (e.g., via a rejected promise when calling the task's `next()` or `return()` methods, or by catching it if iterating the generator directly). No further actions in the sequence will be executed.
-    *   **Example:**
-        ```typescript
-        actions(() => [
-          waitFor(msg => msg.type === 'PROCESS'),
-          send(outbox, { type: 'PROCESSING' }),
-          // Simulate an error during processing
-          fail(new Error("Processing failed due to invalid input"))
-        ])
         ```
 
 *   **`actions<T>(commands: (controls: { done: () => MockAsyncTaskCommand<T> }) => Array<MockAsyncTaskCommand<T>>)`**
@@ -310,28 +324,27 @@ This section provides a detailed breakdown of each mock task action's behavior. 
         ])
         ```
 
-*   **`withState<S, T>(initialState: S, statefulCommandsFactory: (stateHandle: StateHandle<S>) => MockAsyncTaskCommand<T>)`**
-    *   **Description:** Defines a stateful sequence for a mock task. It establishes an initial state (`initialState`) associated with a unique `stateHandle`. The `statefulCommandsFactory` function uses this handle to generate a sequence of `MockAsyncTaskCommand`s (including `modifyState` and `getState`) that operate within this state scope.
+*   **`withState<S, T>(initialState: () => S, factory: (stateHandle: StateHandle<S>) => MockAsyncTaskCommand<T>)`**
+    *   **Description:** Defines a stateful command for a mock task. It establishes an initial state (based on the `initialState` factory) associated with a unique `stateHandle`. The `factory` function uses this handle to generate a `MockAsyncTaskCommand` that operates within this state scope (allowing `modifyState` and `getState` commands to access the state).
     *   **Behavior:**
-        1.  **Configuration:** `act`(self, outbox) =>  stores `initialState` and `statefulCommandsFactory`.
-        2.  **Execution Start:** When the runner starts the `withState` block:
-            *   It creates the state value internally: `let stateValue = initialState;`.
-            *   It creates an opaque `stateHandle` associated with `stateValue`.
-            *   It invokes `statefulCommandsFactory(stateHandle)` once to get the array of commands for this block. Commands like `modifyState(stateHandle, ...)` and `getState(stateHandle, ...)` generated here capture this specific handle.
-        3.  **Command Execution:** The runner executes the generated commands sequentially. The handling of `modifyState` and `getState` within this sequence is detailed in their respective descriptions.
-    *   **State Persistence:** The underlying state value associated with `stateHandle` persists and is mutable across the commands generated by *one call* to `statefulCommandsFactory`.
+        1.  **Configuration:** Stores `initialState` and `factory`.
+        2.  **Execution Start:** When execution encounters the `withState` block:
+            *   It creates the state value internally: `let stateValue = initialState();`.
+            *   It creates an opaque `stateHandle` that can be used to retrieve or modify `stateValue`.
+            *   It invokes `factory(stateHandle)` once to get the body of the stateful block. Commands like `modifyState(stateHandle, ...)` and `getState(stateHandle, ...)` generated here capture this specific handle.
+        3.  **Command Execution:** The runner executes the body command. The handling of `modifyState` and `getState` within this sequence is detailed in their respective descriptions.
+    *   **State Persistence:** The underlying state value associated with `stateHandle` persists and is mutable within the commands generated by the factory. If the command is re-encountered (due to loops etc), the initial state will be recreated.
     *   **Scope:** State is localized. Each `withState` block manages its own independent state via its unique handle.
-    *   **Type Parameters:** `S`, `T` as before. `MockAsyncTaskCommand` now potentially includes `S`.
     *   **Example (Structure):**
         ```typescript
-        act<MyMessage>((self, outbox) =>(
-          withState({ counter: 0 }, stateHandle => actions<MyMessage>([
+        act<MyMessage>((self, { outbox, complete }) => (
+          withState(() => ({ counter: 0 }), stateHandle => actions<MyMessage>([
             // modifyState is a command in the sequence
             modifyState(stateHandle, s => ({ counter: s.counter + 1 })),
             // getState is a command whose factory returns the next command(s)
             getState(stateHandle, s => {
               if (s.counter < 3) {
-                return send(outbox, [HandlerAction.Send(parent, { type: 'COUNT', value: s.counter })]);
+                return send(outbox, { type: 'COUNT', value: s.counter });
               } else {
                 return complete(); // Example: complete the task based on state
               }
@@ -342,39 +355,39 @@ This section provides a detailed breakdown of each mock task action's behavior. 
         ));
         ```
 
-*   **`modifyState<S, T>(stateHandle: StateHandle<S>, modifierFn: (currentState: S) => S) -> MockAsyncTaskCommand<T>`**
+*   **`modifyState<S, T>(stateHandle: StateHandle<S>, updater: (currentState: S) => S) -> MockAsyncTaskCommand<T>`**
     *   **Type Name:** Defined as a `MockAsyncTaskCommand`. Requires the `stateHandle` provided by the enclosing `withState` factory.
     *   **Description:** A command within a `withState` sequence that synchronously updates the state associated with the provided `stateHandle`.
     *   **Behavior:** When the runner executes this command:
         1.  It retrieves the current state value linked to the captured `stateHandle`.
-        2.  It calls `modifierFn` with the current state value.
-        3.  It updates the state value linked to `stateHandle` with the *new state value* returned by `modifierFn`.
+        2.  It calls `updater` with the current state value.
+        3.  It updates the state value linked to `stateHandle` with the *new state value* returned by `updater`.
         4.  Execution proceeds immediately to the next command in the sequence.
-    *   **Return Value:** The `modifierFn` must return the new state value (of type `S`).
+    *   **Return Value:** The `updater` must return the new state value (of type `S`).
     *   **Example (within `withState` -> `actions`):**
         ```typescript
-        withState({ count: 0 }, handle =>
+        withState(() => ({ count: 0 }), state =>
           actions<MyMessage>([ // Assuming 'actions' returns a single composite command
             // ... other commands ...
-            modifyState(handle, s => ({ count: s.count + 1 })),
+            modifyState(state, s => ({ count: s.count + 1 })),
             // ... subsequent commands ...
           ])
         )
         ```
 
-*   **`getState<S, T>(stateHandle: StateHandle<S>, commandFactoryFn: (currentState: S) => MockAsyncTaskCommand<T>) -> MockAsyncTaskCommand<T>`**
+*   **`getState<S, T>(stateHandle: StateHandle<S>, factory: (currentState: S) => MockAsyncTaskCommand<T>) -> MockAsyncTaskCommand<T>`**
     *   **Type Name:** Defined as a `MockAsyncTaskCommand`. Requires the `stateHandle`.
-    *   **Description:** A command within a `withState` sequence that reads the current state and uses it to determine the *next* command to execute.
+    *   **Description:** A command within a `withState` sequence that reads the current state and uses it to lazily determine the *next* command to execute.
     *   **Behavior:** When the runner executes this command:
         1.  It retrieves the current state value linked to the captured `stateHandle`.
-        2.  It calls `commandFactoryFn` with this current state value.
-        3.  The `commandFactoryFn` must return the next single `MockAsyncTaskCommand` (e.g., `send(outbox, ...)`, `delay(...)`, `complete()`, `waitFor(...)`, etc.) based on the state. Let's call this the `innerCommand`.
+        2.  It calls `factory` with this current state value.
+        3.  The `factory` must return the next single `MockAsyncTaskCommand` (e.g., `send(outbox, ...)`, `delay(...)`, `waitFor(...)`, etc.) based on the state. Let's call this the `innerCommand`.
         4.  The runner effectively replaces the `getState` command in its execution plan with this `innerCommand` and proceeds to execute the `innerCommand`.
         5.  Execution continues with the command originally *after* the `getState` only if and when the `innerCommand` fully completes its execution without terminating the task.
-    *   **Return Value:** The `commandFactoryFn` must return a single `MockAsyncTaskCommand<T>`.
+    *   **Return Value:** The `factory` must return a single `MockAsyncTaskCommand<T>`.
     *   **Example (within `withState` -> `actions`):**
         ```typescript
-        withState({ status: 'idle' }, handle =>
+        withState(() => ({ status: 'idle' }), handle =>
           actions<MyMessage>([
             // ... other commands potentially modifying state ...
             getState(handle, s => {
@@ -432,13 +445,13 @@ This section provides a detailed breakdown of each mock task action's behavior. 
         ])
         ```
 
-*   **`whileLoop<T>(loopBodyFactory: (commands: { break: () => MockAsyncTaskCommand<T>, continue: () => MockAsyncTaskCommand<T> }) => MockAsyncTaskCommand<T>) -> MockAsyncTaskCommand<T>`**
+*   **`whileLoop<T>(factory: (commands: { break: () => MockAsyncTaskCommand<T>, continue: () => MockAsyncTaskCommand<T> }) => MockAsyncTaskCommand<T>) -> MockAsyncTaskCommand<T>`**
     *   **Type Name:** Defined as a `MockAsyncTaskCommand`.
-    *   **Description:** Creates a command that repeatedly executes a body command sequence. The loop's control flow (termination or continuing to the next iteration) is managed explicitly by executing special `break` or `continue` commands returned by the `loopBodyFactory`.
+    *   **Description:** Creates a command that repeatedly executes a body command sequence. The loop's control flow (termination or continuing to the next iteration) is managed explicitly by executing special `break` or `continue` commands returned by the `factory`.
     *   **Behavior:**
         1.  The runner encounters the `whileLoop` command.
         2.  It enters the loop execution context.
-        3.  **Loop Iteration Start:** It calls `loopBodyFactory`, providing an object containing two functions:
+        3.  **Loop Iteration Start:** It calls `factory`, providing an object containing two functions:
             *   `break()`: Returns a special `MockAsyncTaskCommand` instance signaling immediate loop termination.
             *   `continue()`: Returns a special `MockAsyncTaskCommand` instance signaling immediate termination of the *current iteration* and starting the next one.
         4.  The factory returns the `MockAsyncTaskCommand` for the loop body (e.g., `actions(() => [...])`).
@@ -451,7 +464,7 @@ This section provides a detailed breakdown of each mock task action's behavior. 
     *   **Requires:** Typically used within `withState` if the loop condition or body depends on state, allowing `getState` inside the loop body to call `break()` or `continue()` conditionally.
     *   **Example:**
         ```typescript
-        withState({ count: 0 }, handle =>
+        withState(() => ({ count: 0 }), handle =>
           actions<MyMessage>([
             whileLoop((loop) =>
               actions(() => [
@@ -466,8 +479,7 @@ This section provides a detailed breakdown of each mock task action's behavior. 
                     ]);
                   }
                 }),
-                when((msg): msg is CancelMsg => msg?.type === 'CANCEL',
-                   () => loop.break())
+                when((msg): msg is CancelMsg => msg.type === 'CANCEL', () => loop.break())
               ])
             ),
             send(outbox, { type: 'LOOP_ENDED' })
