@@ -6,6 +6,7 @@ module.exports = {
         checkLoops: false,
       },
     ],
+    'no-empty-pattern': 'off',
     'no-warning-comments': [
       'warn',
       {
