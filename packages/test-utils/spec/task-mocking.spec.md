@@ -1,6 +1,6 @@
-## Task Mocking System
+## Declarative Actor System
 
-The task mocking system provides a declarative API for mocking asynchronous operations in ReactiveKit actors, allowing precise control over timing and message sequences.
+The Declarative Actor System provides a declarative API for defining the behavior of ReactiveKit actors, allowing precise control over timing and message sequences.
 
 ### 2.1 Basic Actions
 
@@ -139,11 +139,11 @@ act<MyMessage>((self, { outbox }) => (
 
 ## Implementation Details
 
-Mock tasks are defined using the `act` factory function. This function provides a context and helper utilities to configure the task's behavior declaratively using the command combinators.
+Actor definitions are created using the `act` factory function. This function provides a context and helper utilities to configure the actor's behavior declaratively using the command combinators.
 
-### Stateful tasks
+### Actor state
 
-Tasks can declare internal state.
+Declarative actors can define internal state.
 
 A `StateHandle<S>` is an opaque handle to a state of type `S`. 
     *   When created by `withState`, the `stateHandle` is valid for all lexically nested commands within that `withState` block and its factory function.
@@ -153,22 +153,22 @@ A `StateValueResolver<V>` is an opaque type representing a value that will be re
 
 ### Internal Architecture
 
-The `act()` function, when invoked with a task definition, doesn't directly execute the described behavior. Instead, it compiles the declarative definition into a sequence of virtual machine (VM) instructions. This sequence is then executed by a lightweight, stack-based interpreter.
+The `act()` function, when invoked with an actor definition, doesn't directly execute the described behavior. Instead, it compiles the declarative actor definition into a sequence of virtual machine (VM) instructions. This sequence is then internally executed by a lightweight, stack-based interpreter.
 
 #### 1. VM Architecture overview
 
 The core components of the internal VM are:
 
-*   **Instruction Queue:** A list of VM instructions derived from the user's `MockAsyncTaskCommand` definitions. The `act` function effectively translates the command tree into a linear sequence of these instructions.
+*   **Instruction Queue:** A list of VM instructions derived from the user's `ActorCommand` definitions. The `act` function effectively translates the command tree into a linear sequence of these instructions.
 *   **Execution Stack (VM Stack):** A runtime stack used to manage control flow, store intermediate values, and manage lexically-scoped state. `StateHandle`s created by `withState` refer to data held within specific frames on this stack. It is distinct from any JavaScript call stack.
 *   **Instruction Pointer (IP):** A pointer that indicates the next VM instruction to be fetched and executed from the Instruction Queue.
 *   **Execution Engine:** A central loop that fetches the instruction at the current IP, decodes it, and dispatches it to the appropriate handler logic. This engine also manages interactions with the actor system for message passing and timers.
 
-When a mock task begins, the `MockAsyncTaskDefinition` (the output of `act(...)`) is processed. The VM is initialized with the instruction sequence, an empty stack, and its IP set to the start of the sequence. The execution engine then runs until a terminal instruction (like `complete` or `fail`) is encountered, or until the instruction queue is exhausted under normal completion.
+When an actor definition begins execution, the `ActorDefinition` (the output of `act(...)`) is processed. The VM is initialized with the instruction sequence, an empty stack, and its IP set to the start of the sequence. The execution engine then runs until a terminal instruction (like `complete` or `fail`) is encountered, or until the instruction queue is exhausted under normal completion.
 
 #### 2. VM Instruction Set
 
-The declarative commands provided in a task definition (e.g., `send`, `waitFor`, `withState`) are compiled into a lower-level VM instruction set. Each instruction is a simple operation that the VM's execution engine can process. The translation from the high-level API to VM instructions aims to flatten the nested structure of commands into a linear sequence where possible, with control flow instructions managing jumps and conditional execution.
+The declarative commands provided in an actor definition (e.g., `send`, `waitFor`, `withState`) are compiled into a lower-level VM instruction set. Each instruction is a simple operation that the VM's execution engine can process. The translation from the high-level API to VM instructions aims to flatten the nested structure of commands into a linear sequence where possible, with control flow instructions managing jumps and conditional execution.
 
 The instruction set can be broadly categorized:
 
@@ -201,7 +201,7 @@ The instruction set can be broadly categorized:
     *   `StateValueResolver`s (which the VM resolves at runtime).
     *   IP offsets or labels for jump targets.
 
-This instruction set allows the VM to interpret the complex, declarative task definitions by breaking them down into manageable, sequential steps with explicit control flow. The compilation process (from `MockAsyncTaskCommand` tree to linear VM instructions) is a key part of `act()`'s internal setup.
+This instruction set allows the VM to interpret the complex, declarative actor definitions by breaking them down into manageable, sequential steps with explicit control flow. The compilation process (from `ActorCommand` tree to linear VM instructions) is a key part of `act()`'s internal setup.
 
 #### 3. VM Stack and State Management
 
@@ -238,9 +238,9 @@ This tight integration of state management with the stack ensures that state lif
 
 #### 4. VM and Runner: Cooperative Execution Model
 
-The execution of a mock task, defined using the `act()` function and its command combinators, is managed by a cooperative interplay between two main components:
+The execution of an actor definition, created using the `act()` function and its command combinators, is managed by a cooperative interplay between two main components:
 
-1.  **The Virtual Machine (VM):** Implemented as a synchronous generator function. The VM is responsible for interpreting the compiled sequence of instructions derived from the task definition. It processes instructions related to internal state management, synchronous control flow (like conditional jumps based on state), and preparing descriptors for external actions. When an instruction requires interaction with the outside world (e.g., sending a message, waiting for a delay, or awaiting an incoming message), the VM yields a command descriptor and pauses its execution.
+1.  **The Virtual Machine (VM):** Implemented as a synchronous generator function. The VM is responsible for interpreting the compiled sequence of instructions derived from the actor definition. It processes instructions related to internal state management, synchronous control flow (like conditional jumps based on state), and preparing descriptors for external actions. When an instruction requires interaction with the outside world (e.g., sending a message, waiting for a delay, or awaiting an incoming message), the VM yields a command descriptor and pauses its execution.
 
 2.  **The External Runner:** An asynchronous JavaScript function or component that "drives" the VM generator. The runner initiates the VM by calling its `next()` method. It then receives command descriptors yielded by the VM. Based on these descriptors, the runner performs the actual asynchronous operations (e.g., interfacing with the actor system for message passing, managing timers) or handles task lifecycle events. Once an asynchronous operation completes or an event occurs, the runner resumes the VM by calling `generator.next(result)`, passing any relevant data (like a received message) back into the VM.
 
@@ -254,13 +254,13 @@ The overall flow is as follows:
 *   The runner calls `generator.next(result)` to resume the VM.
 *   This cycle repeats until the VM completes its instruction sequence (e.g., by yielding a `COMPLETE` or `FAIL` descriptor, or by the generator function returning).
 
-The following subsections detail the internal workings of the VM's execution cycle (4.1) and the specific responsibilities of the external runner (4.2).
+The following subsections detail the internal workings of the VM's execution cycle and the specific responsibilities of the external runner.
 
-##### 4.1. Internal VM Execution Cycle (Generator)
+##### 4.1. Internal VM Execution Cycle
 
 The VM generator's core is an internal execution loop that processes instructions from the Instruction Queue. This loop runs synchronously within each invocation of `generator.next()` by the external runner.
 
-*   **The Main Loop (within the generator):**
+*   **The Main Loop:**
     *   The loop continues as long as the Instruction Pointer (IP) is within the bounds of the Instruction Queue and no terminal instruction (like `COMPLETE_TASK` or `FAIL_TASK`) has been executed or yielded.
     *   In each iteration, the engine performs the following steps:
         1.  **Fetch:** Retrieve the instruction located at the current IP from the Instruction Queue.
@@ -309,40 +309,40 @@ The external runner is responsible for driving the VM generator and managing all
             *   For `SEND_MESSAGE`: Interacts with the ReactiveKit actor system to dispatch the message.
             *   For `KILL_ACTOR`: Interacts with the actor system to terminate the target.
             *   For `DELAY`: Interacts with the runtime environment to pause for the specified duration.
-            *   For `AWAIT_MESSAGE`: Waits for an incoming message for the mock task (details below).
-            *   For `COMPLETE` or `FAIL`: Finalizes the mock task's lifecycle.
+            *   For `AWAIT_MESSAGE`: Waits for an incoming message for the actor (details below).
+            *   For `COMPLETE` or `FAIL`: Finalizes the actor's lifecycle.
         4.  Once the operation is complete or the event occurs (e.g., timer expired, message received), the runner calls `generator.next(result)` to resume the VM. The `result` is the received message for `AWAIT_MESSAGE` states, or typically `undefined` for others like `DELAY`.
 
 *   **Message Handling by the Runner:**
-    *   **Buffering:** The runner should implement a message buffer for the mock task. If messages arrive from the actor system while the VM generator is paused for other reasons (e.g., `DELAY`) or while the runner is processing a previous command, these messages are queued. When the VM yields `AWAIT_MESSAGE`, the runner first checks this buffer before waiting for new messages from the actor system.
+    *   **Buffering:** The runner should implement a message buffer for the actor. If messages arrive from the actor system while the VM generator is paused for other reasons (e.g., `DELAY`) or while the runner is processing a previous command, these messages are queued. When the VM yields `AWAIT_MESSAGE`, the runner first checks this buffer before waiting for new messages from the actor system.
     *   **Resuming VM on Message Arrival:** When `AWAIT_MESSAGE` is active, and a message is available (either from the buffer or newly arrived), the runner passes this message as the `result` to `generator.next()`. The VM is then responsible for any predicate evaluation to determine if the message is the one it was waiting for (as detailed in 4.1 under how `AWAIT_MESSAGE` and related instructions like `JUMP_IF_MESSAGE` are processed by the VM). If the VM determines the message is not suitable (for a `waitFor`), it will re-yield `AWAIT_MESSAGE`.
 
 *   **Task Lifecycle Integration:**
-    *   The runner manages the overall lifecycle of the mock task (e.g., the `AsyncTask` instance). It translates the VM's terminal state (`COMPLETE` or `FAIL` descriptors) into the appropriate resolution or rejection of this task, making the outcome observable to the testing framework.
+    *   The runner manages the overall lifecycle of the actor (e.g., the `AsyncTask` instance representing the actor's execution). It translates the VM's terminal state (`COMPLETE` or `FAIL` descriptors) into the appropriate resolution or rejection of this actor's execution, making the outcome observable to the testing framework.
 
 This cooperative model allows the VM's internal logic to remain synchronous and focused on instruction execution, while the runner handles the complexities of asynchronous operations and event management.
 
 ### Top-level APIs
 
-*   **`act<T>(definition: (self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => MockAsyncTaskCommand<T>, fail: (error: Error) => MockAsyncTaskCommand<unknown> }) => MockAsyncTaskCommand<T>) -> MockAsyncTaskDefinition<T>`**
-    *   **Description:** The main factory function for creating a declarative mock task definition. It accepts a `definition` function callback that outlines the task's lifecycle, interactions, and responses to incoming messages. The `definition` function must return a single `MockAsyncTaskCommand` (commonly `actions(...)` or `withState(...)`) which serves as the root of the task's behavior tree.
+*   **`act<T>(definition: (self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => ActorCommand<T>, fail: (error: Error) => ActorCommand<unknown> }) => ActorCommand<T>) -> ActorDefinition<T>`**
+    *   **Description:** The main factory function for creating a declarative actor definition. It accepts a `definition` function callback that outlines the actor's lifecycle, interactions, and responses to incoming messages. The `definition` function must return a single `ActorCommand` (commonly `actions(...)` or `withState(...)`) which serves as the root of the actor's behavior tree.
     *   **Type Parameters:**
-        *   `T`: The union type of messages that the mock task can send and receive
+        *   `T`: The union type of messages that the actor defined by this definition can send and receive
     *   **Parameters:**
-        *   `definition`: `(self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => MockAsyncTaskCommand<T>, fail: (error: Error) => MockAsyncTaskCommand<unknown> }) => MockAsyncTaskCommand<T>`
-            A callback function invoked to build the task's behavior. It receives two arguments:
-            *   `self: ActorHandle<T>`: An `ActorHandle` representing the mock task itself.
+        *   `definition`: `(self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => ActorCommand<T>, fail: (error: Error) => ActorCommand<unknown> }) => ActorCommand<T>`
+            A callback function invoked to build the actor's behavior. It receives two arguments:
+            *   `self: ActorHandle<T>`: An `ActorHandle` representing the actor itself.
             *   `helpers`: An object containing essential helper utilities: `outbox`, `complete`, `fail`.
-                *   `outbox: ActorHandle<T>`: Handle for the actor receiving messages from this mock task.
-                *   **`complete(): MockAsyncTaskCommand<T>`**: Command to terminate the task normally.
-                *   **`fail(error: Error): MockAsyncTaskCommand<unknown>`**: Command to terminate the task with an error.
-    *   **Return Value:** `MockAsyncTaskDefinition<T>`: An opaque definition object.
+                *   `outbox: ActorHandle<T>`: Handle for the actor receiving messages from this actor definition.
+                *   **`complete(): ActorCommand<T>`**: Command to terminate the actor normally.
+                *   **`fail(error: Error): ActorCommand<unknown>`**: Command to terminate the actor with an error.
+    *   **Return Value:** `ActorDefinition<T>`: An opaque definition object.
     *   **Example (Overall Structure):**
         ```typescript
         interface MyMessage { type: "PING" | "PONG" | "INIT_DATA"; payload?: any; }
         interface MyState { initialized: boolean; data?: any; }
 
-        const myMockTaskDefinition = act<MyMessage>((self, { outbox, complete, fail }) =>
+        const myActorDefinition = act<MyMessage>((self, { outbox, complete, fail }) =>
           withState<MyState, MyMessage>(() => ({ initialized: false }), stateHandle =>
             actions(() => [
               waitFor((msg): msg is Extract<MyMessage, { type: "INIT_DATA" }> => msg.type === "INIT_DATA",
@@ -364,15 +364,15 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
 
 ### Command combinators
 
-*   **`send<T>(target: ActorHandle<T>, message: T | StateValueResolver<T>) -> MockAsyncTaskCommand<T, HandlerAction<T>>`**
-    *   **Description:** Immediately yields the specified message (or a message resolved from state) from the mock task's iterator. The message is automatically wrapped in a `HandlerAction.Send(target, message)` internally.
+*   **`send<T>(target: ActorHandle<T>, message: T | StateValueResolver<T>) -> ActorCommand<T, HandlerAction<T>>`**
+    *   **Description:** Immediately yields the specified message (or a message resolved from state) from the actor's iterator. The message is automatically wrapped in a `HandlerAction.Send(target, message)` internally.
     *   **Type Parameters:**
         *   `T`: The union type of messages that the `target` actor can receive.
     *   **Parameters:**
         *   `target: ActorHandle<T>`: The handle of the actor to send the message to.
         *   `message: T | StateValueResolver<T>`: The message to send, or a `StateValueResolver` that will produce the message.
-    *   **Return Value:** `MockAsyncTaskCommand<T, HandlerAction<T>>`: A command that, when executed, will send the message.
-    *   **Behavior:** If `message` is a `StateValueResolver`, it's resolved using the relevant state. The task then yields `[HandlerAction.Send(target, resolvedMessage)]`. Execution continues immediately.
+    *   **Return Value:** `ActorCommand<T, HandlerAction<T>>`: A command that, when executed, will send the message.
+    *   **Behavior:** If `message` is a `StateValueResolver`, it's resolved using the relevant state. The actor then yields `[HandlerAction.Send(target, resolvedMessage)]`. Execution continues immediately.
     *   **Example:**
         ```typescript
         // Literal message
@@ -384,14 +384,14 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         )
         ```
 
-*   **`kill<T>(target: ActorHandle<T>) -> MockAsyncTaskCommand<unknown>`**
+*   **`kill<T>(target: ActorHandle<T>) -> ActorCommand<unknown>`**
     *   **Description:** Immediately yields a `HandlerAction.Kill` for the specified `target` actor handle.
     *   **Type Parameters:**
         *   `T`: The message type of the actor being killed. This is often `unknown` if the specific message type isn't relevant to the kill operation itself.
     *   **Parameters:**
         *   `target: ActorHandle<T>`: The handle of the actor to kill.
-    *   **Return Value:** `MockAsyncTaskCommand<unknown>`: A command that, when executed, will kill the target actor.
-    *   **Behavior:** The mock task's underlying async generator yields `[HandlerAction.Kill(target)]`.
+    *   **Return Value:** `ActorCommand<unknown>`: A command that, when executed, will kill the target actor.
+    *   **Behavior:** The actor's underlying async generator yields `[HandlerAction.Kill(target)]`.
     *   **Example:**
         ```typescript
         actions(() => [
@@ -402,43 +402,49 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         ])
         ```
 
-*   **`waitFor<T, TNarrowed extends T>(predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>, commandIfTrue?: (messageHandle: StateHandle<TNarrowed>) => MockAsyncTaskCommand<T>) -> MockAsyncTaskCommand<T>`**
-    *   **Description:** Pauses task execution until an incoming message satisfies the `predicate`. If a `commandIfTrue` is provided, it's invoked with a `StateHandle` for the consumed message (type-narrowed). The factory returns a command to be executed. To access message fields within the factory, use `readState(messageHandle, msg => ...)`. The `messageHandle` is temporary and valid only within the `commandIfTrue` callback.
+*   **`waitFor<T, TNarrowed extends T>(predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>, commandIfTrue?: (messageHandle: StateHandle<TNarrowed>) => ActorCommand<T>) -> ActorCommand<T>`**
+    *   **Description:** Pauses actor execution until an incoming message satisfies the `predicate`. If a `commandIfTrue` is provided, it's invoked with a `StateHandle` for the consumed message (type-narrowed). The factory returns a command to be executed. To access message fields within the factory, use `readState(messageHandle, msg => ...)`. The `messageHandle` is temporary and valid only within the `commandIfTrue` callback.
     *   **Type Parameters:**
-        *   `T`: The general union type of messages the task can receive.
+        *   `T`: The general union type of messages the actor can receive.
         *   `TNarrowed extends T`: A narrowed subtype of `T`, used when the `predicate` acts as a type guard.
     *   **Parameters:**
         *   `predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>`: A function or a `StateValueResolver` for a function that evaluates an incoming message. If it's a type guard, `TNarrowed` will be the type of the message if the predicate returns `true`.
-        *   `commandIfTrue?: (messageHandle: StateHandle<TNarrowed>) => MockAsyncTaskCommand<T>`: An optional factory function called if the `predicate` returns `true`. It receives a `StateHandle` for the consumed (and potentially type-narrowed) message and must return a `MockAsyncTaskCommand` to be executed.
-    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, will wait for and process a message according to the predicate.
+        *   `commandIfTrue?: (messageHandle: StateHandle<TNarrowed>) => ActorCommand<T>`: An optional factory function called if the `predicate` returns `true`. It receives a `StateHandle` for the consumed (and potentially type-narrowed) message and must return an `ActorCommand` to be executed.
+    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will wait for and process a message according to the predicate.
     *   **Behavior:**
-        1.  Task pauses. If `predicate` is a `StateValueResolver`, it's resolved.
+        1.  Actor execution pauses. If `predicate` is a `StateValueResolver`, it's resolved.
         2.  On message arrival, evaluate `resolvedPredicate(message)`.
-        3.  **If `false`:** Consume and discard. Continue waiting.
-        4.  **If `true`:**
-            *   Consume message. Create a temporary `StateHandle` for it.
-            *   If `commandIfTrue` exists, call `commandIfTrue(messageHandle)`. Execute the returned command.
-            *   Proceed to the next action.
-    *   **Example (Type Guard & Processor Factory):**
+        3.  If `true`, calls `commandIfTrue(messageHandle)` and executes the returned command.
+        4.  If `false`, the command is not executed, and the actor continues to the next instruction.
+    *   **Example:**
         ```typescript
-        waitFor<MyMessage, StartMsg>(
-          (msg): msg is StartMsg => msg.type === 'START',
-          (msgHandle) => send(outbox, readState(msgHandle, (startMsg) => ({ type: 'ACK', id: startMsg.payload.id })))
+        withState(() => ({ status: 'idle', userRole: 'user' }), appStateHandle =>
+          withState(() => ({ isLocked: true }), itemStateHandle => 
+            actions<MyMessage>([
+              whenState(
+                computeState(
+                  [appStateHandle, itemStateHandle],
+                  (appState, itemState) => 
+                    appState.status === 'active' && 
+                    appState.userRole === 'admin' && 
+                    !itemState.isLocked
+                ),
+                send(outbox, { type: 'PERFORM_ADMIN_ACTION' }), 
+                send(outbox, { type: 'CANNOT_PERFORM_ACTION' })
+              )
+            ])
+          )
         )
         ```
-    *   **Example (Wait Only):**
-        ```typescript
-        waitFor<MyMessage>(msg => msg.type === 'COMPLETE')
-        ```
 
-*   **`delay<T>(durationMs: number | StateValueResolver<number>) -> MockAsyncTaskCommand<T>`**
+*   **`delay<T>(durationMs: number | StateValueResolver<number>) -> ActorCommand<T>`**
     *   **Description:** Pauses execution for the specified duration. This duration can be a literal `number` (in milliseconds) or a `StateValueResolver<number>` to dynamically determine the delay from state at runtime.
     *   **Type Parameters:**
-        *   `T`: The message type of the mock task. This is used for consistency with other commands but doesn't directly affect the `delay` operation itself.
+        *   `T`: The message type of the actor definition. This is used for consistency with other commands but doesn't directly affect the `delay` operation itself.
     *   **Parameters:**
         *   `durationMs: number | StateValueResolver<number>`: The duration to wait in milliseconds, or a `StateValueResolver` that will produce this duration.
-    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, will pause the task for the specified duration.
-    *   **Behavior:** If `durationMs` is a `StateValueResolver`, it's resolved. The task then waits for the resolved duration. Commands in a sequence are executed sequentially; for instance, a `delay` command will fully complete before any subsequent command (like `waitFor` or `when`) begins execution. Messages arriving from external sources while a `delay` (or any other non-message-consuming command) is active are typically buffered by the underlying actor system and will be processed by the next relevant message-consuming command (e.g., `waitFor`, `when`) once it becomes active.
+    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will pause the actor for the specified duration.
+    *   **Behavior:** If `durationMs` is a `StateValueResolver`, it's resolved. The actor then waits for the resolved duration. Commands in a sequence are executed sequentially; for instance, a `delay` command will fully complete before any subsequent command (like `waitFor` or `when`) begins execution. Messages arriving from external sources while a `delay` (or any other non-message-consuming command) is active are typically buffered by the underlying actor system and will be processed by the next relevant message-consuming command (e.g., `waitFor`, `when`) once it becomes active.
     *   **Example:**
         ```typescript
         // Literal duration
@@ -450,12 +456,12 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         )
         ```
 
-*   **`none<T>() -> MockAsyncTaskCommand<T>`**
+*   **`none<T>() -> ActorCommand<T>`**
     *   **Description:** A no-operation command.
     *   **Type Parameters:**
-        *   `T`: The message type of the mock task, for command type consistency.
+        *   `T`: The message type of the actor definition, for command type consistency.
     *   **Parameters:** None.
-    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that performs no action when executed.
+    *   **Return Value:** `ActorCommand<T>`: A command that performs no action when executed.
     *   **Behavior:** The runner skips this command.
     *   **Example:**
         ```typescript
@@ -466,25 +472,25 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         )
         ```
 
-*   **`actions<T>(commands: (controls: { done: () => MockAsyncTaskCommand<T> }) => Array<MockAsyncTaskCommand<T>>)`**
+*   **`actions<T>(commands: (controls: { done: () => ActorCommand<T> }) => Array<ActorCommand<T>>)`**
     *   **Description:** Executes a sequence of commands. The factory function receives `controls.done()` which can be called to terminate the current `actions` block early.
     *   **Type Parameters:**
-        *   `T`: The message type of the mock task, for command type consistency within the sequence.
+        *   `T`: The message type of the actor definition, for command type consistency within the sequence.
     *   **Parameters:**
-        *   `commands: (controls: { done: () => MockAsyncTaskCommand<T> }) => Array<MockAsyncTaskCommand<T>>`: A factory function that returns an array of `MockAsyncTaskCommand<T>` to be executed in sequence. It receives a `controls` object with a `done` function that can be called to exit the sequence prematurely.
-    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, will run the sequence of provided commands.
+        *   `commands: (controls: { done: () => ActorCommand<T> }) => Array<ActorCommand<T>>`: A factory function that returns an array of `ActorCommand<T>` to be executed in sequence. It receives a `controls` object with a `done` function that can be called to exit the sequence prematurely.
+    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will run the sequence of provided commands.
     *   **Behavior:** Executes commands in the provided order. If `controls.done()` is called, execution of the current `actions` block halts, and control passes to the command following the `actions` block. If `done()` is not called, the sequence completes after the last command in the array, and then control proceeds.
     *   **Example:** (See various examples throughout)
 
-*   **`withState<S, T>(initialState: () => S | StateValueResolver<() => S>, factory: (stateHandle: StateHandle<S>) => MockAsyncTaskCommand<T>)`**
+*   **`withState<S, T>(initialState: () => S | StateValueResolver<() => S>, factory: (stateHandle: StateHandle<S>) => ActorCommand<T>)`**
     *   **Description:** Defines a stateful command scope. It creates an initial state and provides a `stateHandle` to the `factory` function. The `factory` returns a command that operates within this state scope.
     *   **Type Parameters:**
         *   `S`: The type of the state being managed within this scope.
-        *   `T`: The message type of the mock task, for command type consistency of the command returned by the `factory`.
+        *   `T`: The message type of the actor definition, for command type consistency of the command returned by the `factory`.
     *   **Parameters:**
         *   `initialState: () => S | StateValueResolver<() => S>`: A function that returns the initial state value, or a `StateValueResolver` for such a function. This function is invoked to establish the initial state for this scope.
-        *   `factory: (stateHandle: StateHandle<S>) => MockAsyncTaskCommand<T>`: A factory function that receives a `StateHandle<S>` for the newly created state and must return a `MockAsyncTaskCommand<T>` that will operate within this state's context.
-    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, establishes a state scope and runs the command returned by the `factory`.
+        *   `factory: (stateHandle: StateHandle<S>) => ActorCommand<T>`: A factory function that receives a `StateHandle<S>` for the newly created state and must return an `ActorCommand<T>` that will operate within this state's context.
+    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, establishes a state scope and runs the command returned by the `factory`.
     *   **Behavior:**
         1.  Invokes `initialState()` to get the state value (resolving it first if it's a `StateValueResolver`).
         2.  Creates a `stateHandle` for this state.
@@ -505,15 +511,15 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         ));
         ```
 
-*   **`modifyState<S, T>(stateHandle: StateHandle<S>, updater: (currentState: S) => S) -> MockAsyncTaskCommand<T>`**
+*   **`modifyState<S, T>(stateHandle: StateHandle<S>, updater: (currentState: S) => S) -> ActorCommand<T>`**
     *   **Description:** Synchronously updates the state associated with `stateHandle`.
     *   **Type Parameters:**
         *   `S`: The type of the state being modified.
-        *   `T`: The message type of the mock task, for command type consistency. It does not directly affect the state modification itself.
+        *   `T`: The message type of the actor definition, for command type consistency. It does not directly affect the state modification itself.
     *   **Parameters:**
         *   `stateHandle: StateHandle<S>`: The handle to the state that needs to be updated.
         *   `updater: (currentState: S) => S`: A function that takes the current state `S` and returns the new state `S`.
-    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, will update the specified state.
+    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will update the specified state.
     *   **Behavior:** Retrieves current state, calls `updater`, updates state with the new value.
     *   **Example (within `withState` -> `actions`):**
         ```typescript
@@ -566,15 +572,15 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         );
         ```
 
-*   **`whenState<T>(predicateResolver: StateValueResolver<boolean>, commandIfTrue: MockAsyncTaskCommand<T>, commandIfFalse?: MockAsyncTaskCommand<T>): MockAsyncTaskCommand<T>`**
+*   **`whenState<T>(predicateResolver: StateValueResolver<boolean>, commandIfTrue: ActorCommand<T>, commandIfFalse?: ActorCommand<T>): ActorCommand<T>`**
     *   **Description:** Conditionally executes a command based on a `StateValueResolver<boolean>`. The `predicateResolver` is typically created using `readState` (for single state dependency) or `computeState` (for multiple state dependencies).
     *   **Type Parameters:**
-        *   `T`: The message type of the mock task, for command type consistency of the conditional commands.
+        *   `T`: The message type of the actor definition, for command type consistency of the conditional commands.
     *   **Parameters:**
         *   `predicateResolver: StateValueResolver<boolean>`: A `StateValueResolver` that resolves to a boolean value. This determines which command branch is executed.
-        *   `commandIfTrue: MockAsyncTaskCommand<T>`: The command to execute if the `predicateResolver` resolves to `true`.
-        *   `commandIfFalse?: MockAsyncTaskCommand<T>`: An optional command to execute if the `predicateResolver` resolves to `false`.
-    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, will conditionally run one of the provided commands based on resolved state.
+        *   `commandIfTrue: ActorCommand<T>`: The command to execute if the `predicateResolver` resolves to `true`.
+        *   `commandIfFalse?: ActorCommand<T>`: An optional command to execute if the `predicateResolver` resolves to `false`.
+    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will conditionally run one of the provided commands based on resolved state.
     *   **Behavior:** Resolves `predicateResolver` to a boolean. Executes `commandIfTrue` or `commandIfFalse`.
     *   **Example:**
         ```typescript
@@ -597,16 +603,16 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         )
         ```
 
-*   **`when<T, TNarrowed extends T>(predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>, commandIfTrue: (messageHandle: StateHandle<TNarrowed>) => MockAsyncTaskCommand<T>, commandIfFalse?: (messageHandle: StateHandle<T>) => MockAsyncTaskCommand<T>): MockAsyncTaskCommand<T>`**
+*   **`when<T, TNarrowed extends T>(predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>, commandIfTrue: (messageHandle: StateHandle<TNarrowed>) => ActorCommand<T>, commandIfFalse?: (messageHandle: StateHandle<T>) => ActorCommand<T>): ActorCommand<T>`**
     *   **Description:** Waits for the next incoming message from the actor's inbox, consumes it, and then conditionally executes a command returned by one of two factories based on the `predicate`. This command *always* consumes one message upon invocation, regardless of whether its predicate is state-based or directly uses the message content. The factories receive a `StateHandle<T>` for the incoming message (type-narrowed to `TNarrowed` for `commandIfTrue` if the predicate is a type guard), allowing message fields to be accessed via `readState(messageHandle, ...)`. This `messageHandle` is temporary and valid only within its respective factory callback (`commandIfTrue` or `commandIfFalse`).
     *   **Type Parameters:**
-        *   `T`: The general union type of messages the task can receive.
+        *   `T`: The general union type of messages the actor can receive.
         *   `TNarrowed extends T`: A narrowed subtype of `T`, used when the `predicate` acts as a type guard.
     *   **Parameters:**
         *   `predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>`: A function (often a type guard) or a `StateValueResolver` for a function that evaluates the incoming message.
-        *   `commandIfTrue: (messageHandle: StateHandle<TNarrowed>) => MockAsyncTaskCommand<T>`: A factory function called if the `predicate` returns `true`. It receives a `StateHandle` for the consumed (and type-narrowed) message and must return a `MockAsyncTaskCommand` to be executed.
-        *   `commandIfFalse?: (messageHandle: StateHandle<T>) => MockAsyncTaskCommand<T>`: An optional factory function called if the `predicate` returns `false`. It receives a `StateHandle` for the consumed message (not narrowed) and must return a `MockAsyncTaskCommand` to be executed.
-    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, will consume a message and conditionally execute further commands based on that message.
+        *   `commandIfTrue: (messageHandle: StateHandle<TNarrowed>) => ActorCommand<T>`: A factory function called if the `predicate` returns `true`. It receives a `StateHandle` for the consumed (and type-narrowed) message and must return an `ActorCommand` to be executed.
+        *   `commandIfFalse?: (messageHandle: StateHandle<T>) => ActorCommand<T>`: An optional factory function called if the `predicate` returns `false`. It receives a `StateHandle` for the consumed message (not narrowed) and must return an `ActorCommand` to be executed.
+    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will consume a message and conditionally execute further commands based on that message.
     *   **Behavior:**
         1.  Awaits an incoming message and consumes it from the inbox.
         2.  Creates temporary `StateHandle` for the message.
@@ -625,13 +631,13 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         ])
         ```
 
-*   **`whileLoop<T>(factory: (commands: { break: () => MockAsyncTaskCommand<T>, continue: () => MockAsyncTaskCommand<T> }) => MockAsyncTaskCommand<T>) -> MockAsyncTaskCommand<T>`**
+*   **`whileLoop<T>(factory: (commands: { break: () => ActorCommand<T>, continue: () => ActorCommand<T> }) => ActorCommand<T>) -> ActorCommand<T>`**
     *   **Description:** Creates a command that repeatedly executes a body command sequence provided by the `factory` function. Loop control (`break`, `continue`) is explicit via the `commands` object passed to the factory. State-dependent logic within the loop body should use `whenState` or `readState` with a lexically captured `StateHandle`.
     *   **Type Parameters:**
-        *   `T`: The message type of the mock task, for command type consistency of the commands within the loop and the loop control commands.
+        *   `T`: The message type of the actor definition, for command type consistency of the commands within the loop and the loop control commands.
     *   **Parameters:**
-        *   `factory: (commands: { break: () => MockAsyncTaskCommand<T>, continue: () => MockAsyncTaskCommand<T> }) => MockAsyncTaskCommand<T>`: A factory function that is called at the beginning of each loop iteration. It receives a `commands` object with `break` and `continue` functions (which return commands to control the loop) and must return a `MockAsyncTaskCommand<T>` representing the body of the loop for that iteration.
-    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, will run the loop.
+        *   `factory: (commands: { break: () => ActorCommand<T>, continue: () => ActorCommand<T> }) => ActorCommand<T>`: A factory function that is called at the beginning of each loop iteration. It receives a `commands` object with `break` and `continue` functions (which return commands to control the loop) and must return an `ActorCommand<T>` representing the body of the loop for that iteration.
+    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will run the loop.
     *   **Behavior:** Executes the command returned by `factory` repeatedly. `commands.break()` terminates the loop. `commands.continue()` immediately skips to the next iteration, re-evaluating the factory. If the command sequence returned by the `factory` completes without an explicit `commands.break()` or `commands.continue()` being called, the loop implicitly continues to the next iteration.
     *   **Example:**
         ```typescript
