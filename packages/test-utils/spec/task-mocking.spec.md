@@ -487,3 +487,161 @@ A `StateValueResolver<V>` is an opaque type representing a value that will be re
           ])
         )
         ```
+
+### 1. Overall VM Architecture
+
+The `act()` function, when invoked with a task definition, doesn't directly execute the described behavior. Instead, it compiles the declarative definition into a sequence of virtual machine (VM) instructions. This sequence is then executed by a lightweight, stack-based interpreter.
+
+The core components of this VM are:
+
+*   **Instruction Queue:** A list of VM instructions derived from the user's `MockAsyncTaskCommand` definitions. The `act` function effectively translates the command tree into a linear sequence of these instructions.
+*   **Execution Stack (VM Stack):** A runtime stack used to manage control flow, store intermediate values, and manage lexically-scoped state. `StateHandle`s created by `withState` refer to data held within specific frames on this stack. It is distinct from any JavaScript call stack.
+*   **Instruction Pointer (IP):** A pointer that indicates the next VM instruction to be fetched and executed from the Instruction Queue.
+*   **Execution Engine:** A central loop that fetches the instruction at the current IP, decodes it, and dispatches it to the appropriate handler logic. This engine also manages interactions with the actor system for message passing and timers.
+
+When a mock task begins, the `MockAsyncTaskDefinition` (the output of `act(...)`) is processed. The VM is initialized with the instruction sequence, an empty stack, and its IP set to the start of the sequence. The execution engine then runs until a terminal instruction (like `complete` or `fail`) is encountered, or until the instruction queue is exhausted under normal completion.
+
+### 2. VM Instruction Set
+
+The declarative commands provided in a task definition (e.g., `send`, `waitFor`, `withState`) are compiled into a lower-level VM instruction set. Each instruction is a simple operation that the VM's execution engine can process. The translation from the high-level API to VM instructions aims to flatten the nested structure of commands into a linear sequence where possible, with control flow instructions managing jumps and conditional execution.
+
+The instruction set can be broadly categorized:
+
+*   **Core Task Operations:**
+    *   `SEND_MESSAGE`: Corresponds to `send()`. Takes a target actor handle and a message (or a resolver for a message) as operands.
+    *   `COMPLETE_TASK`: Corresponds to `helpers.complete()`. Terminates the task successfully.
+    *   `FAIL_TASK`: Corresponds to `helpers.fail()`. Terminates the task with an error.
+    *   `KILL_ACTOR`: Corresponds to `kill()`. Takes a target actor handle.
+    *   `NOOP`: Corresponds to `none()`.
+
+*   **State Management Operations:**
+    *   `PUSH_STATE`: Marks the beginning of a `withState` block. Initializes the state and pushes its handle onto the VM stack or a dedicated part of the current stack frame. The operand would be the initial state (or a resolver for it).
+    *   `POP_STATE`: Marks the end of a `withState` block, removing the state scope.
+    *   `MODIFY_STATE`: Corresponds to `modifyState()`. Takes a state handle (resolved from the stack) and an updater function.
+    *   *Note: `readState` and `computeState` don't necessarily translate to dedicated VM instructions. Instead, they are operands to other instructions (like `SEND_MESSAGE`, `JUMP_IF_STATE`, `DELAY`). The VM resolves these `StateValueResolver`s at the point the consuming instruction is executed.*
+
+*   **Control Flow Operations:**
+    *   `AWAIT_MESSAGE`: Corresponds to `waitFor()`. Pauses execution. Takes a predicate. If the predicate has a `commandIfTrue` factory, this instruction might be followed by instructions generated from that factory, or a conditional jump.
+    *   `DELAY`: Corresponds to `delay()`. Pauses execution. Takes a duration (or a resolver for it).
+    *   `JUMP`: Unconditional jump to a different IP. Used to implement loops and the `actions()` `done()` control.
+    *   `JUMP_IF_STATE`: Corresponds to `whenState()`. Takes a `StateValueResolver<boolean>` and a target IP for the "true" branch. The "false" branch is typically the next instruction in sequence or an explicit `JUMP`.
+    *   `JUMP_IF_MESSAGE`: Corresponds to `when()`. Consumes a message, evaluates a predicate against it. Takes a target IP for the "true" branch. The "false" branch is handled similarly. The factories (`commandIfTrue`, `commandIfFalse`) from `when()` would compile to instruction sub-sequences.
+    *   `ENTER_LOOP / EXIT_LOOP_IF / CONTINUE_LOOP`: Instructions to manage `whileLoop()`. `ENTER_LOOP` might set up a loop context on the stack. `EXIT_LOOP_IF` would check a condition (often involving a `StateValueResolver` or a message predicate) and jump out of the loop. `CONTINUE_LOOP` would jump to the beginning of the loop's body.
+    *   `PUSH_BLOCK`: The `actions()` command translates to a sequence of instructions. `PUSH_BLOCK` might set up a new frame or marker on the stack to handle `controls.done()`.
+    *   `POP_BLOCK`: `controls.done()` would compile to a `JUMP` instruction targeting after the corresponding `POP_BLOCK`.
+
+*   **Operand Types:** Instructions operate on various types of operands, including:
+    *   Literal values (numbers, strings, booleans).
+    *   `ActorHandle`s.
+    *   `StateValueResolver`s (which the VM resolves at runtime).
+    *   IP offsets or labels for jump targets.
+
+This instruction set allows the VM to interpret the complex, declarative task definitions by breaking them down into manageable, sequential steps with explicit control flow. The compilation process (from `MockAsyncTaskCommand` tree to linear VM instructions) is a key part of `act()`'s internal setup.
+
+### 3. VM Stack and State Management
+
+The VM's execution stack is central to its operation, serving not only for control flow but also for managing the lifecycle of stateful contexts introduced by `withState` and temporary message data.
+
+*   **Stack Frames:**
+    *   The stack is composed of frames. A new frame might be pushed for contexts like `actions()` blocks (especially if they need to manage `controls.done()` jumps), `whileLoop()` iterations, or when `withState()` introduces a new lexical state scope.
+    *   Frames hold information such as the return Instruction Pointer (IP) for when a block or scope finishes, and local data relevant to that scope.
+
+*   **State Scopes and `StateHandle` Resolution:**
+    *   When a `PUSH_STATE` instruction (generated from `withState`) is executed, the initial state value (potentially resolved from a `StateValueResolver` itself) is computed and stored within the current or a newly created stack frame.
+    *   A `StateHandle` provided to the user's factory function is, internally, a reference that allows the VM to locate this state data on the stack. This could be an index into a specific part of a stack frame or a pointer to a memory region managed by the frame.
+    *   `readState` and `computeState` operations, when encountered as operands to other instructions, use these internal `StateHandle` references to access the appropriate data from the relevant stack frame(s). The VM traverses the stack (or uses a more direct pointer if the handle encodes its frame) to find the frame containing the state associated with the handle.
+    *   The `POP_STATE` instruction removes the state data from the stack, effectively ending the lexical scope of that `StateHandle`. This typically occurs when the stack frame associated with the `withState` block is popped.
+
+*   **Temporary Message Handles:**
+    *   Commands like `AWAIT_MESSAGE` and `JUMP_IF_MESSAGE` consume an incoming message. If their associated factory functions (e.g., `commandIfTrue` in `waitFor` or `when`) are invoked, a temporary `StateHandle` for the consumed message is created.
+    *   The data for this message (the message object itself) is also stored on the stack, typically in the current frame, and the temporary `StateHandle` points to it.
+    *   This message-specific `StateHandle` is only valid for the duration of the factory callback's execution. Once the instructions generated from that factory complete, the part of the stack frame holding the message data might be reclaimed or marked as invalid.
+
+*   **Control Flow Information:**
+    *   The stack stores return addresses for jumps (e.g., after a `PUSH_BLOCK` completes or a loop iteration finishes).
+    *   For `whileLoop`, the stack might hold information about the loop's start IP to allow `CONTINUE_LOOP` to jump back, and status flags or counters if needed (though most loop logic will rely on `StateHandle`s).
+
+*   **`StateValueResolver`s:**
+    *   These are not directly stored on the stack as persistent entities but are operands to VM instructions.
+    *   When an instruction like `SEND_MESSAGE` has a `StateValueResolver` as its message operand, or `JUMP_IF_STATE` has one as its predicate, the VM's execution logic for that instruction is responsible for:
+        1.  Identifying the `StateHandle`(s) within the resolver.
+        2.  Using these handles to retrieve the current state value(s) from the stack.
+        3.  Executing the resolver's `selector` or `computer` function with these values.
+        4.  Using the result to proceed with the instruction (e.g., sending the resolved message, making the jump decision).
+
+This tight integration of state management with the stack ensures that state lifetimes are naturally coupled to their lexical scopes, simplifying the VM's design.
+
+### 4. Execution Loop and Instruction Dispatch
+
+The heart of the VM is its execution engine, which consists of a main loop that iteratively processes instructions from the Instruction Queue. When the VM is implemented as a generator, this internal loop runs within each call to `generator.next()`.
+
+*   **The Main Loop (within the generator):**
+    *   The loop continues as long as the Instruction Pointer (IP) is within the bounds of the Instruction Queue and no terminal instruction (like `COMPLETE_TASK` or `FAIL_TASK`) has been executed or yielded.
+    *   In each iteration, the engine performs the following steps:
+        1.  **Fetch:** Retrieve the instruction located at the current IP from the Instruction Queue.
+        2.  **Decode (Implicit):** The instruction's type (e.g., `SEND_MESSAGE`, `JUMP_IF_STATE`) determines the operation to be performed. Operands are part of the instruction structure.
+        3.  **Execute:** Dispatch the instruction to its corresponding handler logic. This is where the primary work of the VM occurs.
+        4.  **Advance IP:** Typically, the IP is incremented to point to the next instruction in sequence. However, control flow instructions (like `JUMP`, `JUMP_IF_STATE`) will modify the IP according to their specific logic. For instructions that `yield`, the IP might not be advanced until the generator is resumed.
+
+*   **Instruction Dispatch:**
+    *   The VM contains a set of handler functions, one for each type of VM instruction (e.g., a handler for `SEND_MESSAGE`, another for `PUSH_STATE`, etc.).
+    *   The "execute" step involves calling the appropriate handler based on the fetched instruction's type.
+    *   Each handler function implements the semantics of its instruction:
+        *   It may interact with the VM stack (pushing/popping frames or values).
+        *   It may resolve `StateValueResolver`s if they are operands.
+        *   It may modify the IP (e.g., for jumps).
+        *   For asynchronous operations, it prepares a command descriptor to be `yield`ed by the generator.
+
+*   **Synchronous vs. Asynchronous Instructions (Generator Model):**
+    *   Many instructions execute synchronously within the generator's internal loop (e.g., `NOOP`, `PUSH_STATE`, `MODIFY_STATE`, `JUMP`). Their handlers complete their work, update the IP, and the loop immediately proceeds to the next instruction within the same call to `generator.next()`.
+    *   Some instructions are inherently asynchronous, requiring interaction with the external environment (e.g., `AWAIT_MESSAGE`, `DELAY`, `SEND_MESSAGE`). When such an instruction is encountered by the generator's internal loop:
+        *   Its handler logic prepares a command descriptor (e.g., `{ type: 'DELAY', duration: 100 }`, `{ type: 'AWAIT_MESSAGE' }`, or `{ type: 'SEND', target: ..., message: ... }`).
+        *   The generator then `yields` this command descriptor. At this point, the generator's execution, including its internal loop, pauses. The IP is typically not advanced *by the generator* for these yielded instructions; it will resume at the same IP when `next()` is called again.
+        *   An external "runner" receives the yielded command and performs the actual asynchronous operation or external interaction.
+        *   Once the operation completes, the runner calls `generator.next(result)` (where `result` might be an incoming message for `AWAIT_MESSAGE`, or `undefined` for others) to resume the generator.
+        *   Upon resumption, the generator's internal loop continues from where it paused, potentially using the `result` passed to `next()` to complete the processing of the asynchronous instruction (e.g., placing the received message onto the stack) before advancing the IP.
+
+The execution loop and dispatch mechanism provide a structured way to interpret the compiled instruction sequence. The generator model cleanly separates the synchronous instruction processing from the handling of asynchronous external events, which is managed by the runner.
+
+### 5. Asynchronous Operations and Event Handling
+
+The generator-based VM relies on an external "runner" to manage interactions with the actor system and the asynchronous environment. This section details that relationship and the handling of events.
+
+*   **Yielded Command Descriptors:**
+    *   When the VM's internal instruction processing (within the generator) encounters a point where an external asynchronous action or wait is required, it `yields` a command descriptor object. These descriptors are plain objects that describe the desired operation and its parameters. Examples include:
+        *   `SEND_MESSAGE`: Yields `{ type: 'SEND', targetActor: ActorHandle, message: any }`
+        *   `KILL_ACTOR`: Yields `{ type: 'KILL', targetActor: ActorHandle }`
+        *   `DELAY`: Yields `{ type: 'DELAY', durationMs: number }`
+        *   `AWAIT_MESSAGE`: Yields `{ type: 'AWAIT_MESSAGE' }`. The VM internally remembers any predicate associated with the `waitFor` or `when` command that led to this state.
+    *   Terminal conditions also result in yielded values or generator completion:
+        *   `COMPLETE_TASK`: The generator might `return` or `yield { type: 'COMPLETE' }`.
+        *   `FAIL_TASK`: The generator might `throw error` or `yield { type: 'FAIL', error: Error }`.
+
+*   **The Runner's Responsibilities:**
+    *   The runner is a piece of code external to the VM generator. It initiates the VM by calling `generator.next()` for the first time.
+    *   It then enters a loop, processing the values yielded by the generator:
+        1.  Receives the yielded command descriptor (e.g., from `generator.next().value`).
+        2.  Interprets the `type` of the command.
+        3.  Performs the actual asynchronous operation based on the command:
+            *   For `SEND_MESSAGE`: Interacts with the ReactiveKit actor system to dispatch the message to the `targetActor`.
+            *   For `KILL_ACTOR`: Interacts with the actor system to terminate the `targetActor`.
+            *   For `DELAY`: Uses `setTimeout` (or an equivalent mechanism) to pause for `durationMs`.
+            *   For `AWAIT_MESSAGE`: Subscribes to the mock task's own inbox (or a similar event queue). It may need to buffer messages. When *any* message arrives, it prepares to resume the generator with this message.
+            *   For `COMPLETE` or `FAIL`: The runner finalizes the mock task's lifecycle accordingly.
+        4.  Once the asynchronous operation is complete (e.g., timer expired, any message received for an `AWAIT_MESSAGE` state), the runner calls `generator.next(result)` to resume the VM.
+            *   The `result` for resuming from an `AWAIT_MESSAGE` state is the received message object.
+            *   For other commands like `DELAY` or `SEND_MESSAGE`, the `result` might be `undefined`.
+
+*   **Message Handling and Predicate Evaluation by the VM:**
+    *   **Buffering by Runner:** The runner might need to implement a message buffer for the mock task. If messages arrive while the VM generator is paused (e.g., due to a `DELAY`) or while the runner is processing a previously yielded command, these messages should be queued by the runner. When the VM yields `AWAIT_MESSAGE`, the runner would first check this buffer before waiting for new messages.
+    *   **VM-Side Predicate Evaluation:** When the runner resumes the generator with a message (after an `AWAIT_MESSAGE` yield), the VM's instruction handler for `AWAIT_MESSAGE` (or a similar message-processing instruction) takes over:
+        *   It retrieves the predicate associated with the original `waitFor` or `when` command from its current execution context (e.g., stack frame).
+        *   It evaluates this predicate against the received message.
+        *   **If the predicate returns `true` (or if there was no predicate):** The message is considered "consumed" by the `waitFor` or `when`. The VM proceeds to execute the subsequent command sequence (e.g., the `commandIfTrue` factory), making the message available via a temporary `StateHandle`.
+        *   **If the predicate returns `false` (for a `waitFor` command):** The message is effectively discarded by the VM. The VM then re-yields `{ type: 'AWAIT_MESSAGE' }` (or its internal loop effectively stays on the `AWAIT_MESSAGE` instruction), indicating to the runner it's still waiting for a suitable message.
+        *   **If the predicate returns `false` (for the primary predicate of a `when` command):** The VM proceeds to its "false" branch (e.g., the `commandIfFalse` factory, if provided), making the current (non-matching) message available to that branch.
+
+*   **Task Lifecycle Integration:**
+    *   The overall mock task is managed by this runner. The runner translates the generator's final state (`COMPLETE` or `FAIL`) into the appropriate resolution or rejection of the mock task's observable outcome.
+
+This cooperative model keeps the VM's core logic synchronous and deterministic, with predicate evaluation and conditional flow logic contained within the VM. The runner's role is simplified to fetching messages and managing the raw asynchronous operations.
