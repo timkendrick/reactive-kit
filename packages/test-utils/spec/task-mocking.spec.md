@@ -139,12 +139,19 @@ act<MyMessage>((self, { outbox }) => (
 
 ## Implementation Details
 
-Mock tasks are defined using the `act` factory function. This function provides a context and helper utilities to construct the task's behavior declaratively.
+Mock tasks are defined using the `act` factory function. This function provides a context and helper utilities to configure the task's behavior declaratively using the command combinators.
 
-A `StateValueResolver<V>` is an opaque type representing a value that will be resolved from state at runtime. Many command parameters can accept either a direct value (e.g., a `number` for a duration) or a `StateValueResolver<V>` for that value type, allowing for dynamic values derived from state. This dual capability is noted in individual command descriptions where applicable.
+### Stateful tasks
+
+Tasks can declare internal state.
+
 A `StateHandle<S>` is an opaque handle to a state of type `S`. 
     *   When created by `withState`, the `stateHandle` is valid for all lexically nested commands within that `withState` block and its factory function.
     *   When provided to a factory by commands like `waitFor` or `when` (representing a consumed message), this `messageHandle` is a temporary handle valid only within the scope of that specific factory function callback.
+
+A `StateValueResolver<V>` is an opaque type representing a value that will be resolved from a state handle at runtime. Many command parameters can accept either a direct value (e.g., a `number` for a duration) or a `StateValueResolver<V>` for that value type, allowing for dynamic values derived from state. This dual capability is noted in individual command descriptions where applicable.
+
+### Top-level APIs
 
 *   **`act<T>(definition: (self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => MockAsyncTaskCommand<T>, fail: (error: Error) => MockAsyncTaskCommand<unknown> }) => MockAsyncTaskCommand<T>) -> MockAsyncTaskDefinition<T>`**
     *   **Description:** The main factory function for creating a declarative mock task definition. It accepts a `definition` function callback that outlines the task's lifecycle, interactions, and responses to incoming messages. The `definition` function must return a single `MockAsyncTaskCommand` (commonly `actions(...)` or `withState(...)`) which serves as the root of the task's behavior tree.
@@ -184,7 +191,7 @@ A `StateHandle<S>` is an opaque handle to a state of type `S`.
         );
         ```
 
-This section provides a detailed breakdown of each mock task action's behavior. 
+### Command combinators
 
 *   **`send<T>(target: ActorHandle<T>, message: T | StateValueResolver<T>) -> MockAsyncTaskCommand<T, HandlerAction<T>>`**
     *   **Description:** Immediately yields the specified message (or a message resolved from state) from the mock task's iterator. The message is automatically wrapped in a `HandlerAction.Send(target, message)` internally.
