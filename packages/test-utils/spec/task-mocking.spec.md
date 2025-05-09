@@ -488,7 +488,7 @@ A `StateValueResolver<V>` is an opaque type representing a value that will be re
         )
         ```
 
-### 1. Overall VM Architecture
+### 1. Internal VM Architecture
 
 The `act()` function, when invoked with a task definition, doesn't directly execute the described behavior. Instead, it compiles the declarative definition into a sequence of virtual machine (VM) instructions. This sequence is then executed by a lightweight, stack-based interpreter.
 
@@ -571,9 +571,29 @@ The VM's execution stack is central to its operation, serving not only for contr
 
 This tight integration of state management with the stack ensures that state lifetimes are naturally coupled to their lexical scopes, simplifying the VM's design.
 
-### 4. Execution Loop and Instruction Dispatch
+### 4. VM and Runner: Cooperative Execution Model
 
-The heart of the VM is its execution engine, which consists of a main loop that iteratively processes instructions from the Instruction Queue. When the VM is implemented as a generator, this internal loop runs within each call to `generator.next()`.
+The execution of a mock task, defined using the `act()` function and its command combinators, is managed by a cooperative interplay between two main components:
+
+1.  **The Virtual Machine (VM):** Implemented as a synchronous generator function. The VM is responsible for interpreting the compiled sequence of instructions derived from the task definition. It processes instructions related to internal state management, synchronous control flow (like conditional jumps based on state), and preparing descriptors for external actions. When an instruction requires interaction with the outside world (e.g., sending a message, waiting for a delay, or awaiting an incoming message), the VM yields a command descriptor and pauses its execution.
+
+2.  **The External Runner:** An asynchronous JavaScript function or component that "drives" the VM generator. The runner initiates the VM by calling its `next()` method. It then receives command descriptors yielded by the VM. Based on these descriptors, the runner performs the actual asynchronous operations (e.g., interfacing with the actor system for message passing, managing timers) or handles task lifecycle events. Once an asynchronous operation completes or an event occurs, the runner resumes the VM by calling `generator.next(result)`, passing any relevant data (like a received message) back into the VM.
+
+This division of labor allows the VM's core logic to remain relatively simple and synchronous, focusing on instruction interpretation and state transitions. The runner, on the other hand, handles the complexities of asynchronous event management and interaction with the broader JavaScript environment and the ReactiveKit actor system.
+
+The overall flow is as follows:
+*   The runner starts the VM generator.
+*   The VM executes instructions internally until it needs to perform an external action or wait for an event.
+*   The VM `yields` a command descriptor to the runner.
+*   The runner processes the command, performs any necessary asynchronous operations, and waits for completion/events.
+*   The runner calls `generator.next(result)` to resume the VM.
+*   This cycle repeats until the VM completes its instruction sequence (e.g., by yielding a `COMPLETE` or `FAIL` descriptor, or by the generator function returning).
+
+The following subsections detail the internal workings of the VM's execution cycle (4.1) and the specific responsibilities of the external runner (4.2).
+
+#### 4.1. Internal VM Execution Cycle (Generator)
+
+The VM generator's core is an internal execution loop that processes instructions from the Instruction Queue. This loop runs synchronously within each invocation of `generator.next()` by the external runner.
 
 *   **The Main Loop (within the generator):**
     *   The loop continues as long as the Instruction Pointer (IP) is within the bounds of the Instruction Queue and no terminal instruction (like `COMPLETE_TASK` or `FAIL_TASK`) has been executed or yielded.
@@ -596,52 +616,43 @@ The heart of the VM is its execution engine, which consists of a main loop that 
     *   Many instructions execute synchronously within the generator's internal loop (e.g., `NOOP`, `PUSH_STATE`, `MODIFY_STATE`, `JUMP`). Their handlers complete their work, update the IP, and the loop immediately proceeds to the next instruction within the same call to `generator.next()`.
     *   Some instructions are inherently asynchronous, requiring interaction with the external environment (e.g., `AWAIT_MESSAGE`, `DELAY`, `SEND_MESSAGE`). When such an instruction is encountered by the generator's internal loop:
         *   Its handler logic prepares a command descriptor (e.g., `{ type: 'DELAY', duration: 100 }`, `{ type: 'AWAIT_MESSAGE' }`, or `{ type: 'SEND', target: ..., message: ... }`).
-        *   The generator then `yields` this command descriptor. At this point, the generator's execution, including its internal loop, pauses. The IP is typically not advanced *by the generator* for these yielded instructions; it will resume at the same IP when `next()` is called again.
-        *   An external "runner" receives the yielded command and performs the actual asynchronous operation or external interaction.
-        *   Once the operation completes, the runner calls `generator.next(result)` (where `result` might be an incoming message for `AWAIT_MESSAGE`, or `undefined` for others) to resume the generator.
-        *   Upon resumption, the generator's internal loop continues from where it paused, potentially using the `result` passed to `next()` to complete the processing of the asynchronous instruction (e.g., placing the received message onto the stack) before advancing the IP.
+        *   The generator then `yields` this command descriptor, pausing its execution. The IP is typically not advanced by the generator for these yielded instructions; it will resume at the same IP when `next()` is called again by the runner.
+        *   Upon resumption (via `generator.next(result)` from the runner), the generator's internal loop continues from where it paused. It may use the `result` passed to `next()` to complete the processing of the asynchronous instruction (e.g., placing a received message onto the stack) before advancing the IP.
 
-The execution loop and dispatch mechanism provide a structured way to interpret the compiled instruction sequence. The generator model cleanly separates the synchronous instruction processing from the handling of asynchronous external events, which is managed by the runner.
+This internal cycle allows the VM to manage its state and control flow deterministically, preparing command descriptors for any operations that require external handling by the runner.
 
-### 5. Asynchronous Operations and Event Handling
+#### 4.2. External Runner and Asynchronous Event Management
 
-The generator-based VM relies on an external "runner" to manage interactions with the actor system and the asynchronous environment. This section details that relationship and the handling of events.
+The external runner is responsible for driving the VM generator and managing all interactions with the asynchronous environment and the actor system. Its key duties are detailed below.
 
-*   **Yielded Command Descriptors:**
-    *   When the VM's internal instruction processing (within the generator) encounters a point where an external asynchronous action or wait is required, it `yields` a command descriptor object. These descriptors are plain objects that describe the desired operation and its parameters. Examples include:
-        *   `SEND_MESSAGE`: Yields `{ type: 'SEND', targetActor: ActorHandle, message: any }`
-        *   `KILL_ACTOR`: Yields `{ type: 'KILL', targetActor: ActorHandle }`
-        *   `DELAY`: Yields `{ type: 'DELAY', durationMs: number }`
-        *   `AWAIT_MESSAGE`: Yields `{ type: 'AWAIT_MESSAGE' }`. The VM internally remembers any predicate associated with the `waitFor` or `when` command that led to this state.
-    *   Terminal conditions also result in yielded values or generator completion:
-        *   `COMPLETE_TASK`: The generator might `return` or `yield { type: 'COMPLETE' }`.
-        *   `FAIL_TASK`: The generator might `throw error` or `yield { type: 'FAIL', error: Error }`.
+*   **Processing Yielded Command Descriptors:**
+    *   The VM `yields` command descriptor objects when it requires an external action or needs to pause for an event. These descriptors define the operation and its parameters. Examples include:
+        *   `SEND_MESSAGE`: `{ type: 'SEND', targetActor: ActorHandle, message: any }`
+        *   `KILL_ACTOR`: `{ type: 'KILL', targetActor: ActorHandle }`
+        *   `DELAY`: `{ type: 'DELAY', durationMs: number }`
+        *   `AWAIT_MESSAGE`: `{ type: 'AWAIT_MESSAGE' }` (The VM internally manages any associated predicate).
+    *   Terminal conditions are also communicated:
+        *   `COMPLETE_TASK`: via `{ type: 'COMPLETE' }` or generator return.
+        *   `FAIL_TASK`: via `{ type: 'FAIL', error: Error }` or generator throwing an error.
 
-*   **The Runner's Responsibilities:**
-    *   The runner is a piece of code external to the VM generator. It initiates the VM by calling `generator.next()` for the first time.
-    *   It then enters a loop, processing the values yielded by the generator:
-        1.  Receives the yielded command descriptor (e.g., from `generator.next().value`).
+*   **Core Runner Loop and Responsibilities:**
+    *   The runner initiates the VM by calling `generator.next()` for the first time.
+    *   It then enters a loop, processing values yielded by the generator:
+        1.  Receives the yielded command descriptor.
         2.  Interprets the `type` of the command.
-        3.  Performs the actual asynchronous operation based on the command:
-            *   For `SEND_MESSAGE`: Interacts with the ReactiveKit actor system to dispatch the message to the `targetActor`.
-            *   For `KILL_ACTOR`: Interacts with the actor system to terminate the `targetActor`.
-            *   For `DELAY`: Uses `setTimeout` (or an equivalent mechanism) to pause for `durationMs`.
-            *   For `AWAIT_MESSAGE`: Subscribes to the mock task's own inbox (or a similar event queue). It may need to buffer messages. When *any* message arrives, it prepares to resume the generator with this message.
-            *   For `COMPLETE` or `FAIL`: The runner finalizes the mock task's lifecycle accordingly.
-        4.  Once the asynchronous operation is complete (e.g., timer expired, any message received for an `AWAIT_MESSAGE` state), the runner calls `generator.next(result)` to resume the VM.
-            *   The `result` for resuming from an `AWAIT_MESSAGE` state is the received message object.
-            *   For other commands like `DELAY` or `SEND_MESSAGE`, the `result` might be `undefined`.
+        3.  Performs the actual asynchronous operation or handles the event:
+            *   For `SEND_MESSAGE`: Interacts with the ReactiveKit actor system to dispatch the message.
+            *   For `KILL_ACTOR`: Interacts with the actor system to terminate the target.
+            *   For `DELAY`: Uses `setTimeout` (or an equivalent) to pause for the specified duration.
+            *   For `AWAIT_MESSAGE`: Waits for an incoming message for the mock task (details below).
+            *   For `COMPLETE` or `FAIL`: Finalizes the mock task's lifecycle.
+        4.  Once the operation is complete or the event occurs (e.g., timer expired, message received), the runner calls `generator.next(result)` to resume the VM. The `result` is the received message for `AWAIT_MESSAGE` states, or typically `undefined` for others like `DELAY`.
 
-*   **Message Handling and Predicate Evaluation by the VM:**
-    *   **Buffering by Runner:** The runner might need to implement a message buffer for the mock task. If messages arrive while the VM generator is paused (e.g., due to a `DELAY`) or while the runner is processing a previously yielded command, these messages should be queued by the runner. When the VM yields `AWAIT_MESSAGE`, the runner would first check this buffer before waiting for new messages.
-    *   **VM-Side Predicate Evaluation:** When the runner resumes the generator with a message (after an `AWAIT_MESSAGE` yield), the VM's instruction handler for `AWAIT_MESSAGE` (or a similar message-processing instruction) takes over:
-        *   It retrieves the predicate associated with the original `waitFor` or `when` command from its current execution context (e.g., stack frame).
-        *   It evaluates this predicate against the received message.
-        *   **If the predicate returns `true` (or if there was no predicate):** The message is considered "consumed" by the `waitFor` or `when`. The VM proceeds to execute the subsequent command sequence (e.g., the `commandIfTrue` factory), making the message available via a temporary `StateHandle`.
-        *   **If the predicate returns `false` (for a `waitFor` command):** The message is effectively discarded by the VM. The VM then re-yields `{ type: 'AWAIT_MESSAGE' }` (or its internal loop effectively stays on the `AWAIT_MESSAGE` instruction), indicating to the runner it's still waiting for a suitable message.
-        *   **If the predicate returns `false` (for the primary predicate of a `when` command):** The VM proceeds to its "false" branch (e.g., the `commandIfFalse` factory, if provided), making the current (non-matching) message available to that branch.
+*   **Message Handling by the Runner:**
+    *   **Buffering:** The runner should implement a message buffer for the mock task. If messages arrive from the actor system while the VM generator is paused for other reasons (e.g., `DELAY`) or while the runner is processing a previous command, these messages are queued. When the VM yields `AWAIT_MESSAGE`, the runner first checks this buffer before waiting for new messages from the actor system.
+    *   **Resuming VM on Message Arrival:** When `AWAIT_MESSAGE` is active, and a message is available (either from the buffer or newly arrived), the runner passes this message as the `result` to `generator.next()`. The VM is then responsible for any predicate evaluation to determine if the message is the one it was waiting for (as detailed in 4.1 under how `AWAIT_MESSAGE` and related instructions like `JUMP_IF_MESSAGE` are processed by the VM). If the VM determines the message is not suitable (for a `waitFor`), it will re-yield `AWAIT_MESSAGE`.
 
 *   **Task Lifecycle Integration:**
-    *   The overall mock task is managed by this runner. The runner translates the generator's final state (`COMPLETE` or `FAIL`) into the appropriate resolution or rejection of the mock task's observable outcome.
+    *   The runner manages the overall lifecycle of the mock task (e.g., the `AsyncTask` instance). It translates the VM's terminal state (`COMPLETE` or `FAIL` descriptors) into the appropriate resolution or rejection of this task, making the outcome observable to the testing framework.
 
-This cooperative model keeps the VM's core logic synchronous and deterministic, with predicate evaluation and conditional flow logic contained within the VM. The runner's role is simplified to fetching messages and managing the raw asynchronous operations.
+This cooperative model allows the VM's internal logic to remain synchronous and focused on instruction execution, while the runner handles the complexities of asynchronous operations and event management.
