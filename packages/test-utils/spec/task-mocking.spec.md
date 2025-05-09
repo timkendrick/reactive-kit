@@ -149,7 +149,7 @@ A `StateHandle<S>` is an opaque handle to a state of type `S`.
 *   **`act<T>(definition: (self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => MockAsyncTaskCommand<T>, fail: (error: Error) => MockAsyncTaskCommand<unknown> }) => MockAsyncTaskCommand<T>) -> MockAsyncTaskDefinition<T>`**
     *   **Description:** The main factory function for creating a declarative mock task definition. It accepts a `definition` function callback that outlines the task's lifecycle, interactions, and responses to incoming messages. The `definition` function must return a single `MockAsyncTaskCommand` (commonly `actions(...)` or `withState(...)`) which serves as the root of the task's behavior tree.
     *   **Type Parameters:**
-        *   `T`: The union type of messages that the mock task can receive and (typically) send. The `self` handle represents this actor.
+        *   `T`: The union type of messages that the mock task can send and receive
     *   **Parameters:**
         *   `definition`: `(self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => MockAsyncTaskCommand<T>, fail: (error: Error) => MockAsyncTaskCommand<unknown> }) => MockAsyncTaskCommand<T>`
             A callback function invoked to build the task's behavior. It receives two arguments:
@@ -188,6 +188,12 @@ This section provides a detailed breakdown of each mock task action's behavior.
 
 *   **`send<T>(target: ActorHandle<T>, message: T | StateValueResolver<T>) -> MockAsyncTaskCommand<T, HandlerAction<T>>`**
     *   **Description:** Immediately yields the specified message (or a message resolved from state) from the mock task's iterator. The message is automatically wrapped in a `HandlerAction.Send(target, message)` internally.
+    *   **Type Parameters:**
+        *   `T`: The union type of messages that the `target` actor can receive.
+    *   **Parameters:**
+        *   `target: ActorHandle<T>`: The handle of the actor to send the message to.
+        *   `message: T | StateValueResolver<T>`: The message to send, or a `StateValueResolver` that will produce the message.
+    *   **Return Value:** `MockAsyncTaskCommand<T, HandlerAction<T>>`: A command that, when executed, will send the message.
     *   **Behavior:** If `message` is a `StateValueResolver`, it's resolved using the relevant state. The task then yields `[HandlerAction.Send(target, resolvedMessage)]`. Execution continues immediately.
     *   **Example:**
         ```typescript
@@ -202,6 +208,11 @@ This section provides a detailed breakdown of each mock task action's behavior.
 
 *   **`kill<T>(target: ActorHandle<T>) -> MockAsyncTaskCommand<unknown>`**
     *   **Description:** Immediately yields a `HandlerAction.Kill` for the specified `target` actor handle.
+    *   **Type Parameters:**
+        *   `T`: The message type of the actor being killed. This is often `unknown` if the specific message type isn't relevant to the kill operation itself.
+    *   **Parameters:**
+        *   `target: ActorHandle<T>`: The handle of the actor to kill.
+    *   **Return Value:** `MockAsyncTaskCommand<unknown>`: A command that, when executed, will kill the target actor.
     *   **Behavior:** The mock task's underlying async generator yields `[HandlerAction.Kill(target)]`.
     *   **Example:**
         ```typescript
@@ -215,6 +226,13 @@ This section provides a detailed breakdown of each mock task action's behavior.
 
 *   **`waitFor<T, TNarrowed extends T>(predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>, commandIfTrue?: (messageHandle: StateHandle<TNarrowed>) => MockAsyncTaskCommand<T>) -> MockAsyncTaskCommand<T>`**
     *   **Description:** Pauses task execution until an incoming message satisfies the `predicate`. If a `commandIfTrue` is provided, it's invoked with a `StateHandle` for the consumed message (type-narrowed). The factory returns a command to be executed. To access message fields within the factory, use `readState(messageHandle, msg => ...)`. The `messageHandle` is temporary and valid only within the `commandIfTrue` callback.
+    *   **Type Parameters:**
+        *   `T`: The general union type of messages the task can receive.
+        *   `TNarrowed extends T`: A narrowed subtype of `T`, used when the `predicate` acts as a type guard.
+    *   **Parameters:**
+        *   `predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>`: A function or a `StateValueResolver` for a function that evaluates an incoming message. If it's a type guard, `TNarrowed` will be the type of the message if the predicate returns `true`.
+        *   `commandIfTrue?: (messageHandle: StateHandle<TNarrowed>) => MockAsyncTaskCommand<T>`: An optional factory function called if the `predicate` returns `true`. It receives a `StateHandle` for the consumed (and potentially type-narrowed) message and must return a `MockAsyncTaskCommand` to be executed.
+    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, will wait for and process a message according to the predicate.
     *   **Behavior:**
         1.  Task pauses. If `predicate` is a `StateValueResolver`, it's resolved.
         2.  On message arrival, evaluate `resolvedPredicate(message)`.
@@ -237,6 +255,11 @@ This section provides a detailed breakdown of each mock task action's behavior.
 
 *   **`delay<T>(durationMs: number | StateValueResolver<number>) -> MockAsyncTaskCommand<T>`**
     *   **Description:** Pauses execution for the specified duration. This duration can be a literal `number` (in milliseconds) or a `StateValueResolver<number>` to dynamically determine the delay from state at runtime.
+    *   **Type Parameters:**
+        *   `T`: The message type of the mock task. This is used for consistency with other commands but doesn't directly affect the `delay` operation itself.
+    *   **Parameters:**
+        *   `durationMs: number | StateValueResolver<number>`: The duration to wait in milliseconds, or a `StateValueResolver` that will produce this duration.
+    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, will pause the task for the specified duration.
     *   **Behavior:** If `durationMs` is a `StateValueResolver`, it's resolved. The task then waits for the resolved duration. Commands in a sequence are executed sequentially; for instance, a `delay` command will fully complete before any subsequent command (like `waitFor` or `when`) begins execution. Messages arriving from external sources while a `delay` (or any other non-message-consuming command) is active are typically buffered by the underlying actor system and will be processed by the next relevant message-consuming command (e.g., `waitFor`, `when`) once it becomes active.
     *   **Example:**
         ```typescript
@@ -251,6 +274,10 @@ This section provides a detailed breakdown of each mock task action's behavior.
 
 *   **`none<T>() -> MockAsyncTaskCommand<T>`**
     *   **Description:** A no-operation command.
+    *   **Type Parameters:**
+        *   `T`: The message type of the mock task, for command type consistency.
+    *   **Parameters:** None.
+    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that performs no action when executed.
     *   **Behavior:** The runner skips this command.
     *   **Example:**
         ```typescript
@@ -263,11 +290,23 @@ This section provides a detailed breakdown of each mock task action's behavior.
 
 *   **`actions<T>(commands: (controls: { done: () => MockAsyncTaskCommand<T> }) => Array<MockAsyncTaskCommand<T>>)`**
     *   **Description:** Executes a sequence of commands. The factory function receives `controls.done()` which can be called to terminate the current `actions` block early.
+    *   **Type Parameters:**
+        *   `T`: The message type of the mock task, for command type consistency within the sequence.
+    *   **Parameters:**
+        *   `commands: (controls: { done: () => MockAsyncTaskCommand<T> }) => Array<MockAsyncTaskCommand<T>>`: A factory function that returns an array of `MockAsyncTaskCommand<T>` to be executed in sequence. It receives a `controls` object with a `done` function that can be called to exit the sequence prematurely.
+    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, will run the sequence of provided commands.
     *   **Behavior:** Executes commands in the provided order. If `controls.done()` is called, execution of the current `actions` block halts, and control passes to the command following the `actions` block. If `done()` is not called, the sequence completes after the last command in the array, and then control proceeds.
     *   **Example:** (See various examples throughout)
 
 *   **`withState<S, T>(initialState: () => S | StateValueResolver<() => S>, factory: (stateHandle: StateHandle<S>) => MockAsyncTaskCommand<T>)`**
     *   **Description:** Defines a stateful command scope. It creates an initial state and provides a `stateHandle` to the `factory` function. The `factory` returns a command that operates within this state scope.
+    *   **Type Parameters:**
+        *   `S`: The type of the state being managed within this scope.
+        *   `T`: The message type of the mock task, for command type consistency of the command returned by the `factory`.
+    *   **Parameters:**
+        *   `initialState: () => S | StateValueResolver<() => S>`: A function that returns the initial state value, or a `StateValueResolver` for such a function. This function is invoked to establish the initial state for this scope.
+        *   `factory: (stateHandle: StateHandle<S>) => MockAsyncTaskCommand<T>`: A factory function that receives a `StateHandle<S>` for the newly created state and must return a `MockAsyncTaskCommand<T>` that will operate within this state's context.
+    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, establishes a state scope and runs the command returned by the `factory`.
     *   **Behavior:**
         1.  Invokes `initialState()` to get the state value (resolving it first if it's a `StateValueResolver`).
         2.  Creates a `stateHandle` for this state.
@@ -290,6 +329,13 @@ This section provides a detailed breakdown of each mock task action's behavior.
 
 *   **`modifyState<S, T>(stateHandle: StateHandle<S>, updater: (currentState: S) => S) -> MockAsyncTaskCommand<T>`**
     *   **Description:** Synchronously updates the state associated with `stateHandle`.
+    *   **Type Parameters:**
+        *   `S`: The type of the state being modified.
+        *   `T`: The message type of the mock task, for command type consistency. It does not directly affect the state modification itself.
+    *   **Parameters:**
+        *   `stateHandle: StateHandle<S>`: The handle to the state that needs to be updated.
+        *   `updater: (currentState: S) => S`: A function that takes the current state `S` and returns the new state `S`.
+    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, will update the specified state.
     *   **Behavior:** Retrieves current state, calls `updater`, updates state with the new value.
     *   **Example (within `withState` -> `actions`):**
         ```typescript
@@ -302,6 +348,13 @@ This section provides a detailed breakdown of each mock task action's behavior.
 
 *   **`readState<S, V>(stateHandle: StateHandle<S>, selector: (currentState: S) => V): StateValueResolver<V>`**
     *   **Description:** Creates a `StateValueResolver`. This is not a command itself, but a helper to produce a placeholder that is dynamically resolved at runtime to retrieve a value from state. This resolved value is then used as an argument to another command (e.g., `send`, `delay`).
+    *   **Type Parameters:**
+        *   `S`: The type of the state being read from.
+        *   `V`: The type of the value selected from the state.
+    *   **Parameters:**
+        *   `stateHandle: StateHandle<S>`: The handle to the state from which to read.
+        *   `selector: (currentState: S) => V`: A function that takes the current state `S` and returns a selected value `V`.
+    *   **Return Value:** `StateValueResolver<V>`: An opaque resolver object that, when used by a command, will provide the value selected from the state at the time of resolution.
     *   **Behavior:** Returns an opaque `StateValueResolver` object containing the `stateHandle` and the `selector`. The command execution engine uses this to fetch the actual value from state when needed.
     *   **Example:**
         ```typescript
@@ -312,15 +365,20 @@ This section provides a detailed breakdown of each mock task action's behavior.
         delay(readState(configHandle, s => s.timeoutMs));
         ```
 
-*   **`computeState<S extends unknown[], R>(handles: Readonly<{[K in keyof S]: StateHandle<S[K]>}>, computer: (...values: S) => R): StateValueResolver<R>`**
+*   **`computeState<S extends unknown[], V>(handles: Readonly<{[K in keyof S]: StateHandle<S[K]>}>, computer: (...values: S) => R): StateValueResolver<R>`**
     *   **Description:** Creates a `StateValueResolver` for a derived value `R`. It takes a tuple of `StateHandle`s and a `computer` function.
+    *   **Type Parameters:**
+        *   `S`: A tuple type representing the types of the states managed by the input `handles` (e.g., `[StateType1, StateType2]`).
+        *   `V`: The type of the value returned by the `computer` function. *Note: The original signature uses `R` for the return type of `computer` and the `StateValueResolver`. This will be updated to `V` for consistency if `R` was a typo, or clarified if `R` is distinct.* Assuming `R` is the intended return type.
+        *   `R`: The type of the value returned by the `computer` function and consequently the type of the resolved value.
+    *   **Parameters:**
+        *   `handles: Readonly<{[K in keyof S]: StateHandle<S[K]>}>`: A read-only array (tuple) of `StateHandle`s. Each handle corresponds to a state that will be an input to the `computer` function.
+        *   `computer: (...values: S) => R`: A function that takes the resolved values of the states (in the same order as the `handles` array) and returns a computed value `R`.
+    *   **Return Value:** `StateValueResolver<R>`: An opaque resolver object that, when used by a command, will provide the computed value `R` at the time of resolution.
     *   **Behavior:** When resolved by the interpreter:
         1.  Each `StateHandle` in `handles` is resolved to its current state value.
         2.  The `computer` function is called with these resolved state values in the same order as the handles.
         3.  The return value of `computer` is the result of this `computeState` operation, wrapped as a `StateValueResolver`.
-    *   **Type Parameters:**
-        *   `S`: A tuple type representing the types of the states managed by the input `handles` (e.g., `[StateType1, StateType2]`).
-        *   `R`: The type of the value returned by the `computer` function.
     *   **Example:**
         ```typescript
         const greetingResolver = computeState(
@@ -332,6 +390,13 @@ This section provides a detailed breakdown of each mock task action's behavior.
 
 *   **`whenState<T>(predicateResolver: StateValueResolver<boolean>, commandIfTrue: MockAsyncTaskCommand<T>, commandIfFalse?: MockAsyncTaskCommand<T>): MockAsyncTaskCommand<T>`**
     *   **Description:** Conditionally executes a command based on a `StateValueResolver<boolean>`. The `predicateResolver` is typically created using `readState` (for single state dependency) or `computeState` (for multiple state dependencies).
+    *   **Type Parameters:**
+        *   `T`: The message type of the mock task, for command type consistency of the conditional commands.
+    *   **Parameters:**
+        *   `predicateResolver: StateValueResolver<boolean>`: A `StateValueResolver` that resolves to a boolean value. This determines which command branch is executed.
+        *   `commandIfTrue: MockAsyncTaskCommand<T>`: The command to execute if the `predicateResolver` resolves to `true`.
+        *   `commandIfFalse?: MockAsyncTaskCommand<T>`: An optional command to execute if the `predicateResolver` resolves to `false`.
+    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, will conditionally run one of the provided commands based on resolved state.
     *   **Behavior:** Resolves `predicateResolver` to a boolean. Executes `commandIfTrue` or `commandIfFalse`.
     *   **Example:**
         ```typescript
@@ -356,6 +421,14 @@ This section provides a detailed breakdown of each mock task action's behavior.
 
 *   **`when<T, TNarrowed extends T>(predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>, commandIfTrue: (messageHandle: StateHandle<TNarrowed>) => MockAsyncTaskCommand<T>, commandIfFalse?: (messageHandle: StateHandle<T>) => MockAsyncTaskCommand<T>): MockAsyncTaskCommand<T>`**
     *   **Description:** Waits for the next incoming message from the actor's inbox, consumes it, and then conditionally executes a command returned by one of two factories based on the `predicate`. This command *always* consumes one message upon invocation, regardless of whether its predicate is state-based or directly uses the message content. The factories receive a `StateHandle<T>` for the incoming message (type-narrowed to `TNarrowed` for `commandIfTrue` if the predicate is a type guard), allowing message fields to be accessed via `readState(messageHandle, ...)`. This `messageHandle` is temporary and valid only within its respective factory callback (`commandIfTrue` or `commandIfFalse`).
+    *   **Type Parameters:**
+        *   `T`: The general union type of messages the task can receive.
+        *   `TNarrowed extends T`: A narrowed subtype of `T`, used when the `predicate` acts as a type guard.
+    *   **Parameters:**
+        *   `predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>`: A function (often a type guard) or a `StateValueResolver` for a function that evaluates the incoming message.
+        *   `commandIfTrue: (messageHandle: StateHandle<TNarrowed>) => MockAsyncTaskCommand<T>`: A factory function called if the `predicate` returns `true`. It receives a `StateHandle` for the consumed (and type-narrowed) message and must return a `MockAsyncTaskCommand` to be executed.
+        *   `commandIfFalse?: (messageHandle: StateHandle<T>) => MockAsyncTaskCommand<T>`: An optional factory function called if the `predicate` returns `false`. It receives a `StateHandle` for the consumed message (not narrowed) and must return a `MockAsyncTaskCommand` to be executed.
+    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, will consume a message and conditionally execute further commands based on that message.
     *   **Behavior:**
         1.  Awaits an incoming message and consumes it from the inbox.
         2.  Creates temporary `StateHandle` for the message.
@@ -376,6 +449,11 @@ This section provides a detailed breakdown of each mock task action's behavior.
 
 *   **`whileLoop<T>(factory: (commands: { break: () => MockAsyncTaskCommand<T>, continue: () => MockAsyncTaskCommand<T> }) => MockAsyncTaskCommand<T>) -> MockAsyncTaskCommand<T>`**
     *   **Description:** Creates a command that repeatedly executes a body command sequence provided by the `factory` function. Loop control (`break`, `continue`) is explicit via the `commands` object passed to the factory. State-dependent logic within the loop body should use `whenState` or `readState` with a lexically captured `StateHandle`.
+    *   **Type Parameters:**
+        *   `T`: The message type of the mock task, for command type consistency of the commands within the loop and the loop control commands.
+    *   **Parameters:**
+        *   `factory: (commands: { break: () => MockAsyncTaskCommand<T>, continue: () => MockAsyncTaskCommand<T> }) => MockAsyncTaskCommand<T>`: A factory function that is called at the beginning of each loop iteration. It receives a `commands` object with `break` and `continue` functions (which return commands to control the loop) and must return a `MockAsyncTaskCommand<T>` representing the body of the loop for that iteration.
+    *   **Return Value:** `MockAsyncTaskCommand<T>`: A command that, when executed, will run the loop.
     *   **Behavior:** Executes the command returned by `factory` repeatedly. `commands.break()` terminates the loop. `commands.continue()` immediately skips to the next iteration, re-evaluating the factory. If the command sequence returned by the `factory` completes without an explicit `commands.break()` or `commands.continue()` being called, the loop implicitly continues to the next iteration.
     *   **Example:**
         ```typescript
