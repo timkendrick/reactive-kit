@@ -15,7 +15,7 @@ act((self, { complete }) => complete())
 act((self, { fail }) => fail(new Error("Task failed")))
 
 // Wait for specific message
-act((self, { outbox }) => actions(() => [
+act((self, { outbox }) => sequence(() => [
   waitFor((msg): msg is Extract<MyMessage, { type: "START" }> => msg.type === "START",
     (msgHandle) => send(outbox, readState(msgHandle, (startMsg) => ({ type: "ACK_START", payload: startMsg.payload })))
   ),
@@ -23,13 +23,13 @@ act((self, { outbox }) => actions(() => [
 ]))
 
 // Delay execution
-act((self, { outbox }) => actions(() => [
+act((self, { outbox }) => sequence(() => [
   delay(100), // ms
   send(outbox, { type: "READY" })
 ]))
 
 // Combined basic actions
-act((self, { outbox }) => actions(() => [
+act((self, { outbox }) => sequence(() => [
   send(outbox, { type: "STARTING" }),
   delay(100),
   send(outbox, { type: "READY" }),
@@ -45,7 +45,7 @@ act((self, { outbox }) => actions(() => [
 ```typescript
 // Using readState to send a message with state data
 act((self, { outbox }) => 
-  withState(() => ({ progress: 0 }), stateHandle => actions(() => [
+  withState(() => ({ progress: 0 }), stateHandle => sequence(() => [
     // Update state
     modifyState(stateHandle, s => ({ progress: s.progress + 0.1 })),
     
@@ -56,7 +56,7 @@ act((self, { outbox }) =>
 
 // State-based retry logic using computeState and readState
 act((self, { outbox }) => 
-  withState(() => ({ retries: 0 }), stateHandle => actions(() => [
+  withState(() => ({ retries: 0 }), stateHandle => sequence(() => [
     modifyState(stateHandle, s => ({ retries: s.retries + 1 })),
     send(outbox, readState(stateHandle, s => ({ type: "ATTEMPT", count: s.retries }))),
     delay(readState(stateHandle, s => Math.pow(2, s.retries) * 100))
@@ -78,7 +78,7 @@ act((self, { outbox }) => when(
 act((self, { outbox, fail }) => 
   withState(() => ({ retries: 0, maxRetries: 3, otherCondition: true }), stateHandle =>
     // Example: Simulating a process that might fail and need retries
-    actions(() => [
+    sequence(() => [
       // Some initial action
       send(outbox, { type: "INITIATE_PROCESS" }),
       waitFor((msg): msg is Extract<MyMessage, { type: "PROCESS_RESPONSE", status: string }> => msg.type === "PROCESS_RESPONSE",
@@ -90,7 +90,7 @@ act((self, { outbox, fail }) =>
               (responseMsg, appState) => responseMsg.status === "FAIL" && appState.retries < appState.maxRetries
             ),
             // If shouldRetry is true:
-            actions(() => [
+            sequence(() => [
               modifyState(stateHandle, s => ({ ...s, retries: s.retries + 1 })),
               send(outbox, readState(stateHandle, s => ({ type: "RETRYING", attempt: s.retries }))),
             ]),
@@ -112,14 +112,14 @@ act((self, { outbox, fail }) =>
 // While loop for autonomous repeated actions using whenState and readState
 act<MyMessage>((self, { outbox }) => (
   withState(() => ({ count: 0 }), stateHandle =>
-    actions<MyMessage>(() => [
+    sequence<MyMessage>(() => [
       whileLoop((loop) =>
-        actions(() => [
+        sequence(() => [
           // Conditional break or continue based on state
           whenState(
             readState(stateHandle, s => s.count >= 3),
             loop.break(), // If count >= 3, break
-            actions(() => [ // Else, continue loop actions
+            sequence(() => [ // Else, continue loop actions
               send(outbox, { type: "TICK" }),
               modifyState(stateHandle, cs => ({ count: cs.count + 1 })),
               delay(1000)
@@ -344,9 +344,9 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
 
         const myActorDefinition = act<MyMessage>((self, { outbox, complete, fail }) =>
           withState<MyState, MyMessage>(() => ({ initialized: false }), stateHandle =>
-            actions(() => [
+            sequence(() => [
               waitFor((msg): msg is Extract<MyMessage, { type: "INIT_DATA" }> => msg.type === "INIT_DATA",
-                (msgHandle) => actions(() => [
+                (msgHandle) => sequence(() => [
                   send(outbox, readState(msgHandle, (initMsg) => ({ type: "PONG", payload: initMsg.payload }))),
                   modifyState(stateHandle, readState(msgHandle, (initMsg) => (s) => ({ ...s, initialized: true, data: initMsg.payload })))
                 ])
@@ -420,7 +420,7 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         ```typescript
         withState(() => ({ status: 'idle', userRole: 'user' }), appStateHandle =>
           withState(() => ({ isLocked: true }), itemStateHandle => 
-            actions<MyMessage>([
+            sequence<MyMessage>([
               whenState(
                 computeState(
                   [appStateHandle, itemStateHandle],
@@ -499,7 +499,7 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
     *   **Example (Structure):**
         ```typescript
         act<MyMessage>((self, { outbox, complete }) => (
-          withState(() => ({ counter: 0 }), stateHandle => actions<MyMessage>([
+          withState(() => ({ counter: 0 }), stateHandle => sequence<MyMessage>([
             modifyState(stateHandle, s => ({ counter: s.counter + 1 })),
             whenState(
               readState(stateHandle, s => s.counter >= 3),
@@ -524,7 +524,7 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
     *   **Example (within `withState` -> `actions`):**
         ```typescript
         withState(() => ({ count: 0 }), stateHandle =>
-          actions<MyMessage>([ 
+          sequence<MyMessage>([ 
             modifyState(stateHandle, s => ({ count: s.count + 1 })),
           ])
         )
@@ -586,7 +586,7 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         ```typescript
         withState(() => ({ status: 'idle', userRole: 'user' }), appStateHandle =>
           withState(() => ({ isLocked: true }), itemStateHandle => 
-            actions<MyMessage>([
+            sequence<MyMessage>([
               whenState(
                 computeState(
                   [appStateHandle, itemStateHandle],
@@ -621,7 +621,7 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         5.  If `false`, calls `commandIfFalse(messageHandle)` (if provided) and executes its result.
     *   **Example:**
         ```typescript
-        actions<MyMessage>([
+        sequence<MyMessage>([
           when<MyMessage, StartMsg>(
             (msg): msg is StartMsg => msg.type === 'START',
             (msgHandle) => send(outbox, readState(msgHandle, (startMsg: StartMsg) => ({ type: 'STARTED', id: startMsg.payload.id }))),
@@ -642,13 +642,13 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
     *   **Example:**
         ```typescript
         withState(() => ({ count: 0 }), handle =>
-          actions<MyMessage>([
+          sequence<MyMessage>([
             whileLoop((loop) =>
-              actions(() => [
+              sequence(() => [
                 whenState(
                   readState(handle, s => s.count >= 3),
                   loop.break(), // Break if count >= 3
-                  actions(() => [ // Else continue
+                  sequence(() => [ // Else continue
                     send(outbox, { type: "TICK" }),
                     modifyState(handle, cs => ({ count: cs.count + 1 })),
                     delay(1000)
