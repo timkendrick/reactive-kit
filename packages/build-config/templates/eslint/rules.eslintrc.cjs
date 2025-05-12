@@ -45,6 +45,7 @@ module.exports = {
         default: 'generic',
       },
     ],
+    '@typescript-eslint/no-empty-object-type': ['error', { allowInterfaces: 'always' }],
     '@typescript-eslint/no-unused-vars': [
       'error',
       {
