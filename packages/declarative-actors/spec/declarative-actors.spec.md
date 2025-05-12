@@ -173,17 +173,17 @@ The declarative commands provided in an actor definition (e.g., `send`, `waitFor
 The instruction set can be broadly categorized:
 
 *   **Core Task Operations:**
-    *   `SEND_MESSAGE`: Corresponds to `send()`. Takes a target actor handle and a message (or a resolver for a message) as operands.
-    *   `COMPLETE_TASK`: Corresponds to `helpers.complete()`. Terminates the task successfully.
-    *   `FAIL_TASK`: Corresponds to `helpers.fail()`. Terminates the task with an error.
-    *   `KILL_ACTOR`: Corresponds to `kill()`. Takes a target actor handle.
-    *   `NOOP`: Corresponds to `none()`.
+    *   `ACTOR_SEND`: Corresponds to `send()`. Takes a target actor handle and a message (or a resolver for a message) as operands.
+    *   `TASK_COMPLETE`: Corresponds to `helpers.complete()`. Terminates the task successfully.
+    *   `TASK_FAIL`: Corresponds to `helpers.fail()`. Terminates the task with an error.
+    *   `ACTOR_KILL`: Corresponds to `kill()`. Takes a target actor handle.
+    *   `NOOP`: Corresponds to `noop()`.
 
 *   **State Management Operations:**
-    *   `PUSH_STATE`: Marks the beginning of a `withState` block. Initializes the state and pushes its handle onto the VM stack or a dedicated part of the current stack frame. The operand would be the initial state (or a resolver for it).
-    *   `POP_STATE`: Marks the end of a `withState` block, removing the state scope.
-    *   `MODIFY_STATE`: Corresponds to `modifyState()`. Takes a state handle (resolved from the stack) and an updater function.
-    *   *Note: `readState` and `computeState` don't necessarily translate to dedicated VM instructions. Instead, they are operands to other instructions (like `SEND_MESSAGE`, `JUMP_IF_STATE`, `DELAY`). The VM resolves these `StateValueResolver`s at the point the consuming instruction is executed.*
+    *   `STATE_PUSH`: Marks the beginning of a `withState` block. Initializes the state and pushes its handle onto the VM stack or a dedicated part of the current stack frame. The operand would be the initial state (or a resolver for it).
+    *   `STATE_POP`: Marks the end of a `withState` block, removing the state scope.
+    *   `STATE_UPDATE`: Corresponds to `modifyState()`. Takes a state handle (resolved from the stack) and an updater function.
+    *   *Note: `readState` and `computeState` don't necessarily translate to dedicated VM instructions. Instead, they are operands to other instructions (like `ACTOR_SEND`, `JUMP_IF_STATE`, `DELAY`). The VM resolves these `StateValueResolver`s at the point the consuming instruction is executed.*
 
 *   **Control Flow Operations:**
     *   `AWAIT_MESSAGE`: Corresponds to `waitFor()`. Pauses execution. Takes a predicate. If the predicate has a `commandIfTrue` factory, this instruction might be followed by instructions generated from that factory, or a conditional jump.
@@ -191,9 +191,9 @@ The instruction set can be broadly categorized:
     *   `JUMP`: Unconditional jump to a different IP. Used to implement loops and the `actions()` `done()` control.
     *   `JUMP_IF_STATE`: Corresponds to `whenState()`. Takes a `StateValueResolver<boolean>` and a target IP for the "true" branch. The "false" branch is typically the next instruction in sequence or an explicit `JUMP`.
     *   `JUMP_IF_MESSAGE`: Corresponds to `when()`. Consumes a message, evaluates a predicate against it. Takes a target IP for the "true" branch. The "false" branch is handled similarly. The factories (`commandIfTrue`, `commandIfFalse`) from `when()` would compile to instruction sub-sequences.
-    *   `ENTER_LOOP / EXIT_LOOP_IF / CONTINUE_LOOP`: Instructions to manage `whileLoop()`. `ENTER_LOOP` might set up a loop context on the stack. `EXIT_LOOP_IF` would check a condition (often involving a `StateValueResolver` or a message predicate) and jump out of the loop. `CONTINUE_LOOP` would jump to the beginning of the loop's body.
-    *   `PUSH_BLOCK`: The `actions()` command translates to a sequence of instructions. `PUSH_BLOCK` might set up a new frame or marker on the stack to handle `controls.done()`.
-    *   `POP_BLOCK`: `controls.done()` would compile to a `JUMP` instruction targeting after the corresponding `POP_BLOCK`.
+    *   `LOOP_ENTER / LOOP_EXIT_IF / LOOP_CONTINUE`: Instructions to manage `whileLoop()`. `LOOP_ENTER` might set up a loop context on the stack. `LOOP_EXIT_IF` would check a condition (often involving a `StateValueResolver` or a message predicate) and jump out of the loop. `LOOP_CONTINUE` would jump to the beginning of the loop's body.
+    *   `BLOCK_PUSH`: The `actions()` command translates to a sequence of instructions. `BLOCK_PUSH` might set up a new frame or marker on the stack to handle `controls.done()`.
+    *   `BLOCK_POP`: `controls.done()` would compile to a `JUMP` instruction targeting after the corresponding `BLOCK_POP`.
 
 *   **Operand Types:** Instructions operate on various types of operands, including:
     *   Literal values (numbers, strings, booleans).
@@ -212,10 +212,10 @@ The VM's execution stack is central to its operation, serving not only for contr
     *   Frames hold information such as the return Instruction Pointer (IP) for when a block or scope finishes, and local data relevant to that scope.
 
 *   **State Scopes and `StateHandle` Resolution:**
-    *   When a `PUSH_STATE` instruction (generated from `withState`) is executed, the initial state value (potentially resolved from a `StateValueResolver` itself) is computed and stored within the current or a newly created stack frame.
+    *   When a `STATE_PUSH` instruction (generated from `withState`) is executed, the initial state value (potentially resolved from a `StateValueResolver` itself) is computed and stored within the current or a newly created stack frame.
     *   A `StateHandle` provided to the user's factory function is, internally, a reference that allows the VM to locate this state data on the stack. This could be an index into a specific part of a stack frame or a pointer to a memory region managed by the frame.
     *   `readState` and `computeState` operations, when encountered as operands to other instructions, use these internal `StateHandle` references to access the appropriate data from the relevant stack frame(s). The VM traverses the stack (or uses a more direct pointer if the handle encodes its frame) to find the frame containing the state associated with the handle.
-    *   The `POP_STATE` instruction removes the state data from the stack, effectively ending the lexical scope of that `StateHandle`. This typically occurs when the stack frame associated with the `withState` block is popped.
+    *   The `STATE_POP` instruction removes the state data from the stack, effectively ending the lexical scope of that `StateHandle`. This typically occurs when the stack frame associated with the `withState` block is popped.
 
 *   **Temporary Message Handles:**
     *   Commands like `AWAIT_MESSAGE` and `JUMP_IF_MESSAGE` consume an incoming message. If their associated factory functions (e.g., `commandIfTrue` in `waitFor` or `when`) are invoked, a temporary `StateHandle` for the consumed message is created.
@@ -223,12 +223,12 @@ The VM's execution stack is central to its operation, serving not only for contr
     *   This message-specific `StateHandle` is only valid for the duration of the factory callback's execution. Once the instructions generated from that factory complete, the part of the stack frame holding the message data might be reclaimed or marked as invalid.
 
 *   **Control Flow Information:**
-    *   The stack stores return addresses for jumps (e.g., after a `PUSH_BLOCK` completes or a loop iteration finishes).
-    *   For `whileLoop`, the stack might hold information about the loop's start IP to allow `CONTINUE_LOOP` to jump back, and status flags or counters if needed (though most loop logic will rely on `StateHandle`s).
+    *   The stack stores return addresses for jumps (e.g., after a `BLOCK_PUSH` completes or a loop iteration finishes).
+    *   For `whileLoop`, the stack might hold information about the loop's start IP to allow `LOOP_CONTINUE` to jump back, and status flags or counters if needed (though most loop logic will rely on `StateHandle`s).
 
 *   **`StateValueResolver`s:**
     *   These are not directly stored on the stack as persistent entities but are operands to VM instructions.
-    *   When an instruction like `SEND_MESSAGE` has a `StateValueResolver` as its message operand, or `JUMP_IF_STATE` has one as its predicate, the VM's execution logic for that instruction is responsible for:
+    *   When an instruction like `ACTOR_SEND` has a `StateValueResolver` as its message operand, or `JUMP_IF_STATE` has one as its predicate, the VM's execution logic for that instruction is responsible for:
         1.  Identifying the `StateHandle`(s) within the resolver.
         2.  Using these handles to retrieve the current state value(s) from the stack.
         3.  Executing the resolver's `selector` or `computer` function with these values.
@@ -261,15 +261,15 @@ The following subsections detail the internal workings of the VM's execution cyc
 The VM generator's core is an internal execution loop that processes instructions from the Instruction Queue. This loop runs synchronously within each invocation of `generator.next()` by the external runner.
 
 *   **The Main Loop:**
-    *   The loop continues as long as the Instruction Pointer (IP) is within the bounds of the Instruction Queue and no terminal instruction (like `COMPLETE_TASK` or `FAIL_TASK`) has been executed or yielded.
+    *   The loop continues as long as the Instruction Pointer (IP) is within the bounds of the Instruction Queue and no terminal instruction (like `TASK_COMPLETE` or `TASK_FAIL`) has been executed or yielded.
     *   In each iteration, the engine performs the following steps:
         1.  **Fetch:** Retrieve the instruction located at the current IP from the Instruction Queue.
-        2.  **Decode (Implicit):** The instruction's type (e.g., `SEND_MESSAGE`, `JUMP_IF_STATE`) determines the operation to be performed. Operands are part of the instruction structure.
+        2.  **Decode (Implicit):** The instruction's type (e.g., `ACTOR_SEND`, `JUMP_IF_STATE`) determines the operation to be performed. Operands are part of the instruction structure.
         3.  **Execute:** Dispatch the instruction to its corresponding handler logic. This is where the primary work of the VM occurs.
         4.  **Advance IP:** Typically, the IP is incremented to point to the next instruction in sequence. However, control flow instructions (like `JUMP`, `JUMP_IF_STATE`) will modify the IP according to their specific logic. For instructions that `yield`, the IP might not be advanced until the generator is resumed.
 
 *   **Instruction Dispatch:**
-    *   The VM contains a set of handler functions, one for each type of VM instruction (e.g., a handler for `SEND_MESSAGE`, another for `PUSH_STATE`, etc.).
+    *   The VM contains a set of handler functions, one for each type of VM instruction (e.g., a handler for `ACTOR_SEND`, another for `STATE_PUSH`, etc.).
     *   The "execute" step involves calling the appropriate handler based on the fetched instruction's type.
     *   Each handler function implements the semantics of its instruction:
         *   It may interact with the VM stack (pushing/popping frames or values).
@@ -278,8 +278,8 @@ The VM generator's core is an internal execution loop that processes instruction
         *   For asynchronous operations, it prepares a command descriptor to be `yield`ed by the generator.
 
 *   **Synchronous vs. Asynchronous Instructions (Generator Model):**
-    *   Many instructions execute synchronously within the generator's internal loop (e.g., `NOOP`, `PUSH_STATE`, `MODIFY_STATE`, `JUMP`). Their handlers complete their work, update the IP, and the loop immediately proceeds to the next instruction within the same call to `generator.next()`.
-    *   Some instructions are inherently asynchronous, requiring interaction with the external environment (e.g., `AWAIT_MESSAGE`, `DELAY`, `SEND_MESSAGE`). When such an instruction is encountered by the generator's internal loop:
+    *   Many instructions execute synchronously within the generator's internal loop (e.g., `NOOP`, `STATE_PUSH`, `STATE_UPDATE`, `JUMP`). Their handlers complete their work, update the IP, and the loop immediately proceeds to the next instruction within the same call to `generator.next()`.
+    *   Some instructions are inherently asynchronous, requiring interaction with the external environment (e.g., `AWAIT_MESSAGE`, `DELAY`, `ACTOR_SEND`). When such an instruction is encountered by the generator's internal loop:
         *   Its handler logic prepares a command descriptor (e.g., `{ type: 'DELAY', duration: 100 }`, `{ type: 'AWAIT_MESSAGE' }`, or `{ type: 'SEND', target: ..., message: ... }`).
         *   The generator then `yields` this command descriptor, pausing its execution. The IP is typically not advanced by the generator for these yielded instructions; it will resume at the same IP when `next()` is called again by the runner.
         *   Upon resumption (via `generator.next(result)` from the runner), the generator's internal loop continues from where it paused. It may use the `result` passed to `next()` to complete the processing of the asynchronous instruction (e.g., placing a received message onto the stack) before advancing the IP.
@@ -292,13 +292,13 @@ The external runner is responsible for driving the VM generator and managing all
 
 *   **Processing Yielded Command Descriptors:**
     *   The VM `yields` command descriptor objects when it requires an external action or needs to pause for an event. These descriptors define the operation and its parameters. Examples include:
-        *   `SEND_MESSAGE`: `{ type: 'SEND', targetActor: ActorHandle, message: any }`
-        *   `KILL_ACTOR`: `{ type: 'KILL', targetActor: ActorHandle }`
+        *   `ACTOR_SEND`: `{ type: 'SEND', targetActor: ActorHandle, message: any }`
+        *   `ACTOR_KILL`: `{ type: 'KILL', targetActor: ActorHandle }`
         *   `DELAY`: `{ type: 'DELAY', durationMs: number }`
         *   `AWAIT_MESSAGE`: `{ type: 'AWAIT_MESSAGE' }` (The VM internally manages any associated predicate).
     *   Terminal conditions are also communicated:
-        *   `COMPLETE_TASK`: via `{ type: 'COMPLETE' }` or generator return.
-        *   `FAIL_TASK`: via `{ type: 'FAIL', error: Error }` or generator throwing an error.
+        *   `TASK_COMPLETE`: via `{ type: 'COMPLETE' }` or generator return.
+        *   `TASK_FAIL`: via `{ type: 'FAIL', error: Error }` or generator throwing an error.
 
 *   **Core Runner Loop and Responsibilities:**
     *   The runner initiates the VM by calling `generator.next()` for the first time.
@@ -306,8 +306,8 @@ The external runner is responsible for driving the VM generator and managing all
         1.  Receives the yielded command descriptor.
         2.  Interprets the `type` of the command.
         3.  Performs the actual asynchronous operation or handles the event:
-            *   For `SEND_MESSAGE`: Interacts with the ReactiveKit actor system to dispatch the message.
-            *   For `KILL_ACTOR`: Interacts with the actor system to terminate the target.
+            *   For `ACTOR_SEND`: Interacts with the ReactiveKit actor system to dispatch the message.
+            *   For `ACTOR_KILL`: Interacts with the actor system to terminate the target.
             *   For `DELAY`: Interacts with the runtime environment to pause for the specified duration.
             *   For `AWAIT_MESSAGE`: Waits for an incoming message for the actor (details below).
             *   For `COMPLETE` or `FAIL`: Finalizes the actor's lifecycle.
@@ -456,7 +456,7 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         )
         ```
 
-*   **`none<T>() -> ActorCommand<T>`**
+*   **`noop<T>() -> ActorCommand<T>`**
     *   **Description:** A no-operation command.
     *   **Type Parameters:**
         *   `T`: The message type of the actor definition, for command type consistency.
@@ -467,7 +467,7 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         ```typescript
         whenState(
           readState(someHandle, s => s.shouldIgnore),
-          none(), // Do nothing if condition is true
+          noop(), // Do nothing if condition is true
           send(outbox, { type: 'PROCESS' })
         )
         ```
