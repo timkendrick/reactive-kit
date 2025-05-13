@@ -141,7 +141,7 @@ act<MyMessage>((self, { outbox }) => (
 
 Actor definitions are created using the `act` factory function. This function provides a context and helper utilities to configure the actor's behavior declaratively using the command combinators.
 
-### Actor state
+### Actor state and runtime values
 
 Declarative actors can define internal state.
 
@@ -149,7 +149,11 @@ A `StateHandle<S>` is an opaque handle to a state of type `S`.
     *   When created by `withState`, the `stateHandle` is valid for all lexically nested commands within that `withState` block and its factory function.
     *   When provided to a factory by commands like `waitFor` or `when` (representing a consumed message), this `messageHandle` is a temporary handle valid only within the scope of that specific factory function callback.
 
-A `StateValueResolver<V>` is an opaque type representing a value that will be resolved from a state handle at runtime. Many command parameters can accept either a direct value (e.g., a `number` for a duration) or a `StateValueResolver<V>` for that value type, allowing for dynamic values derived from state. This dual capability is noted in individual command descriptions where applicable.
+Many command parameters can accept either a direct, static value (e.g., a `number` for a duration) or a dynamic `ValueRef<V>` that resolves to a value at runtime.
+
+These dynamic resolvers can be direct state references (`StateRef<V>`), derived from a single state (`ReadStateValueResolver<S,V>`), computed from multiple states (`ComputeStateValueResolver<S[],V>`), or references to spawned actors (`SpawnedActorResolver<T>`).
+
+Dynamic runtime values can be used interchangeably with static values wherever a `ValueRef<V>` is present in a type signature.
 
 ### Internal Architecture
 
@@ -183,23 +187,30 @@ The instruction set can be broadly categorized:
     *   `STATE_PUSH`: Marks the beginning of a `withState` block. Initializes the state and pushes its handle onto the VM stack or a dedicated part of the current stack frame. The operand would be the initial state (or a resolver for it).
     *   `STATE_POP`: Marks the end of a `withState` block, removing the state scope.
     *   `STATE_UPDATE`: Corresponds to `modifyState()`. Takes a state handle (resolved from the stack) and an updater function.
-    *   *Note: `readState` and `computeState` don't necessarily translate to dedicated VM instructions. Instead, they are operands to other instructions (like `ACTOR_SEND`, `JUMP_IF_STATE`, `DELAY`). The VM resolves these `StateValueResolver`s at the point the consuming instruction is executed.*
+    *   *Note: `readState` and `computeState` don't necessarily translate to dedicated VM instructions. Instead, their results (which are specific types of `ValueRef<V>`) are operands to other instructions (like `ACTOR_SEND`, `JUMP_IF_STATE`, `DELAY`). The VM resolves these dynamic `ValueRef<V>` instances at the point the consuming instruction is executed.*
 
 *   **Control Flow Operations:**
     *   `AWAIT_MESSAGE`: Corresponds to `waitFor()`. Pauses execution. Takes a predicate. If the predicate has a `commandIfTrue` factory, this instruction might be followed by instructions generated from that factory, or a conditional jump.
     *   `DELAY`: Corresponds to `delay()`. Pauses execution. Takes a duration (or a resolver for it).
-    *   `JUMP`: Unconditional jump to a different IP. Used to implement loops and the `actions()` `done()` control.
+    *   `JUMP`: Unconditional jump to a different IP. Used to implement loops and the `sequence()` `done()` control.
     *   `JUMP_IF_STATE`: Corresponds to `whenState()`. Takes a `StateValueResolver<boolean>` and a target IP for the "true" branch. The "false" branch is typically the next instruction in sequence or an explicit `JUMP`.
     *   `JUMP_IF_MESSAGE`: Corresponds to `when()`. Consumes a message, evaluates a predicate against it. Takes a target IP for the "true" branch. The "false" branch is handled similarly. The factories (`commandIfTrue`, `commandIfFalse`) from `when()` would compile to instruction sub-sequences.
     *   `LOOP_ENTER / LOOP_EXIT_IF / LOOP_CONTINUE`: Instructions to manage `whileLoop()`. `LOOP_ENTER` might set up a loop context on the stack. `LOOP_EXIT_IF` would check a condition (often involving a `StateValueResolver` or a message predicate) and jump out of the loop. `LOOP_CONTINUE` would jump to the beginning of the loop's body.
-    *   `BLOCK_PUSH`: The `actions()` command translates to a sequence of instructions. `BLOCK_PUSH` might set up a new frame or marker on the stack to handle `controls.done()`.
+    *   `BLOCK_PUSH`: The `sequence()` command translates to a sequence of instructions. `BLOCK_PUSH` might set up a new frame or marker on the stack to handle `controls.done()`.
     *   `BLOCK_POP`: `controls.done()` would compile to a `JUMP` instruction targeting after the corresponding `BLOCK_POP`.
 
-*   **Operand Types:** Instructions operate on various types of operands, including:
-    *   Literal values (numbers, strings, booleans).
-    *   `ActorHandle`s.
-    *   `StateValueResolver`s (which the VM resolves at runtime).
-    *   IP offsets or labels for jump targets.
+*   **Operand Types:** VM instructions operate on two main kinds of inputs: *Immediates* and *Operands (Values)*.
+    *   **Immediates:** These are values directly encoded with the instruction, typically used for control flow.
+        *   Example: IP offsets or labels used by jump instructions to specify target locations within the instruction queue.
+    *   **Operands (Values):** These represent data that instructions act upon. They are all encompassed by the `ValueRef<V>` abstraction, which allows commands to interchangeably use static values or values that are dynamically resolved at runtime. Operands can be further categorized:
+        *   **Static Operands:** Values known at compile time or directly available without further resolution by the VM from its internal state.
+            *   Literal values (e.g., numbers, strings, booleans).
+            *   `ActorHandle`s (direct references to other actors).
+        *   **Dynamic Operands (Runtime Value Resolvers):** Values that are resolved or computed by the VM at runtime, often involving access to the VM's execution stack or state. These are specific variants of `ValueRef<V>`:
+            *   `StateRef<V>`: An opaque handle that directly references a piece of state managed on the VM's execution stack.
+            *   `ReadStateValueResolver<S, V>`: Created by the `readState` helper, this resolves a value by applying a selector function to a single `StateRef<S>`.
+            *   `ComputeStateValueResolver<S[], V>`: Created by the `computeState` helper, this resolves a value by applying a computer function to an array of `StateRef<S>` instances.
+            *   `SpawnedActorResolver<T>`: A specialized `ValueRef<ActorHandle<T>>` created by the `spawn` command. It resolves to the `ActorHandle<T>` of a newly spawned child actor.
 
 This instruction set allows the VM to interpret the complex, declarative actor definitions by breaking them down into manageable, sequential steps with explicit control flow. The compilation process (from `ActorCommand` tree to linear VM instructions) is a key part of `act()`'s internal setup.
 
@@ -208,7 +219,7 @@ This instruction set allows the VM to interpret the complex, declarative actor d
 The VM's execution stack is central to its operation, serving not only for control flow but also for managing the lifecycle of stateful contexts introduced by `withState` and temporary message data.
 
 *   **Stack Frames:**
-    *   The stack is composed of frames. A new frame might be pushed for contexts like `actions()` blocks (especially if they need to manage `controls.done()` jumps), `whileLoop()` iterations, or when `withState()` introduces a new lexical state scope.
+    *   The stack is composed of frames. A new frame might be pushed for contexts like `sequence()` blocks (especially if they need to manage `controls.done()` jumps), `whileLoop()` iterations, or when `withState()` introduces a new lexical state scope.
     *   Frames hold information such as the return Instruction Pointer (IP) for when a block or scope finishes, and local data relevant to that scope.
 
 *   **State Scopes and `StateHandle` Resolution:**
@@ -226,13 +237,12 @@ The VM's execution stack is central to its operation, serving not only for contr
     *   The stack stores return addresses for jumps (e.g., after a `BLOCK_PUSH` completes or a loop iteration finishes).
     *   For `whileLoop`, the stack might hold information about the loop's start IP to allow `LOOP_CONTINUE` to jump back, and status flags or counters if needed (though most loop logic will rely on `StateHandle`s).
 
-*   **`StateValueResolver`s:**
-    *   These are not directly stored on the stack as persistent entities but are operands to VM instructions.
-    *   When an instruction like `ACTOR_SEND` has a `StateValueResolver` as its message operand, or `JUMP_IF_STATE` has one as its predicate, the VM's execution logic for that instruction is responsible for:
-        1.  Identifying the `StateHandle`(s) within the resolver.
-        2.  Using these handles to retrieve the current state value(s) from the stack.
-        3.  Executing the resolver's `selector` or `computer` function with these values.
-        4.  Using the result to proceed with the instruction (e.g., sending the resolved message, making the jump decision).
+*   **Dynamic `ValueRef<V>` Resolution:**
+    *   Dynamic `ValueRef<V>` accessors (like `StateRef`, `ReadStateValueResolver`, `ComputeStateValueResolver`) can be used as placeholder operands to VM instructions in order to compute the operand value dynamically at runtime.
+    *   When an instruction like `ACTOR_SEND` has a dynamic `ValueRef<V>` as its message operand, or `JUMP_IF_STATE` has one as its predicate, the VM's execution logic for that instruction is responsible for:
+        1.  Identifying the underlying `StateHandle`(s) or other references within the `ValueRef`.
+        2.  Using these handles/references to retrieve the current or derived state value(s) from the stack or other dynamic execution environment state (like spawned actor handles).
+        3.  Using the final resolved value to proceed with evaluating the instruction (e.g., sending the resolved message, making the jump decision).
 
 This tight integration of state management with the stack ensures that state lifetimes are naturally coupled to their lexical scopes, simplifying the VM's design.
 
@@ -325,18 +335,18 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
 ### Top-level APIs
 
 *   **`act<T>(definition: (self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => ActorCommand<T>, fail: (error: Error) => ActorCommand<unknown> }) => ActorCommand<T>) -> ActorDefinition<T>`**
-    *   **Description:** The main factory function for creating a declarative actor definition. It accepts a `definition` function callback that outlines the actor's lifecycle, interactions, and responses to incoming messages. The `definition` function must return a single `ActorCommand` (commonly `actions(...)` or `withState(...)`) which serves as the root of the actor's behavior tree.
+    *   **Description:** The main factory function for creating a declarative actor definition. It accepts a `definition` function callback that outlines the actor's lifecycle, interactions, and responses to incoming messages. The `definition` function must return a single `ActorCommand` (commonly `sequence(...)` or `withState(...)`) which serves as the root of the actor's behavior tree.
     *   **Type Parameters:**
-        *   `T`: The union type of messages that the actor defined by this definition can send and receive
+        *   `T`: The union type of messages that the actor defined by this definition can send and receive.
     *   **Parameters:**
-        *   `definition`: `(self: ActorHandle<T>, helpers: { outbox: ActorHandle<T>, complete: () => ActorCommand<T>, fail: (error: Error) => ActorCommand<unknown> }) => ActorCommand<T>`
+        *   `definition`: `(self: ActorHandle<T>, helpers: { ... }) => ActorCommand<T>`
             A callback function invoked to build the actor's behavior. It receives two arguments:
             *   `self: ActorHandle<T>`: An `ActorHandle` representing the actor itself.
-            *   `helpers`: An object containing essential helper utilities: `outbox`, `complete`, `fail`.
-                *   `outbox: ActorHandle<T>`: Handle for the actor receiving messages from this actor definition.
-                *   **`complete(): ActorCommand<T>`**: Command to terminate the actor normally.
-                *   **`fail(error: Error): ActorCommand<unknown>`**: Command to terminate the actor with an error.
-    *   **Return Value:** `ActorDefinition<T>`: An opaque definition object.
+            *   `helpers`: An object containing helper utilities related to the actor:
+                *   `outbox: ActorHandle<T>`: Handle for the actor receiving messages from this actor definition (typically the system or parent).
+                *   `complete(): ActorCommand<T>`: Terminate the current task successfully (see below)
+                *   `fail(error: Error): ActorCommand<T>`: Terminate the current task with an error (see below)
+    *   **Return Value:** `ActorDefinition<T>`: An opaque definition object representing the compiled behavior.
     *   **Example (Overall Structure):**
         ```typescript
         interface MyMessage { type: "PING" | "PONG" | "INIT_DATA"; payload?: any; }
@@ -362,17 +372,57 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         );
         ```
 
+### Actor Definition Helpers
+
+This section describes the helper functions provided within the `helpers` object to the `act` definition callback.
+
+*   **`complete<T>(): ActorCommand<T>`**
+    *   **Description:** Returns a command that, when executed, terminates the current actor's task successfully.
+    *   **Type Parameters:**
+        *   `T`: The message type of the actor definition, for command type consistency.
+    *   **Parameters:** None.
+    *   **Return Value:** `ActorCommand<T>`: A command that signals normal completion of the actor.
+    *   **Behavior:** When this command is processed by the VM, it will yield a `TASK_COMPLETE` descriptor, leading the runner to finalize the actor's execution as successful. No further commands within the current actor definition will be processed.
+    *   **Example:**
+        ```typescript
+        act((self, { outbox, complete }) => sequence(() => [
+          send(outbox, { type: "FINAL_MESSAGE" }),
+          complete()
+        ]))
+        ```
+
+*   **`fail<T>(error: Error): ActorCommand<T>`**
+    *   **Description:** Returns a command that, when executed, terminates the current actor's task with an error.
+    *   **Type Parameters:**
+        *   `T`: The message type of the actor definition. While the command signals failure for an actor of type `T`, the command itself can be considered `ActorCommand<unknown>` or `ActorCommand<never>` in some contexts as it leads to termination. For consistency within `act`, it's typed as `ActorCommand<T>`.
+    *   **Parameters:**
+        *   `error: Error`: The error object to fail the task with.
+    *   **Return Value:** `ActorCommand<T>`: A command that signals an error-based termination of the actor.
+    *   **Behavior:** When this command is processed by the VM, it will yield a `TASK_FAIL` descriptor with the provided error, leading the runner to finalize the actor's execution as failed. No further commands within the current actor definition will be processed.
+    *   **Example:**
+        ```typescript
+        act((self, { outbox, fail }) => sequence(() => [
+          // Some operation that might lead to an error condition
+          whenState(
+            readState(someStateHandle, state => state.isInvalid),
+            fail(new Error("Invalid state encountered.")),
+            send(outbox, { type: "PROCEEDING" })
+          )
+        ]))
+        ```
+
 ### Command combinators
 
-*   **`send<T>(target: ActorHandle<T>, message: T | StateValueResolver<T>) -> ActorCommand<T, HandlerAction<T>>`**
+*   **`send<T, TTarget>(target: ActorHandle<TTarget>, message: ValueRef<TTarget>): SendAction<T, TTarget>`**
     *   **Description:** Immediately yields the specified message (or a message resolved from state) from the actor's iterator. The message is automatically wrapped in a `HandlerAction.Send(target, message)` internally.
     *   **Type Parameters:**
-        *   `T`: The union type of messages that the `target` actor can receive.
+        *   `T`: The message type of the actor definition, for command type consistency.
+        *   `TTarget`: The union type of messages that the `target` actor can receive.
     *   **Parameters:**
-        *   `target: ActorHandle<T>`: The handle of the actor to send the message to.
-        *   `message: T | StateValueResolver<T>`: The message to send, or a `StateValueResolver` that will produce the message.
-    *   **Return Value:** `ActorCommand<T, HandlerAction<T>>`: A command that, when executed, will send the message.
-    *   **Behavior:** If `message` is a `StateValueResolver`, it's resolved using the relevant state. The actor then yields `[HandlerAction.Send(target, resolvedMessage)]`. Execution continues immediately.
+        *   `target: ActorHandle<TTarget>`: The handle of the actor to send the message to.
+        *   `message: ValueRef<TTarget>`: The message to send.
+    *   **Return Value:** `SendAction<T, TTarget>`: A command that, when executed, will send the message.
+    *   **Behavior:** The actor yields `[HandlerAction.Send(target, message)]`. Execution continues immediately.
     *   **Example:**
         ```typescript
         // Literal message
@@ -384,17 +434,17 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         )
         ```
 
-*   **`kill<T>(target: ActorHandle<T>) -> ActorCommand<unknown>`**
+*   **`kill<T>(target: ActorHandle<unknown>): KillAction<T>`**
     *   **Description:** Immediately yields a `HandlerAction.Kill` for the specified `target` actor handle.
     *   **Type Parameters:**
-        *   `T`: The message type of the actor being killed. This is often `unknown` if the specific message type isn't relevant to the kill operation itself.
+        *   `T`: The message type of the actor definition, for command type consistency.
     *   **Parameters:**
-        *   `target: ActorHandle<T>`: The handle of the actor to kill.
-    *   **Return Value:** `ActorCommand<unknown>`: A command that, when executed, will kill the target actor.
+        *   `target: ActorHandle<unknown>`: The handle of the actor to kill.
+    *   **Return Value:** `KillAction<T>`: A command that, when executed, will kill the target actor.
     *   **Behavior:** The actor's underlying async generator yields `[HandlerAction.Kill(target)]`.
     *   **Example:**
         ```typescript
-        actions(() => [
+        sequence(() => [
           send(outbox, { type: 'INITIALIZING' }),
           delay(50),
           kill(self), 
@@ -402,18 +452,18 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         ])
         ```
 
-*   **`waitFor<T, TNarrowed extends T>(predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>, commandIfTrue?: (messageHandle: StateHandle<TNarrowed>) => ActorCommand<T>) -> ActorCommand<T>`**
+*   **`waitFor<T, TNarrowed extends T>(predicate: ValueRef<((message: T) => message is TNarrowed)>, commandIfTrue?: (messageHandle: StateHandle<TNarrowed>) => ActorCommand<T>): WaitForAction<T, TNarrowed>`**
     *   **Description:** Pauses actor execution until an incoming message satisfies the `predicate`. If a `commandIfTrue` is provided, it's invoked with a `StateHandle` for the consumed message (type-narrowed). The factory returns a command to be executed. To access message fields within the factory, use `readState(messageHandle, msg => ...)`. The `messageHandle` is temporary and valid only within the `commandIfTrue` callback.
     *   **Type Parameters:**
         *   `T`: The general union type of messages the actor can receive.
         *   `TNarrowed extends T`: A narrowed subtype of `T`, used when the `predicate` acts as a type guard.
     *   **Parameters:**
-        *   `predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>`: A function or a `StateValueResolver` for a function that evaluates an incoming message. If it's a type guard, `TNarrowed` will be the type of the message if the predicate returns `true`.
+        *   `predicate: ValueRef<((message: T) => message is TNarrowed)>`: A function that evaluates an incoming message. If it's a type guard, `TNarrowed` will be the type of the message if the predicate returns `true`.
         *   `commandIfTrue?: (messageHandle: StateHandle<TNarrowed>) => ActorCommand<T>`: An optional factory function called if the `predicate` returns `true`. It receives a `StateHandle` for the consumed (and potentially type-narrowed) message and must return an `ActorCommand` to be executed.
-    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will wait for and process a message according to the predicate.
+    *   **Return Value:** `WaitForAction<T, TNarrowed>`: A command that, when executed, will wait for and process a message according to the predicate.
     *   **Behavior:**
-        1.  Actor execution pauses. If `predicate` is a `StateValueResolver`, it's resolved.
-        2.  On message arrival, evaluate `resolvedPredicate(message)`.
+        1.  Actor execution pauses.
+        2.  On message arrival, evaluate `predicate(message)`.
         3.  If `true`, calls `commandIfTrue(messageHandle)` and executes the returned command.
         4.  If `false`, the command is not executed, and the actor continues to the next instruction.
     *   **Example:**
@@ -437,14 +487,14 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         )
         ```
 
-*   **`delay<T>(durationMs: number | StateValueResolver<number>) -> ActorCommand<T>`**
-    *   **Description:** Pauses execution for the specified duration. This duration can be a literal `number` (in milliseconds) or a `StateValueResolver<number>` to dynamically determine the delay from state at runtime.
+*   **`delay<T>(durationMs: ValueRef<number>): DelayAction<T>`**
+    *   **Description:** Pauses execution for the specified duration (in milliseconds).
     *   **Type Parameters:**
         *   `T`: The message type of the actor definition. This is used for consistency with other commands but doesn't directly affect the `delay` operation itself.
     *   **Parameters:**
-        *   `durationMs: number | StateValueResolver<number>`: The duration to wait in milliseconds, or a `StateValueResolver` that will produce this duration.
-    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will pause the actor for the specified duration.
-    *   **Behavior:** If `durationMs` is a `StateValueResolver`, it's resolved. The actor then waits for the resolved duration. Commands in a sequence are executed sequentially; for instance, a `delay` command will fully complete before any subsequent command (like `waitFor` or `when`) begins execution. Messages arriving from external sources while a `delay` (or any other non-message-consuming command) is active are typically buffered by the underlying actor system and will be processed by the next relevant message-consuming command (e.g., `waitFor`, `when`) once it becomes active.
+        *   `durationMs: ValueRef<number>`: The duration to wait in milliseconds.
+    *   **Return Value:** `DelayAction<T>`: A command that, when executed, will pause the actor for the specified duration.
+    *   **Behavior:** The actor waits for the duration specified by `durationMs`. Commands in a sequence are executed sequentially; for instance, a `delay` command will fully complete before any subsequent command (like `waitFor` or `when`) begins execution. Messages arriving from external sources while a `delay` (or any other non-message-consuming command) is active are typically buffered by the underlying actor system and will be processed by the next relevant message-consuming command (e.g., `waitFor`, `when`) once it becomes active.
     *   **Example:**
         ```typescript
         // Literal duration
@@ -456,12 +506,12 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         )
         ```
 
-*   **`noop<T>() -> ActorCommand<T>`**
+*   **`noop<T>(): NoopAction<T>`**
     *   **Description:** A no-operation command.
     *   **Type Parameters:**
         *   `T`: The message type of the actor definition, for command type consistency.
     *   **Parameters:** None.
-    *   **Return Value:** `ActorCommand<T>`: A command that performs no action when executed.
+    *   **Return Value:** `NoopAction<T>`: A command that performs no action when executed.
     *   **Behavior:** The runner skips this command.
     *   **Example:**
         ```typescript
@@ -472,27 +522,27 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         )
         ```
 
-*   **`actions<T>(commands: (controls: { done: () => ActorCommand<T> }) => Array<ActorCommand<T>>)`**
-    *   **Description:** Executes a sequence of commands. The factory function receives `controls.done()` which can be called to terminate the current `actions` block early.
+*   **`sequence<T>(commandsFactory: (controls: { done: () => ActorCommand<T> }) => Array<ActorCommand<T>>): SequenceAction<T>`**
+    *   **Description:** Executes a sequence of commands returned by the `commandsFactory`. The factory function receives a `controls` object with a `done()` method, which returns a command that can be executed to terminate the current `sequence` block early.
     *   **Type Parameters:**
         *   `T`: The message type of the actor definition, for command type consistency within the sequence.
     *   **Parameters:**
-        *   `commands: (controls: { done: () => ActorCommand<T> }) => Array<ActorCommand<T>>`: A factory function that returns an array of `ActorCommand<T>` to be executed in sequence. It receives a `controls` object with a `done` function that can be called to exit the sequence prematurely.
-    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will run the sequence of provided commands.
-    *   **Behavior:** Executes commands in the provided order. If `controls.done()` is called, execution of the current `actions` block halts, and control passes to the command following the `actions` block. If `done()` is not called, the sequence completes after the last command in the array, and then control proceeds.
+        *   `commandsFactory: (controls: { done: () => ActorCommand<T> }) => Array<ActorCommand<T>>`: A factory function that returns an array of `ActorCommand<T>` to be executed in sequence. It receives a `controls` object containing a `done` function. Executing the command generated by `controls.done()` will cause the sequence to terminate prematurely.
+    *   **Return Value:** `SequenceAction<T>`: A command that, when executed, will run the sequence of commands returned by the factory.
+    *   **Behavior:** Executes commands returned by the factory in the provided order. If the command generated by `controls.done()` is executed, execution of the current `sequence` block halts, and control passes to the command following the `sequence` block. If the factory completes without executing `controls.done()`, the sequence completes after the last command in the array, and then control proceeds.
     *   **Example:** (See various examples throughout)
 
-*   **`withState<S, T>(initialState: () => S | StateValueResolver<() => S>, factory: (stateHandle: StateHandle<S>) => ActorCommand<T>)`**
+*   **`withState<T, S>(initialState: ValueRef<() => S>, factory: (stateHandle: StateHandle<S>) => ActorCommand<T>): WithStateAction<T, S>`**
     *   **Description:** Defines a stateful command scope. It creates an initial state and provides a `stateHandle` to the `factory` function. The `factory` returns a command that operates within this state scope.
     *   **Type Parameters:**
-        *   `S`: The type of the state being managed within this scope.
         *   `T`: The message type of the actor definition, for command type consistency of the command returned by the `factory`.
+        *   `S`: The type of the state being managed within this scope.
     *   **Parameters:**
-        *   `initialState: () => S | StateValueResolver<() => S>`: A function that returns the initial state value, or a `StateValueResolver` for such a function. This function is invoked to establish the initial state for this scope.
+        *   `initialState: ValueRef<() => S>`: A function that returns the initial state value.
         *   `factory: (stateHandle: StateHandle<S>) => ActorCommand<T>`: A factory function that receives a `StateHandle<S>` for the newly created state and must return an `ActorCommand<T>` that will operate within this state's context.
-    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, establishes a state scope and runs the command returned by the `factory`.
+    *   **Return Value:** `WithStateAction<T, S>`: A command that, when executed, establishes a state scope and runs the command returned by the `factory`.
     *   **Behavior:**
-        1.  Invokes `initialState()` to get the state value (resolving it first if it's a `StateValueResolver`).
+        1.  Invokes `initialState()` to get the state value.
         2.  Creates a `stateHandle` for this state.
         3.  Invokes `factory(stateHandle)` to get the command body for this stateful block.
         4.  Commands like `modifyState`, `readState`, and `computeState` use this `stateHandle`.
@@ -511,17 +561,17 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         ));
         ```
 
-*   **`modifyState<S, T>(stateHandle: StateHandle<S>, updater: (currentState: S) => S) -> ActorCommand<T>`**
+*   **`modifyState<T, S>(stateHandle: StateHandle<S>, updater: (currentState: S) => S): ModifyStateAction<T, S>`**
     *   **Description:** Synchronously updates the state associated with `stateHandle`.
     *   **Type Parameters:**
-        *   `S`: The type of the state being modified.
         *   `T`: The message type of the actor definition, for command type consistency. It does not directly affect the state modification itself.
+        *   `S`: The type of the state being modified.
     *   **Parameters:**
         *   `stateHandle: StateHandle<S>`: The handle to the state that needs to be updated.
         *   `updater: (currentState: S) => S`: A function that takes the current state `S` and returns the new state `S`.
-    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will update the specified state.
+    *   **Return Value:** `ModifyStateAction<T, S>`: A command that, when executed, will update the specified state.
     *   **Behavior:** Retrieves current state, calls `updater`, updates state with the new value.
-    *   **Example (within `withState` -> `actions`):**
+    *   **Example (within `withState` -> `sequence`):**
         ```typescript
         withState(() => ({ count: 0 }), stateHandle =>
           sequence<MyMessage>([ 
@@ -530,58 +580,16 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         )
         ```
 
-*   **`readState<S, V>(stateHandle: StateHandle<S>, selector: (currentState: S) => V): StateValueResolver<V>`**
-    *   **Description:** Creates a `StateValueResolver`. This is not a command itself, but a helper to produce a placeholder that is dynamically resolved at runtime to retrieve a value from state. This resolved value is then used as an argument to another command (e.g., `send`, `delay`).
-    *   **Type Parameters:**
-        *   `S`: The type of the state being read from.
-        *   `V`: The type of the value selected from the state.
-    *   **Parameters:**
-        *   `stateHandle: StateHandle<S>`: The handle to the state from which to read.
-        *   `selector: (currentState: S) => V`: A function that takes the current state `S` and returns a selected value `V`.
-    *   **Return Value:** `StateValueResolver<V>`: An opaque resolver object that, when used by a command, will provide the value selected from the state at the time of resolution.
-    *   **Behavior:** Returns an opaque `StateValueResolver` object containing the `stateHandle` and the `selector`. The command execution engine uses this to fetch the actual value from state when needed.
-    *   **Example:**
-        ```typescript
-        // Used with send:
-        send(outbox, readState(dataHandle, s => ({ type: "CURRENT_DATA", payload: s.info })));
-
-        // Used with delay:
-        delay(readState(configHandle, s => s.timeoutMs));
-        ```
-
-*   **`computeState<S extends unknown[], V>(handles: Readonly<{[K in keyof S]: StateHandle<S[K]>}>, computer: (...values: S) => R): StateValueResolver<R>`**
-    *   **Description:** Creates a `StateValueResolver` for a derived value `R`. It takes a tuple of `StateHandle`s and a `computer` function.
-    *   **Type Parameters:**
-        *   `S`: A tuple type representing the types of the states managed by the input `handles` (e.g., `[StateType1, StateType2]`).
-        *   `V`: The type of the value returned by the `computer` function. *Note: The original signature uses `R` for the return type of `computer` and the `StateValueResolver`. This will be updated to `V` for consistency if `R` was a typo, or clarified if `R` is distinct.* Assuming `R` is the intended return type.
-        *   `R`: The type of the value returned by the `computer` function and consequently the type of the resolved value.
-    *   **Parameters:**
-        *   `handles: Readonly<{[K in keyof S]: StateHandle<S[K]>}>`: A read-only array (tuple) of `StateHandle`s. Each handle corresponds to a state that will be an input to the `computer` function.
-        *   `computer: (...values: S) => R`: A function that takes the resolved values of the states (in the same order as the `handles` array) and returns a computed value `R`.
-    *   **Return Value:** `StateValueResolver<R>`: An opaque resolver object that, when used by a command, will provide the computed value `R` at the time of resolution.
-    *   **Behavior:** When resolved by the interpreter:
-        1.  Each `StateHandle` in `handles` is resolved to its current state value.
-        2.  The `computer` function is called with these resolved state values in the same order as the handles.
-        3.  The return value of `computer` is the result of this `computeState` operation, wrapped as a `StateValueResolver`.
-    *   **Example:**
-        ```typescript
-        const greetingResolver = computeState(
-          [appStateHandle, userPrefsHandle],
-          (appState, userPrefs) => 
-            `Hello, ${appState.name}! Your lang is ${userPrefs.preferredLang} on theme ${appState.settings.theme}.`
-        );
-        ```
-
-*   **`whenState<T>(predicateResolver: StateValueResolver<boolean>, commandIfTrue: ActorCommand<T>, commandIfFalse?: ActorCommand<T>): ActorCommand<T>`**
-    *   **Description:** Conditionally executes a command based on a `StateValueResolver<boolean>`. The `predicateResolver` is typically created using `readState` (for single state dependency) or `computeState` (for multiple state dependencies).
+*   **`whenState<T>(predicateResolver: ValueRef<boolean>, commandIfTrue: ActorCommand<T>, commandIfFalse?: ActorCommand<T>): WhenStateAction<T>`**
+    *   **Description:** Conditionally executes a command based on a `ValueRef<boolean>`. The `predicateResolver` is typically created using `readState` (for single state dependency) or `computeState` (for multiple state dependencies), both of which return specific types of `ValueRef<boolean>`.
     *   **Type Parameters:**
         *   `T`: The message type of the actor definition, for command type consistency of the conditional commands.
     *   **Parameters:**
-        *   `predicateResolver: StateValueResolver<boolean>`: A `StateValueResolver` that resolves to a boolean value. This determines which command branch is executed.
+        *   `predicateResolver: ValueRef<boolean>`: The boolean predicate. This determines which command branch is executed.
         *   `commandIfTrue: ActorCommand<T>`: The command to execute if the `predicateResolver` resolves to `true`.
         *   `commandIfFalse?: ActorCommand<T>`: An optional command to execute if the `predicateResolver` resolves to `false`.
-    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will conditionally run one of the provided commands based on resolved state.
-    *   **Behavior:** Resolves `predicateResolver` to a boolean. Executes `commandIfTrue` or `commandIfFalse`.
+    *   **Return Value:** `WhenStateAction<T>`: A command that, when executed, will conditionally run one of the provided commands based on resolved state.
+    *   **Behavior:** Evaluates the `predicateResolver`. Executes `commandIfTrue` or `commandIfFalse` accordingly.
     *   **Example:**
         ```typescript
         withState(() => ({ status: 'idle', userRole: 'user' }), appStateHandle =>
@@ -603,20 +611,20 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         )
         ```
 
-*   **`when<T, TNarrowed extends T>(predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>, commandIfTrue: (messageHandle: StateHandle<TNarrowed>) => ActorCommand<T>, commandIfFalse?: (messageHandle: StateHandle<T>) => ActorCommand<T>): ActorCommand<T>`**
+*   **`when<T, TNarrowed extends T>(predicate: ValueRef<((message: T) => message is TNarrowed)>, commandIfTrue: (messageHandle: StateHandle<TNarrowed>) => ActorCommand<T>, commandIfFalse?: (messageHandle: StateHandle<T>) => ActorCommand<T>): ActorCommand<T>`**
     *   **Description:** Waits for the next incoming message from the actor's inbox, consumes it, and then conditionally executes a command returned by one of two factories based on the `predicate`. This command *always* consumes one message upon invocation, regardless of whether its predicate is state-based or directly uses the message content. The factories receive a `StateHandle<T>` for the incoming message (type-narrowed to `TNarrowed` for `commandIfTrue` if the predicate is a type guard), allowing message fields to be accessed via `readState(messageHandle, ...)`. This `messageHandle` is temporary and valid only within its respective factory callback (`commandIfTrue` or `commandIfFalse`).
     *   **Type Parameters:**
         *   `T`: The general union type of messages the actor can receive.
         *   `TNarrowed extends T`: A narrowed subtype of `T`, used when the `predicate` acts as a type guard.
     *   **Parameters:**
-        *   `predicate: ((message: T) => message is TNarrowed) | StateValueResolver<((message: T) => message is TNarrowed)>`: A function (often a type guard) or a `StateValueResolver` for a function that evaluates the incoming message.
+        *   `predicate: ValueRef<((message: T) => message is TNarrowed)>`: A function (often a type guard) that evaluates the incoming message.
         *   `commandIfTrue: (messageHandle: StateHandle<TNarrowed>) => ActorCommand<T>`: A factory function called if the `predicate` returns `true`. It receives a `StateHandle` for the consumed (and type-narrowed) message and must return an `ActorCommand` to be executed.
         *   `commandIfFalse?: (messageHandle: StateHandle<T>) => ActorCommand<T>`: An optional factory function called if the `predicate` returns `false`. It receives a `StateHandle` for the consumed message (not narrowed) and must return an `ActorCommand` to be executed.
     *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will consume a message and conditionally execute further commands based on that message.
     *   **Behavior:**
         1.  Awaits an incoming message and consumes it from the inbox.
         2.  Creates temporary `StateHandle` for the message.
-        3.  Evaluates `predicate` (resolving it first if it's a `StateValueResolver`) with the message.
+        3.  Evaluates `predicate(message)`.
         4.  If `true`, calls `commandIfTrue(messageHandle)` and executes the returned command.
         5.  If `false`, calls `commandIfFalse(messageHandle)` (if provided) and executes its result.
     *   **Example:**
@@ -631,14 +639,14 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
         ])
         ```
 
-*   **`whileLoop<T>(factory: (commands: { break: () => ActorCommand<T>, continue: () => ActorCommand<T> }) => ActorCommand<T>) -> ActorCommand<T>`**
-    *   **Description:** Creates a command that repeatedly executes a body command sequence provided by the `factory` function. Loop control (`break`, `continue`) is explicit via the `commands` object passed to the factory. State-dependent logic within the loop body should use `whenState` or `readState` with a lexically captured `StateHandle`.
+*   **`whileLoop<T>(factory: (controls: { break: () => ActorCommand<T>, continue: () => ActorCommand<T> }) => ActorCommand<T>): WhileLoopAction<T>`**
+    *   **Description:** Creates a command that repeatedly executes a body command sequence provided by the `factory` function. Loop control (`break`, `continue`) is explicit via the `controls` object passed to the factory. State-dependent logic within the loop body should use `whenState` or `readState` with a lexically captured `StateHandle`.
     *   **Type Parameters:**
         *   `T`: The message type of the actor definition, for command type consistency of the commands within the loop and the loop control commands.
     *   **Parameters:**
-        *   `factory: (commands: { break: () => ActorCommand<T>, continue: () => ActorCommand<T> }) => ActorCommand<T>`: A factory function that is called at the beginning of each loop iteration. It receives a `commands` object with `break` and `continue` functions (which return commands to control the loop) and must return an `ActorCommand<T>` representing the body of the loop for that iteration.
-    *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will run the loop.
-    *   **Behavior:** Executes the command returned by `factory` repeatedly. `commands.break()` terminates the loop. `commands.continue()` immediately skips to the next iteration, re-evaluating the factory. If the command sequence returned by the `factory` completes without an explicit `commands.break()` or `commands.continue()` being called, the loop implicitly continues to the next iteration.
+        *   `factory: (controls: { break: () => ActorCommand<T>, continue: () => ActorCommand<T> }) => ActorCommand<T>`: A factory function that is called at the beginning of each loop iteration. It receives a `controls` object with `break` and `continue` functions (which return commands to control the loop) and must return an `ActorCommand<T>` representing the body of the loop for that iteration.
+    *   **Return Value:** `WhileLoopAction<T>`: A command that, when executed, will run the loop.
+    *   **Behavior:** Executes the command returned by `factory` repeatedly. Executing the command returned by `controls.break()` terminates the loop. Executing the command returned by `controls.continue()` immediately skips to the next iteration, re-evaluating the factory. If the command sequence returned by the `factory` completes without an explicit `controls.break()` or `controls.continue()` being executed, the loop implicitly continues to the next iteration.
     *   **Example:**
         ```typescript
         withState(() => ({ count: 0 }), handle =>
@@ -663,4 +671,104 @@ This cooperative model allows the VM's internal logic to remain synchronous and 
             send(outbox, { type: 'LOOP_ENDED' })
           ])
         )
+        ```
+
+*   **`spawn<T, I, O>(factory: ActorFactory<ActorHandle<I>, I, O>, next: (handle: SpawnedActorResolver<I>) => ActorCommand<T>): SpawnAction<T, I, O>`**
+    *   **Description:** Creates a command to spawn a new child actor and then execute a subsequent command that can use the child actor's handle. The `factory` argument is the definition of the child actor. The `next` function is a callback that receives the `ActorHandle` of the newly spawned child and must return an `ActorCommand` (typically for the parent actor) to be executed after the child is successfully spawned.
+    *   **Type Parameters:**
+        *   `T`: The message type of the parent actor's definition (the context where `spawn` is used).
+        *   `I`: The input message type of the child actor being spawned.
+        *   `O`: The output message type of the child actor being spawned.
+    *   **Parameters:**
+        *   `factory: ActorFactory<ActorHandle<I>, I, O>`: The factory function or `ActorDefinition` for the child actor to be spawned. This is typically the result of calling `act<I>(...)`.
+        *   `next: (handle: SpawnedActorResolver<I>) => ActorCommand<T>`: A callback function that is invoked after the child actor has been successfully spawned. It receives a `SpawnedActorResolver<I>` that refers to the `ActorHandle<I>` of the new child actor and must return an `ActorCommand<T>` to be executed by the parent actor. This is where you define what the parent does immediately after spawning the child (e.g., send it an initial message, store its handle, etc.).
+    *   **Return Value:** `SpawnAction<T, I, O>`: An `ActorCommand` that, when executed by the parent actor, will:
+        1.  Spawn the child actor defined by `factory`.
+        2.  Invoke the `next` callback with the child's handle.
+        3.  Execute the command returned by the `next` callback.
+    *   **Behavior:** When the `SpawnAction` is executed within a parent actor's command sequence (e.g., `sequence`), the runtime system first spawns the child actor. Once the child is active, the command returned by `next` is then executed by the parent, with the child actor's `ActorHandle` exposed via the `SpawnedActorResolver` accessor.
+    *   **Example:**
+        ```typescript
+        type ParentMsg = { type: 'CHILD_RESPONSE', data: string } | { type: 'INIT_CHILD' } | { type: 'CHILD_RESPONSE_RECEIVED' };
+        type ChildMsg = { type: 'GREET', from: string } | { type: 'RESPOND_TO_PARENT', payload: string };
+
+        // Define the child actor
+        const childActorDefinition = act<ChildMsg>((self, { outbox, complete }) =>
+          sequence<ChildMsg>(() => [
+            waitFor((msg): msg is Extract<ChildMsg, { type: 'GREET' }> => msg.type === 'GREET',
+              (msgHandle) =>
+                send(outbox, readState(msgHandle, (greetMsg) => ({ 
+                  type: 'RESPOND_TO_PARENT', 
+                  payload: `Hello ${greetMsg.from}! Child received your greeting.`
+                })))
+            ),
+            complete()
+          ])
+        );
+
+        // Define the parent actor
+        const parentActorDefinition = act<ParentMsg>((self, { outbox, complete }) =>
+          sequence<ParentMsg>(() => [
+            send(outbox, { type: 'INIT_CHILD' }),
+            spawn(
+              childActorDefinition,
+              (childHandle) =>
+                sequence(() => [
+                  send(childHandle, { type: 'GREET', from: 'ParentActor' }),
+                  waitFor((msg): msg is Extract<ParentMsg, { type: 'CHILD_RESPONSE' }> => msg.type === 'CHILD_RESPONSE',
+                    (msgHandle) =>
+                      sequence(() => [
+                        send(outbox, readState(msgHandle, (msg) => ({ type: 'CHILD_RESPONSE_RECEIVED', payload: msg.payload }))),
+                        complete() // Parent completes
+                      ])
+                  )
+                ])
+            ),
+            // Note: The parent might complete before or after the child,
+            // depending on the logic within the 'next' callback and child's behavior.
+          ])
+        );
+        ```
+
+### State accessors
+
+*   **`readState<S, V>(stateHandle: StateHandle<S>, selector: (currentState: S) => V): ReadStateValueResolver<S, V>`**
+    *   **Description:** Creates a placeholder operand that is dynamically resolved at runtime to retrieve a value derived from a single state variable, according to the provided `compute` function. The placeholder operand can be used as an argument to any command that accepts a `ValueRef<V>`.
+    *   **Type Parameters:**
+        *   `S`: The type of the state being read from.
+        *   `V`: The type of the value selected from the state.
+    *   **Parameters:**
+        *   `stateHandle: StateHandle<S>`: The handle to the state from which to read.
+        *   `selector: (currentState: S) => V`: A function that takes the current state `S` and returns a selected value `V`.
+    *   **Return Value:** `ReadStateValueResolver<S, V>`: An opaque resolver object (a specific kind of `ValueRef<V>`) that, when used by a command, will provide the value selected from the state at the time of resolution.
+    *   **Behavior:** Returns an opaque `ReadStateValueResolver<S, V>` object containing the `stateHandle` and the `selector`. The command execution engine uses this to fetch the actual value from state when needed.
+    *   **Example:**
+        ```typescript
+        // Used with send:
+        send(outbox, readState(dataHandle, s => ({ type: "CURRENT_DATA", payload: s.info })));
+
+        // Used with delay:
+        delay(readState(configHandle, s => s.timeoutMs));
+        ```
+
+*   **`computeState<S extends unknown[], R>(handles: Readonly<{[K in keyof S]: StateHandle<S[K]>}>, compute: (...values: S) => R): ComputeStateValueResolver<S, R>`**
+    *   **Description:** Creates a placeholder operand that is dynamically resolved at runtime to retrieve a value derived from multiple state variables, according to the provided `compute` function. The placeholder operand can be used as an argument to any command that accepts a `ValueRef<V>`.
+    *   **Type Parameters:**
+        *   `S`: A tuple type representing the types of the states managed by the input `handles` (e.g., `[StateType1, StateType2]`).
+        *   `R`: The type of the value returned by the `compute` function and consequently the type of the resolved value.
+    *   **Parameters:**
+        *   `handles: Readonly<{[K in keyof S]: StateHandle<S[K]>}>`: A read-only array (tuple) of `StateHandle`s. Each handle corresponds to a state that will be an input to the `compute` function.
+        *   `compute: (...values: S) => R`: A function that takes the resolved values of the states (in the same order as the `handles` array) and returns a computed value `R`.
+    *   **Return Value:** `ComputeStateValueResolver<S, R>`: An opaque resolver object (a specific kind of `ValueRef<R>`) that, when used by a command, will provide the computed value `R` at the time of resolution.
+    *   **Behavior:** When resolved by the interpreter:
+        1.  Each `StateHandle` in `handles` is resolved to its current state value.
+        2.  The `compute` function is called with these resolved state values in the same order as the handles.
+        3.  The return value of `compute` is the result of this `computeState` operation, encapsulated within the `ComputeStateValueResolver`.
+    *   **Example:**
+        ```typescript
+        const greetingResolver = computeState(
+          [appStateHandle, userPrefsHandle],
+          (appState, userPrefs) => 
+            `Hello, ${appState.name}! Your lang is ${userPrefs.preferredLang} on theme ${appState.settings.theme}.`
+        );
         ```
