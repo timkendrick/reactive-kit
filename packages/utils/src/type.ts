@@ -8,15 +8,16 @@ export function unreachable(value: never): never {
 
 export function noop(): void {}
 
-const PHANTOM_TYPE: unique symbol = undefined as never;
+/**
+ * Base Opaque Type using Branding
+ *
+ * This utility type helps create nominal types (opaque types)
+ * @template T The type to be branded
+ * @template B The brand identifier
+ */
+export type Brand<T, B> = T & { readonly [BRAND]: B };
 
-export interface PhantomType<T> {
-  [PHANTOM_TYPE]: T;
-}
-
-export function PhantomType<T>(): PhantomType<T> {
-  return undefined as never;
-}
+declare const BRAND: unique symbol;
 
 /**
  * Determine whether the two given types are equal.
@@ -25,6 +26,11 @@ export type IsEqual<A, B> =
   (<T>() => T extends (A & T) | T ? 1 : 2) extends <T>() => T extends (B & T) | T ? 1 : 2
     ? true
     : false;
+
+/**
+ * Assert that the given type is true.
+ */
+export type Assert<T extends true> = Extract<T, true>;
 
 /**
  * Simplify a compound intersection type for better readability
