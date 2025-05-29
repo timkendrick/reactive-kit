@@ -3,8 +3,8 @@ import {
   type AsyncTaskFactory,
   type AsyncTaskInbox,
   type AsyncTaskOutbox,
+  type AsyncTaskResult,
   type AsyncTaskType,
-  type HandlerResult,
 } from '@reactive-kit/actor';
 
 /**
@@ -26,7 +26,9 @@ import {
  */
 export function fromAsyncIteratorFactory<C, T>(
   type: AsyncTaskType,
-  factory: (config: C) => AsyncIterator<HandlerResult<T>, HandlerResult<T> | null, T | undefined>,
+  factory: (
+    config: C,
+  ) => AsyncIterator<AsyncTaskResult<T>, AsyncTaskResult<T> | null, T | undefined>,
 ): AsyncTaskFactory<C, never, T> {
   return {
     type,
@@ -35,7 +37,7 @@ export function fromAsyncIteratorFactory<C, T>(
       const iterator = factory(config);
       return async function (inbox: AsyncTaskInbox<T>, outbox: AsyncTaskOutbox<T>): Promise<void> {
         type InputResult = IteratorResult<T, null>;
-        type OutputResult = IteratorResult<HandlerResult<T>, HandlerResult<T> | null>;
+        type OutputResult = IteratorResult<AsyncTaskResult<T>, AsyncTaskResult<T> | null>;
         let currentInputTask: Promise<InputMessage<InputResult>> | null = null;
         let currentOutputTask: Promise<OutputMessage<OutputResult>> | null = null;
         // Subscribe to the inbox and output message streams

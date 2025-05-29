@@ -2,7 +2,7 @@ import {
   HandlerAction,
   type ActorHandle,
   type AsyncTaskFactory,
-  type HandlerResult,
+  type AsyncTaskResult,
 } from '@reactive-kit/actor';
 import { fromAsyncIteratorFactory } from '@reactive-kit/actor-utils';
 import type { AsyncTaskId } from '@reactive-kit/handler-utils';
@@ -39,7 +39,7 @@ export const TIME_TASK: TimeTaskFactory = fromAsyncIteratorFactory<
     }
   }
   return {
-    next(): Promise<IteratorResult<HandlerResult<TimeHandlerEmitMessage>>> {
+    next(): Promise<IteratorResult<AsyncTaskResult<TimeHandlerEmitMessage>>> {
       if (!activeInterval) {
         resultQueue.push(new Date());
         activeInterval = setInterval(() => onEmit(new Date()), interval);
@@ -56,16 +56,21 @@ export const TIME_TASK: TimeTaskFactory = fromAsyncIteratorFactory<
       })();
       return nextValue.then((value) => ({
         done: false,
-        value: [HandlerAction.Send(output, createTimeHandlerEmitMessage(taskId, value))],
+        value: [
+          HandlerAction.Send({
+            target: output,
+            message: createTimeHandlerEmitMessage(taskId, value),
+          }),
+        ],
       }));
     },
-    return(): Promise<IteratorResult<HandlerResult<TimeHandlerEmitMessage>>> {
+    return(): Promise<IteratorResult<AsyncTaskResult<TimeHandlerEmitMessage>>> {
       if (activeInterval != null) clearInterval(activeInterval);
       requestQueue.length = 0;
       resultQueue.length = 0;
       return Promise.resolve({ done: true, value: null });
     },
-    throw(): Promise<IteratorResult<HandlerResult<TimeHandlerEmitMessage>>> {
+    throw(): Promise<IteratorResult<AsyncTaskResult<TimeHandlerEmitMessage>>> {
       if (activeInterval != null) clearInterval(activeInterval);
       requestQueue.length = 0;
       resultQueue.length = 0;

@@ -1,13 +1,16 @@
 import {
+  ACTOR_HANDLE_TYPE,
   HandlerActionType,
   type Actor,
   type ActorCreator,
   type ActorFactory,
   type ActorHandle,
   type ActorType,
+  type AsyncActorFactory,
   type AsyncTask,
+  type AsyncTaskResult,
   type HandlerContext,
-  type HandlerResult,
+  type SyncActorFactory,
 } from '@reactive-kit/actor';
 import {
   AsyncQueue,
@@ -15,27 +18,27 @@ import {
   VARIANT,
   nonNull,
   subscribeAsyncIterator,
+  unreachable,
+  type EnumVariant,
   type GenericEnum,
 } from '@reactive-kit/utils';
 
 type ActorState<T> = Enum<{
-  [ActorStateType.Sync]: SyncActorState<T>;
-  [ActorStateType.Async]: AsyncActorState<T>;
+  [ActorStateType.Sync]: {
+    handle: AsyncSchedulerActorHandle<T>;
+    actor: Actor<T, T>;
+    context: AsyncSchedulerHandlerContext<T>;
+  };
+  [ActorStateType.Async]: {
+    handle: ActorHandle<T>;
+    actor: AsyncTask<T, T>;
+    inbox: AsyncQueue<T>;
+    outbox: AsyncQueue<AsyncTaskResult<T>>;
+  };
 }>;
 const enum ActorStateType {
   Sync = 'Sync',
   Async = 'Async',
-}
-interface SyncActorState<T> {
-  handle: ActorHandle<T>;
-  actor: Actor<T, T>;
-  context: SchedulerHandlerContext<T>;
-}
-interface AsyncActorState<T> {
-  handle: ActorHandle<T>;
-  actor: AsyncTask<T, T>;
-  inbox: AsyncQueue<T>;
-  outbox: AsyncQueue<HandlerResult<T>>;
 }
 interface GenericActorState extends GenericEnum<1> {
   instance: ActorState<this['T1']>;
@@ -47,12 +50,16 @@ const ActorState = Enum.create<GenericActorState>({
 
 type AsyncSchedulerPhase<T> = Enum<{
   [AsyncSchedulerPhaseType.Idle]: void;
+  [AsyncSchedulerPhaseType.Queued]: {
+    queue: Array<AsyncSchedulerCommand<T>>;
+  };
   [AsyncSchedulerPhaseType.Busy]: {
     queue: Array<AsyncSchedulerCommand<T>>;
   };
 }>;
 const enum AsyncSchedulerPhaseType {
   Idle = 'Idle',
+  Queued = 'Queued',
   Busy = 'Busy',
 }
 interface GenericAsyncSchedulerPhase extends GenericEnum<1> {
@@ -60,130 +67,272 @@ interface GenericAsyncSchedulerPhase extends GenericEnum<1> {
 }
 const AsyncSchedulerPhase = Enum.create<GenericAsyncSchedulerPhase>({
   [AsyncSchedulerPhaseType.Idle]: true,
+  [AsyncSchedulerPhaseType.Queued]: true,
   [AsyncSchedulerPhaseType.Busy]: true,
 });
 
-type AsyncSchedulerCommand<T> = Enum<{
-  Dispatch: {
-    target: SchedulerActorHandle<T>;
+export type AsyncSchedulerCommand<T> = Enum<{
+  [AsyncSchedulerCommandType.Send]: {
+    source: AsyncSchedulerActorHandle<T> | null;
+    target: AsyncSchedulerActorHandle<T>;
     message: T;
   };
-  Spawn: {
-    target: SchedulerActorHandle<T>;
-    actor: ActorCreator<unknown, T, T>;
+  [AsyncSchedulerCommandType.Spawn]: {
+    source: AsyncSchedulerActorHandle<T> | null;
+    target: AsyncSchedulerActorHandle<T>;
+    actor: ActorFactory<any, T, T>; // eslint-disable-line @typescript-eslint/no-explicit-any
+    config: unknown;
   };
-  Kill: {
+  [AsyncSchedulerCommandType.Kill]: {
+    source: AsyncSchedulerActorHandle<T> | null;
     target: ActorHandle<T>;
   };
+  [AsyncSchedulerCommandType.Fail]: {
+    source: AsyncSchedulerActorHandle<T> | null;
+    target: ActorHandle<T>;
+    error: unknown;
+  };
 }>;
+const enum AsyncSchedulerCommandType {
+  Send = 'Send',
+  Spawn = 'Spawn',
+  Kill = 'Kill',
+  Fail = 'Fail',
+}
 interface GenericAsyncSchedulerCommand extends GenericEnum<1> {
   instance: AsyncSchedulerCommand<this['T1']>;
 }
-const AsyncSchedulerCommand = Enum.create<GenericAsyncSchedulerCommand>({
-  Dispatch: true,
-  Spawn: true,
-  Kill: true,
+export const AsyncSchedulerCommand = Enum.create<GenericAsyncSchedulerCommand>({
+  [AsyncSchedulerCommandType.Send]: true,
+  [AsyncSchedulerCommandType.Spawn]: true,
+  [AsyncSchedulerCommandType.Kill]: true,
+  [AsyncSchedulerCommandType.Fail]: true,
 });
 
 export const ROOT_ACTOR_TYPE: ActorType = '@reactive-kit/async-scheduler/root';
 
 export class AsyncScheduler<T> implements AsyncIterator<T, undefined> {
+  private PHASE_IDLE: EnumVariant<AsyncSchedulerPhase<T>, AsyncSchedulerPhaseType.Idle> =
+    AsyncSchedulerPhase.Idle();
+
   private handlers: Map<unknown, ActorState<T>>;
   private phase: AsyncSchedulerPhase<T>;
-  private inputHandle: SchedulerActorHandle<T>;
-  private outputHandle: SchedulerActorHandle<T>;
+  private inputHandle: AsyncSchedulerActorHandle<T>;
+  private outputHandle: AsyncSchedulerActorHandle<T>;
   private outputQueue: AsyncQueue<T>;
-  private nextHandleId: number = 1;
+  private nextHandleId: number = 0;
+  private middleware: ((command: AsyncSchedulerCommand<T>) => void) | null;
 
-  public constructor(factory: (context: HandlerContext<T>) => ActorFactory<ActorHandle<T>, T, T>) {
-    this.phase = AsyncSchedulerPhase.Idle();
+  public constructor(
+    factory: (context: HandlerContext<T>) => ActorFactory<ActorHandle<T>, T, T>,
+    middleware?: (command: AsyncSchedulerCommand<T>) => void,
+  ) {
+    this.middleware = middleware ?? null;
+    this.phase = this.PHASE_IDLE;
     this.handlers = new Map();
-    const inputHandle = this.generateHandle<T>();
     const outputHandle = this.generateHandle<T>();
+    const inputHandle = this.generateHandle<T>();
     this.inputHandle = inputHandle;
     this.outputHandle = outputHandle;
     this.outputQueue = new AsyncQueue<T>();
     const context = this.createHandlerContext(inputHandle);
     const rootActor = factory(context);
     const spawnedActors = collectSpawnedActors(context);
-    this.handlers.set(
-      inputHandle,
-      this.spawnActor(
-        inputHandle,
-        rootActor.async
-          ? { actor: rootActor, config: outputHandle }
-          : { actor: rootActor, config: outputHandle },
-      ),
-    );
-    for (const [handle, spawner] of spawnedActors ?? []) {
-      this.handlers.set(handle, this.spawnActor(handle as SchedulerActorHandle<T>, spawner));
-    }
+    // Register the root actor and any child actors that were spawned within the root actor factory
+    const initActorSource = outputHandle;
+    this.enqueueCommands([
+      AsyncSchedulerCommand.Spawn({
+        source: initActorSource,
+        target: inputHandle,
+        actor: rootActor,
+        config: outputHandle,
+      }),
+      ...(Array.from(spawnedActors?.entries() ?? []).map(([handle, { actor, config }]) =>
+        AsyncSchedulerCommand.Spawn({
+          source: initActorSource,
+          target: handle as AsyncSchedulerActorHandle<T>,
+          actor,
+          config,
+        }),
+      ) ?? []),
+    ]);
+    // Process the initial commands
+    this.processCommands();
   }
 
   private spawnActor<C>(
-    handle: SchedulerActorHandle<T>,
-    spawner: ActorCreator<C, T, T>,
+    handle: AsyncSchedulerActorHandle<T>,
+    actor: ActorFactory<C, T, T>,
+    config: C,
   ): ActorState<T> {
-    switch (spawner.actor.async) {
-      case false: {
-        const actor = spawner.actor.factory(spawner.config, handle);
-        const context = this.createHandlerContext(handle);
-        return ActorState.Sync({ handle, actor, context });
-      }
+    switch (actor.async) {
       case true: {
-        const actor = spawner.actor.factory(spawner.config, handle);
-        const inbox = new AsyncQueue<T>();
-        const outbox = new AsyncQueue<HandlerResult<T>>();
-        subscribeHandlerEvents(actor, inbox, outbox, (results: HandlerResult<unknown>): void => {
-          if (!results || results.length === 0) return;
-          this.handleCommands(
-            results
-              .map((action) => {
-                switch (action[VARIANT]) {
-                  case HandlerActionType.Spawn: {
-                    return null;
-                  }
-                  case HandlerActionType.Kill: {
-                    const { target } = action;
-                    return AsyncSchedulerCommand.Kill({
-                      target: target as ActorHandle<T>,
-                    });
-                  }
-                  case HandlerActionType.Send: {
-                    const { target, message } = action;
-                    return AsyncSchedulerCommand.Dispatch({
-                      target: target as SchedulerActorHandle<T>,
-                      message: message as T,
-                    });
-                  }
-                }
-              })
-              .filter(nonNull),
-          );
-        });
-        return ActorState.Async({ handle, actor, inbox, outbox });
+        return this.spawnAsyncActor(handle, actor, config);
+      }
+      case false: {
+        return this.spawnSyncActor(handle, actor, config);
       }
     }
   }
 
-  private createHandlerContext<T>(handle: SchedulerActorHandle<T>): SchedulerHandlerContext<T> {
-    const generateHandle = this.generateHandle.bind(this);
-    return new SchedulerHandlerContext(handle, generateHandle);
+  private spawnSyncActor<C>(
+    handle: AsyncSchedulerActorHandle<T>,
+    { factory }: SyncActorFactory<C, T, T, Actor<T, T>>,
+    config: C,
+  ): ActorState<T> {
+    const actor = factory(config, handle);
+    const context = this.createHandlerContext(handle);
+    const initActions = typeof actor.init === 'function' ? actor.init(context) : null;
+    if (initActions && initActions.length > 0) {
+      const spawnedActors = collectSpawnedActors(context);
+      const commands = initActions
+        .map((action) => {
+          switch (action[VARIANT]) {
+            case HandlerActionType.Spawn: {
+              const { target } = action;
+              const spawner = spawnedActors?.get(target) ?? null;
+              if (!spawner) return null;
+              const { actor, config } = spawner;
+              return AsyncSchedulerCommand.Spawn({
+                source: handle,
+                target: target as AsyncSchedulerActorHandle<T>,
+                actor,
+                config,
+              });
+            }
+            case HandlerActionType.Send: {
+              const { target, message } = action;
+              return AsyncSchedulerCommand.Send({
+                source: handle,
+                target: target as AsyncSchedulerActorHandle<T>,
+                message,
+              });
+            }
+            case HandlerActionType.Kill: {
+              const { target } = action;
+              return AsyncSchedulerCommand.Kill({
+                source: handle,
+                target,
+              });
+            }
+            case HandlerActionType.Fail: {
+              const { target, error } = action;
+              return AsyncSchedulerCommand.Fail({
+                source: handle,
+                target,
+                error,
+              });
+            }
+            default: {
+              return unreachable(action);
+            }
+          }
+        })
+        .filter(nonNull);
+      // The current method is always invoked synchronously by the scheduler,
+      // there is no need to trigger a new command processing cycle after queueing the commands
+      this.enqueueCommands(commands);
+    }
+    return ActorState.Sync({ handle, actor, context });
   }
 
-  private generateHandle<T>(): SchedulerActorHandle<T> {
+  private spawnAsyncActor<C>(
+    handle: AsyncSchedulerActorHandle<T>,
+    { factory }: AsyncActorFactory<C, T, T>,
+    config: C,
+  ): ActorState<T> {
+    const actor = factory(config, handle);
+    const inbox = new AsyncQueue<T>();
+    const outbox = new AsyncQueue<AsyncTaskResult<T>>();
+    this.subscribeAsyncHandlerEvents(actor, inbox, outbox, (actions) => {
+      const commands = this.parseAsyncTaskResult(actions, handle);
+      // The current callback is invoked asynchronously, so after queueing the commands
+      // we need to trigger a new command processing cycle
+      this.enqueueCommands(commands);
+      this.processCommands();
+    });
+    return ActorState.Async({ handle, actor, inbox, outbox });
+  }
+
+  private subscribeAsyncHandlerEvents<I, O>(
+    handler: AsyncTask<I, O>,
+    inbox: AsyncQueue<I>,
+    outbox: AsyncQueue<AsyncTaskResult<O>>,
+    callback: (results: AsyncTaskResult<O>) => void,
+  ): Promise<void> {
+    return Promise.race([
+      this.subscribeHandlerMessages(handler, inbox, outbox),
+      subscribeAsyncIterator(outbox, callback).then(() => {}),
+    ]);
+  }
+  private subscribeHandlerMessages<I, O>(
+    handler: AsyncTask<I, O>,
+    inbox: AsyncQueue<I>,
+    outbox: AsyncQueue<AsyncTaskResult<O>>,
+  ): Promise<void> {
+    return handler(inbox, (actions) => outbox.push(actions));
+  }
+
+  private parseAsyncTaskResult(
+    actions: AsyncTaskResult<T>,
+    source: AsyncSchedulerActorHandle<T>,
+  ): Array<AsyncSchedulerCommand<T>> {
+    if (!actions || actions.length === 0) return [];
+    const commands = actions.map((action) => {
+      switch (action[VARIANT]) {
+        case HandlerActionType.Send: {
+          const { target, message } = action;
+          return AsyncSchedulerCommand.Send({
+            source,
+            target: target as AsyncSchedulerActorHandle<T>,
+            message,
+          });
+        }
+        case HandlerActionType.Kill: {
+          const { target } = action;
+          return AsyncSchedulerCommand.Kill({
+            source,
+            target,
+          });
+        }
+        case HandlerActionType.Fail: {
+          const { target, error } = action;
+          return AsyncSchedulerCommand.Fail({
+            source,
+            target,
+            error,
+          });
+        }
+        default: {
+          return unreachable(action);
+        }
+      }
+    });
+    return commands;
+  }
+
+  private createHandlerContext<T>(
+    handle: AsyncSchedulerActorHandle<T>,
+  ): AsyncSchedulerHandlerContext<T> {
+    const generateHandle = this.generateHandle.bind(this);
+    return new AsyncSchedulerHandlerContext(handle, generateHandle);
+  }
+
+  private generateHandle<T>(): AsyncSchedulerActorHandle<T> {
     const uid = this.nextHandleId++;
-    return new SchedulerActorHandle(uid);
+    return new AsyncSchedulerActorHandle(uid);
   }
 
   public dispatch(message: T): void {
     if (this.handlers.size === 0) return;
-    return this.handleCommands([
-      AsyncSchedulerCommand.Dispatch({
+    this.enqueueCommands([
+      AsyncSchedulerCommand.Send({
+        source: null,
         target: this.inputHandle,
         message,
       }),
     ]);
+    return this.processCommands();
   }
 
   public async next(): Promise<IteratorResult<T, undefined>> {
@@ -192,19 +341,37 @@ export class AsyncScheduler<T> implements AsyncIterator<T, undefined> {
     return result;
   }
 
-  private handleCommands(commands: Array<AsyncSchedulerCommand<T>>): void {
-    // If another dispatch is already in progress, push the actions onto the internal queue
-    if (this.phase[VARIANT] === 'Busy') {
-      this.phase.queue.push(...commands);
+  private enqueueCommands(commands: Array<AsyncSchedulerCommand<T>>): void {
+    if (commands.length === 0) return;
+    switch (this.phase[VARIANT]) {
+      case AsyncSchedulerPhaseType.Idle: {
+        this.phase = AsyncSchedulerPhase.Queued({ queue: commands });
+        break;
+      }
+      case AsyncSchedulerPhaseType.Queued:
+      case AsyncSchedulerPhaseType.Busy: {
+        this.phase.queue.push(...commands);
+        break;
+      }
+      default: {
+        return unreachable(this.phase);
+      }
+    }
+  }
+
+  private processCommands(): void {
+    // If there are no queued commands, or another dispatch is already ongoing, bail out
+    if (AsyncSchedulerPhase.Idle.is(this.phase) || AsyncSchedulerPhase.Busy.is(this.phase)) {
       return;
     }
-    const idlePhase = this.phase;
-    this.phase = AsyncSchedulerPhase.Busy({ queue: [...commands] });
+    // Instantiate the busy phase with the currently-queued commands
+    this.phase = AsyncSchedulerPhase.Busy({ queue: this.phase.queue });
     let command: AsyncSchedulerCommand<T> | undefined;
     // Iterate through all queued commands until the queue is exhausted
-    while (this.phase[VARIANT] === 'Busy' && (command = this.phase.queue.shift())) {
+    loop: while (AsyncSchedulerPhase.Busy.is(this.phase) && (command = this.phase.queue.shift())) {
+      if (this.middleware) this.middleware(command);
       switch (command[VARIANT]) {
-        case 'Dispatch': {
+        case AsyncSchedulerCommandType.Send: {
           const { message, target } = command;
           const handlerState = this.handlers.get(target);
           if (!handlerState) {
@@ -213,9 +380,9 @@ export class AsyncScheduler<T> implements AsyncIterator<T, undefined> {
           }
           switch (handlerState[VARIANT]) {
             case ActorStateType.Sync: {
-              const { actor, context } = handlerState;
+              const { actor, handle, context } = handlerState;
               // Handle the message immediately
-              const commands = this.invokeHandler(actor, context, message);
+              const commands = this.invokeHandler(actor, context, message, handle);
               this.phase.queue.push(...commands);
               break;
             }
@@ -229,45 +396,54 @@ export class AsyncScheduler<T> implements AsyncIterator<T, undefined> {
           }
           break;
         }
-        case 'Spawn': {
-          const { target, actor } = command;
+        case AsyncSchedulerCommandType.Spawn: {
+          const { target, actor, config } = command;
           if (this.handlers.has(target)) continue;
-          this.handlers.set(target, this.spawnActor(target, actor));
+          this.handlers.set(target, this.spawnActor(target, actor, config));
           break;
         }
-        case 'Kill': {
+        case AsyncSchedulerCommandType.Kill:
+        case AsyncSchedulerCommandType.Fail: {
           const { target } = command;
           const handlerState = this.handlers.get(target);
           if (!handlerState) continue;
-          this.handlers.delete(target);
-          if (handlerState[VARIANT] === ActorStateType.Async) {
+          if (ActorState.Async.is(handlerState)) {
             handlerState.inbox.return();
             handlerState.outbox.return();
           }
+          this.handlers.delete(target);
+          if (this.handlers.size === 0) {
+            this.outputQueue.return();
+            break loop;
+          }
           break;
+        }
+        default: {
+          return unreachable(command);
         }
       }
     }
-    this.phase = idlePhase;
-    if (this.handlers.size === 0) this.outputQueue.return();
+    this.phase = this.PHASE_IDLE;
   }
 
   private invokeHandler(
     actor: Actor<T, T>,
-    context: SchedulerHandlerContext<T>,
+    context: AsyncSchedulerHandlerContext<T>,
     message: T,
+    source: AsyncSchedulerActorHandle<T> | null,
   ): Array<AsyncSchedulerCommand<T>> {
     const results = actor.handle(message, context);
-    const spawnedActors = collectSpawnedActors(context);
     if (!results) return [];
+    const spawnedActors = collectSpawnedActors(context);
     const commands = new Array<AsyncSchedulerCommand<T>>();
     for (const action of results) {
       switch (action[VARIANT]) {
         case HandlerActionType.Send: {
           const { target, message } = action;
-          const command = AsyncSchedulerCommand.Dispatch({
-            target: target as SchedulerActorHandle<T>,
-            message: message as T,
+          const command = AsyncSchedulerCommand.Send({
+            source,
+            target: target as AsyncSchedulerActorHandle<T>,
+            message,
           });
           commands.push(command);
           break;
@@ -275,11 +451,14 @@ export class AsyncScheduler<T> implements AsyncIterator<T, undefined> {
         case HandlerActionType.Spawn: {
           const { target } = action;
           if (!spawnedActors) continue;
-          const actor = spawnedActors.get(target);
-          if (!actor) continue;
+          const spawner = spawnedActors.get(target);
+          if (!spawner) continue;
+          const { actor, config } = spawner;
           const command = AsyncSchedulerCommand.Spawn({
-            target: target as SchedulerActorHandle<T>,
-            actor: actor as ActorCreator<unknown, T, T>,
+            source,
+            target: target as AsyncSchedulerActorHandle<T>,
+            actor,
+            config,
           });
           commands.push(command);
           break;
@@ -287,10 +466,24 @@ export class AsyncScheduler<T> implements AsyncIterator<T, undefined> {
         case HandlerActionType.Kill: {
           const { target } = action;
           const command = AsyncSchedulerCommand.Kill({
-            target: target as ActorHandle<T>,
+            source,
+            target,
           });
           commands.push(command);
           break;
+        }
+        case HandlerActionType.Fail: {
+          const { target, error } = action;
+          const command = AsyncSchedulerCommand.Fail({
+            source,
+            target,
+            error,
+          });
+          commands.push(command);
+          break;
+        }
+        default: {
+          return unreachable(action);
         }
       }
     }
@@ -298,28 +491,7 @@ export class AsyncScheduler<T> implements AsyncIterator<T, undefined> {
   }
 }
 
-function subscribeHandlerEvents<I, O>(
-  handler: AsyncTask<I, O>,
-  inbox: AsyncQueue<I>,
-  outbox: AsyncQueue<HandlerResult<O>>,
-  callback: (results: HandlerResult<unknown>) => void,
-): Promise<void> {
-  return Promise.race([
-    subscribeHandlerMessages(handler, inbox, outbox),
-    subscribeAsyncIterator(outbox, callback).then(() => {}),
-  ]);
-}
-
-function subscribeHandlerMessages<I, O>(
-  handler: AsyncTask<I, O>,
-  inbox: AsyncQueue<I>,
-  outbox: AsyncQueue<HandlerResult<O>>,
-): Promise<void> {
-  return handler(inbox, (actions) => outbox.push(actions));
-}
-
-class SchedulerActorHandle<T> implements ActorHandle<T> {
-  public _type: ActorHandle<T>['_type'] = undefined as never;
+class AsyncSchedulerActorHandle<T> implements ActorHandle<T> {
   private uid: number;
 
   public constructor(uid: number) {
@@ -329,23 +501,27 @@ class SchedulerActorHandle<T> implements ActorHandle<T> {
   public id(): number {
     return this.uid;
   }
+
+  public get [ACTOR_HANDLE_TYPE](): never {
+    return undefined as never;
+  }
 }
 
-class SchedulerHandlerContext<T> implements HandlerContext<T> {
-  private handle: SchedulerActorHandle<T>;
-  private generateHandle: <T>() => SchedulerActorHandle<T>;
+class AsyncSchedulerHandlerContext<T> implements HandlerContext<T> {
+  private handle: AsyncSchedulerActorHandle<T>;
+  private generateHandle: <T>() => AsyncSchedulerActorHandle<T>;
   public readonly spawned = new Array<{
     // These are not typed because the spawned child might expect different message types from the parent,
     // however this is incompatible with the type system of the scheduler, which assumes all actors have the same message type
     /* eslint-disable @typescript-eslint/no-explicit-any */
-    handle: SchedulerActorHandle<any>;
+    handle: AsyncSchedulerActorHandle<any>;
     actor: ActorCreator<any, any, any>;
     /* eslint-enable @typescript-eslint/no-explicit-any */
   }>();
 
   public constructor(
-    handle: SchedulerActorHandle<T>,
-    generateHandle: <T>() => SchedulerActorHandle<T>,
+    handle: AsyncSchedulerActorHandle<T>,
+    generateHandle: <T>() => AsyncSchedulerActorHandle<T>,
   ) {
     this.handle = handle;
     this.generateHandle = generateHandle;
@@ -363,7 +539,7 @@ class SchedulerHandlerContext<T> implements HandlerContext<T> {
 }
 
 function collectSpawnedActors<T>(
-  context: SchedulerHandlerContext<T>,
+  context: AsyncSchedulerHandlerContext<T>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Map<ActorHandle<T>, ActorCreator<any, any, any>> | null {
   const { spawned } = context;
