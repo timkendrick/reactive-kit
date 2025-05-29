@@ -7,6 +7,7 @@ module.exports = {
       },
     ],
     'no-empty-pattern': 'off',
+    'no-useless-catch': 'off',
     'no-warning-comments': [
       'warn',
       {
