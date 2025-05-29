@@ -20,31 +20,41 @@ describe(parallel, () => {
     {
       const input: Array<string> = ['A', 'B', 'C'];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, refContext: new Map() }];
+      const expected: PatternMatchResults<string> = [
+        { input, nextIndex: 3, refContext: new Map() },
+      ];
       expect(actual).toEqual(expected);
     }
     {
       const input: Array<string> = ['A', 'C', 'B'];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, refContext: new Map() }];
+      const expected: PatternMatchResults<string> = [
+        { input, nextIndex: 3, refContext: new Map() },
+      ];
       expect(actual).toEqual(expected);
     }
     {
       const input: Array<string> = ['B', 'A', 'C'];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, refContext: new Map() }];
+      const expected: PatternMatchResults<string> = [
+        { input, nextIndex: 3, refContext: new Map() },
+      ];
       expect(actual).toEqual(expected);
     }
     {
       const input: Array<string> = ['B', 'C', 'A'];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, refContext: new Map() }];
+      const expected: PatternMatchResults<string> = [
+        { input, nextIndex: 3, refContext: new Map() },
+      ];
       expect(actual).toEqual(expected);
     }
     {
       const input: Array<string> = ['C', 'A', 'B'];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, refContext: new Map() }];
+      const expected: PatternMatchResults<string> = [
+        { input, nextIndex: 3, refContext: new Map() },
+      ];
       expect(actual).toEqual(expected);
     }
     // Should not match if missing items or with extra items
@@ -63,7 +73,9 @@ describe(parallel, () => {
     {
       const input: Array<string> = ['A', 'B', 'C', 'D'];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<string> = [{ input, nextIndex: 3, refContext: new Map() }];
+      const expected: PatternMatchResults<string> = [
+        { input, nextIndex: 3, refContext: new Map() },
+      ];
       expect(actual).toEqual(expected);
     }
   });
@@ -97,7 +109,9 @@ describe(parallel, () => {
         { type: 'ERROR', priority: 'medium' },
         { type: 'INFO', priority: 'low' },
       ];
-      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 3, refContext: new Map() }];
+      const expected: PatternMatchResults<Message> = [
+        { input, nextIndex: 3, refContext: new Map() },
+      ];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
@@ -107,7 +121,9 @@ describe(parallel, () => {
         { type: 'INFO', priority: 'low' },
         { type: 'WARNING', priority: 'high' },
       ];
-      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 3, refContext: new Map() }];
+      const expected: PatternMatchResults<Message> = [
+        { input, nextIndex: 3, refContext: new Map() },
+      ];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
@@ -117,7 +133,9 @@ describe(parallel, () => {
         { type: 'WARNING', priority: 'high' },
         { type: 'ERROR', priority: 'medium' },
       ];
-      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 3, refContext: new Map() }];
+      const expected: PatternMatchResults<Message> = [
+        { input, nextIndex: 3, refContext: new Map() },
+      ];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
@@ -174,7 +192,9 @@ describe(parallel, () => {
         { type: 'Send', message: { type: 'PROGRESS' } },
         { type: 'Send', message: { type: 'UPDATE' } },
       ];
-      const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 2, refContext: new Map() }];
+      const expected: PatternMatchResults<HandlerAction> = [
+        { input, nextIndex: 2, refContext: new Map() },
+      ];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
@@ -184,7 +204,9 @@ describe(parallel, () => {
         { type: 'Send', message: { type: 'UPDATE' } },
         { type: 'Send', message: { type: 'PROGRESS' } },
       ];
-      const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 2, refContext: new Map() }];
+      const expected: PatternMatchResults<HandlerAction> = [
+        { input, nextIndex: 2, refContext: new Map() },
+      ];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
@@ -204,7 +226,9 @@ describe(parallel, () => {
         { type: 'Send', message: { type: 'UPDATE' } },
         { type: 'Send', message: { type: 'EXTRA' } },
       ];
-      const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 2, refContext: new Map() }];
+      const expected: PatternMatchResults<HandlerAction> = [
+        { input, nextIndex: 2, refContext: new Map() },
+      ];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }
@@ -239,7 +263,9 @@ describe(parallel, () => {
         { type: 'Send', message: { type: 'UPDATE' } },
         { type: 'Send', message: { type: 'END' } },
       ];
-      const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 3, refContext: new Map() }];
+      const expected: PatternMatchResults<HandlerAction> = [
+        { input, nextIndex: 3, refContext: new Map() },
+      ];
       const actual = pattern.match(initialMatchState(input));
       expect(actual).toEqual(expected);
     }

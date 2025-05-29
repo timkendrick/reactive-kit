@@ -15,7 +15,9 @@ describe(is, () => {
     {
       const input: Array<symbol> = [foo, bar, baz];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<symbol> = [{ input, nextIndex: 1, refContext: new Map() }];
+      const expected: PatternMatchResults<symbol> = [
+        { input, nextIndex: 1, refContext: new Map() },
+      ];
       expect(actual).toEqual(expected);
     }
   });

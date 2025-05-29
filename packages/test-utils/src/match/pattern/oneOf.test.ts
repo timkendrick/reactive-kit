@@ -14,13 +14,17 @@ describe(oneOf, () => {
     {
       const input = [1, 2, 3, 4, 5];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<number> = [{ input, nextIndex: 1, refContext: new Map() }];
+      const expected: PatternMatchResults<number> = [
+        { input, nextIndex: 1, refContext: new Map() },
+      ];
       expect(actual).toEqual(expected);
     }
     {
       const input = [2, 4, 6, 8, 10];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<number> = [{ input, nextIndex: 1, refContext: new Map() }];
+      const expected: PatternMatchResults<number> = [
+        { input, nextIndex: 1, refContext: new Map() },
+      ];
       expect(actual).toEqual(expected);
     }
   });

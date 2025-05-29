@@ -41,7 +41,9 @@ describe(repeat, () => {
         { type: 'COMPLETE' },
       ];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 5, refContext: new Map() }];
+      const expected: PatternMatchResults<Message> = [
+        { input, nextIndex: 5, refContext: new Map() },
+      ];
       expect(actual).toEqual(expected);
     }
 
@@ -125,7 +127,9 @@ describe(repeat, () => {
     {
       const input: Array<Message> = [{ type: 'START' }, { type: 'COMPLETE' }];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<Message> = [{ input, nextIndex: 2, refContext: new Map() }];
+      const expected: PatternMatchResults<Message> = [
+        { input, nextIndex: 2, refContext: new Map() },
+      ];
       expect(actual).toEqual(expected);
     }
 
@@ -178,7 +182,9 @@ describe(repeat, () => {
         { type: 'Send', message: { type: 'COMPLETE' } },
       ];
       const actual = pattern.match(initialMatchState(input));
-      const expected: PatternMatchResults<HandlerAction> = [{ input, nextIndex: 5, refContext: new Map() }];
+      const expected: PatternMatchResults<HandlerAction> = [
+        { input, nextIndex: 5, refContext: new Map() },
+      ];
       expect(actual).toEqual(expected);
     }
 
