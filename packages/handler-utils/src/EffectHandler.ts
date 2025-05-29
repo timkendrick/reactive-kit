@@ -138,7 +138,9 @@ export abstract class EffectHandler<
         : createEmitEffectValuesMessage({ updates: initialValuesByType });
 
     const initialValueActions =
-      initialValuesMessage != null ? [HandlerAction.Send(this.next, initialValuesMessage)] : [];
+      initialValuesMessage != null
+        ? [HandlerAction.Send({ target: this.next, message: initialValuesMessage })]
+        : [];
 
     const combinedActions = [...initialValueActions, ...actions];
     return combinedActions.length === 0 ? null : combinedActions;
@@ -171,6 +173,6 @@ export abstract class EffectHandler<
   ): HandlerAction<EffectHandlerOutputMessage> {
     const effectValues = new Map([[effectType, values]]);
     const emitMessage = createEmitEffectValuesMessage({ updates: effectValues });
-    return HandlerAction.Send(this.next, emitMessage);
+    return HandlerAction.Send({ target: this.next, message: emitMessage });
   }
 }

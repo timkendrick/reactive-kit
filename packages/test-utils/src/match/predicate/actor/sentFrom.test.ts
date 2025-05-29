@@ -12,9 +12,12 @@ describe('sentFrom', () => {
   it('should match the correct actor', () => {
     const sender = {} as ActorHandle<unknown>;
     const action: TestAction<SendHandlerAction<Message<string, string>>> = {
-      action: HandlerAction.Send({} as ActorHandle<Message<string, string>>, {
-        type: 'START',
-        payload: 'test',
+      action: HandlerAction.Send({
+        target: {} as ActorHandle<Message<string, string>>,
+        message: {
+          type: 'START',
+          payload: 'test',
+        },
       }),
       state: {},
       from: sender,
@@ -26,9 +29,12 @@ describe('sentFrom', () => {
   it('should not match the wrong actor', () => {
     const sender = {} as ActorHandle<unknown>;
     const action: TestAction<SendHandlerAction<Message<string, string>>> = {
-      action: HandlerAction.Send({} as ActorHandle<Message<string, string>>, {
-        type: 'START',
-        payload: 'test',
+      action: HandlerAction.Send({
+        target: {} as ActorHandle<Message<string, string>>,
+        message: {
+          type: 'START',
+          payload: 'test',
+        },
       }),
       state: {},
       from: {} as ActorHandle<unknown>,

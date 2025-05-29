@@ -159,19 +159,21 @@ export class EvaluateHandler
     );
     const subscribeEffectsAction =
       newlySubscribedEffects.size > 0
-        ? HandlerAction.Send(
-            this.next,
-            createSubscribeEffectsMessage({ effects: groupEffectsByType(newlySubscribedEffects) }),
-          )
+        ? HandlerAction.Send({
+            target: this.next,
+            message: createSubscribeEffectsMessage({
+              effects: groupEffectsByType(newlySubscribedEffects),
+            }),
+          })
         : null;
     const emitResultsAction =
       emittedValues.size > 0
-        ? HandlerAction.Send(
-            this.next,
-            createEmitEffectValuesMessage({
+        ? HandlerAction.Send({
+            target: this.next,
+            message: createEmitEffectValuesMessage({
               updates: new Map([[EFFECT_TYPE_EVALUATE, emittedValues]]),
             }),
-          )
+          })
         : null;
     const combinedActions = [
       ...(subscribeEffectsAction ? [subscribeEffectsAction] : []),
@@ -203,12 +205,12 @@ export class EvaluateHandler
     }
     const unsubscribeEffectsAction =
       newlyUnsubscribedEffects.size > 0
-        ? HandlerAction.Send(
-            this.next,
-            createUnsubscribeEffectsMessage({
+        ? HandlerAction.Send({
+            target: this.next,
+            message: createUnsubscribeEffectsMessage({
               effects: groupEffectsByType(newlyUnsubscribedEffects),
             }),
-          )
+          })
         : null;
     const combinedActions = unsubscribeEffectsAction ? [unsubscribeEffectsAction] : [];
     return combinedActions.length === 0 ? null : combinedActions;
@@ -269,30 +271,30 @@ export class EvaluateHandler
     }
     const subscribeEffectsAction =
       newlySubscribedEffects.size > 0
-        ? HandlerAction.Send(
-            this.next,
-            createSubscribeEffectsMessage({
+        ? HandlerAction.Send({
+            target: this.next,
+            message: createSubscribeEffectsMessage({
               effects: groupEffectsByType(newlySubscribedEffects),
             }),
-          )
+          })
         : null;
     const unsubscribeEffectsAction =
       newlyUnsubscribedEffects.size > 0
-        ? HandlerAction.Send(
-            this.next,
-            createUnsubscribeEffectsMessage({
+        ? HandlerAction.Send({
+            target: this.next,
+            message: createUnsubscribeEffectsMessage({
               effects: groupEffectsByType(newlyUnsubscribedEffects),
             }),
-          )
+          })
         : null;
     const emitResultsAction =
       emittedValues.size > 0
-        ? HandlerAction.Send(
-            this.next,
-            createEmitEffectValuesMessage({
+        ? HandlerAction.Send({
+            target: this.next,
+            message: createEmitEffectValuesMessage({
               updates: new Map([[EFFECT_TYPE_EVALUATE, emittedValues]]),
             }),
-          )
+          })
         : null;
     const combinedActions = [
       ...(subscribeEffectsAction ? [subscribeEffectsAction] : []),

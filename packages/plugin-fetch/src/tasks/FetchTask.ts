@@ -29,7 +29,10 @@ export const FETCH_TASK: FetchTaskFactory = fromCancelablePromiseFactory<
   const { signal } = controller;
   return {
     result: fetchRequest(effect.payload, signal).then((response) => [
-      HandlerAction.Send(output, createFetchHandlerResponseMessage(taskId, response)),
+      HandlerAction.Send({
+        target: output,
+        message: createFetchHandlerResponseMessage(taskId, response),
+      }),
     ]),
     abort: controller,
   };

@@ -10,9 +10,12 @@ describe('hasMessagePayload', () => {
   it('should match the correct message payload', () => {
     const predicate = (value: string) => value === 'test';
     const action: TestAction<SendHandlerAction<Message<string, string>>> = {
-      action: HandlerAction.Send({} as ActorHandle<Message<string, string>>, {
-        type: 'START',
-        payload: 'test',
+      action: HandlerAction.Send({
+        target: {} as ActorHandle<Message<string, string>>,
+        message: {
+          type: 'START',
+          payload: 'test',
+        },
       }),
       state: {},
       from: {} as ActorHandle<unknown>,
@@ -24,9 +27,12 @@ describe('hasMessagePayload', () => {
   it('should not match the wrong message payload', () => {
     const predicate = (value: string) => value === 'test';
     const action: TestAction<SendHandlerAction<Message<string, string>>> = {
-      action: HandlerAction.Send({} as ActorHandle<Message<string, string>>, {
-        type: 'START',
-        payload: 'wrong',
+      action: HandlerAction.Send({
+        target: {} as ActorHandle<Message<string, string>>,
+        message: {
+          type: 'START',
+          payload: 'wrong',
+        },
       }),
       state: {},
       from: {} as ActorHandle<unknown>,
