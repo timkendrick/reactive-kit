@@ -81,7 +81,7 @@ function renderEmpty(
   }
   return {
     type: 'empty',
-    node: node,
+    node,
     dom,
   };
 }
@@ -223,7 +223,7 @@ function renderNodeList(
   const endInsertionMarker = dom.end;
   return {
     type: 'list',
-    node: node,
+    node,
     dom,
     items: renderChildNodes(node, container, previousItems, endInsertionMarker),
   };

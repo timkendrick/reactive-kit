@@ -68,7 +68,7 @@ export function fetchRequest(
             return {
               success: false,
               error: new FetchResponseError(response),
-              response: response,
+              response,
             };
           },
           (err): FetchResponseState => ({
