@@ -11,11 +11,16 @@ type AsyncQueueState<T> = Enum<{
     // 'pull' queue (subscribers awaiting values)
     subscribers: Array<(value: IteratorResult<T, null>) => void>;
   };
+  [AsyncQueueStateType.Draining]: {
+    // outstanding 'push' queue (values awaiting retrieval)
+    values: Array<T>;
+  };
   [AsyncQueueStateType.Completed]: void;
 }>;
 const enum AsyncQueueStateType {
   AwaitingSubscribers = 'AwaitingSubscribers',
   AwaitingValues = 'AwaitingValues',
+  Draining = 'Draining',
   Completed = 'Completed',
 }
 interface GenericAsyncQueueState extends GenericEnum<1> {
@@ -24,6 +29,7 @@ interface GenericAsyncQueueState extends GenericEnum<1> {
 const AsyncQueueState = Enum.create<GenericAsyncQueueState>({
   [AsyncQueueStateType.AwaitingSubscribers]: true,
   [AsyncQueueStateType.AwaitingValues]: true,
+  [AsyncQueueStateType.Draining]: true,
   [AsyncQueueStateType.Completed]: true,
 });
 
@@ -52,6 +58,7 @@ export class AsyncQueue<T> implements AsyncIterator<T, null, undefined> {
         }
         break;
       }
+      case AsyncQueueStateType.Draining:
       case AsyncQueueStateType.Completed: {
         return;
       }
@@ -64,12 +71,16 @@ export class AsyncQueue<T> implements AsyncIterator<T, null, undefined> {
   public next(): Promise<IteratorResult<T, null>> {
     const state = this.state;
     switch (state[VARIANT]) {
-      case AsyncQueueStateType.AwaitingSubscribers: {
+      case AsyncQueueStateType.AwaitingSubscribers:
+      case AsyncQueueStateType.Draining: {
         // If there are values queued, emit the next queued value
         const value = state.values.shift()!;
         const isFinalQueuedValue = state.values.length === 0;
         if (isFinalQueuedValue) {
-          this.state = AsyncQueueState.AwaitingValues({ subscribers: [] });
+          const isDraining = state[VARIANT] === AsyncQueueStateType.Draining;
+          this.state = isDraining
+            ? AsyncQueueState.Completed()
+            : AsyncQueueState.AwaitingValues({ subscribers: [] });
         }
         return Promise.resolve({ done: false, value });
       }
@@ -90,7 +101,9 @@ export class AsyncQueue<T> implements AsyncIterator<T, null, undefined> {
     const state = this.state;
     switch (state[VARIANT]) {
       case AsyncQueueStateType.AwaitingSubscribers: {
-        this.state = AsyncQueueState.Completed();
+        const { values } = state;
+        this.state =
+          values.length > 0 ? AsyncQueueState.Draining({ values }) : AsyncQueueState.Completed();
         break;
       }
       case AsyncQueueStateType.AwaitingValues: {
@@ -100,6 +113,7 @@ export class AsyncQueue<T> implements AsyncIterator<T, null, undefined> {
         }
         break;
       }
+      case AsyncQueueStateType.Draining:
       case AsyncQueueStateType.Completed: {
         break;
       }
