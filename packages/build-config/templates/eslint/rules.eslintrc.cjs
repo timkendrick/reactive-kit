@@ -1,5 +1,6 @@
 module.exports = {
   rules: {
+    'no-console': 'error',
     'no-constant-condition': [
       'error',
       {
@@ -8,12 +9,14 @@ module.exports = {
     ],
     'no-empty-pattern': 'off',
     'no-useless-catch': 'off',
+    'no-useless-rename': 'error',
     'no-warning-comments': [
       'warn',
       {
         terms: ['fixme'],
       },
     ],
+    'object-shorthand': ['error', 'always'],
     'import/first': 'error',
     'import/order': [
       'error',
