@@ -824,33 +824,36 @@ This section describes the helper functions provided within the `helpers` object
         )
         ```
 
-*   **`spawn<T, I, O>(factory: ActorFactory<ActorHandle<I>, I, O>, next: (handle: SpawnedActorResolver<I>) => ActorCommand<T>): SpawnAction<T, I, O>`**
-    *   **Description:** Creates a command to spawn a new child actor and then execute a subsequent command that can use the child actor's handle. The `factory` argument expects a child actor definition (e.g. one created via the `act()` API). The `next` function is a callback that receives the `ActorHandle` of the newly spawned child and must return an `ActorCommand` that the parent actor will execute after the child actor has been spawned.
+*   **`spawn<T, C, I, O>(factory: ActorFactory<C, I, O>, config: C, next: (handle: SpawnedActorResolver<I>) => ActorCommand<T>): SpawnAction<T, C, I, O>`**
+    *   **Description:** Creates a command to spawn a new child actor and then execute a subsequent command that can use the child actor's handle. The `factory` argument expects a child actor definition (e.g. one created via the `act()` API). The `config` argument is the configuration to be passed to the child actor's factory. The `next` function is a callback that receives the `ActorHandle` of the newly spawned child and must return an `ActorCommand` that the parent actor will execute after the child actor has been spawned.
     *   **Type Parameters:**
         *   `T`: The message type of the parent actor's definition (the context where `spawn` is used).
+        *   `C`: The configuration type of the child actor being spawned. This is the type of the argument used to instantiate the child actor factory.
         *   `I`: The input message type of the child actor being spawned.
         *   `O`: The output message type of the child actor being spawned.
     *   **Parameters:**
-        *   `factory: ActorFactory<ActorHandle<I>, I, O>`: The factory function or `ActorDefinition` for the child actor to be spawned. takes as its configuration its own inbox handle. This is typically the result of calling `act<I>(...)`.
+        *   `factory: ActorFactory<C, I, O>`: The factory function or `ActorDefinition` for the child actor to be spawned. This is typically the result of calling `act<I>(...)`, however any valid actor factory can be provided.
+        *   `config: C`: The configuration to be passed to the child actor. This value will be used to instantiate the child actor factory function as its second argument. For a child actor that sends messages back to its parent, the `config` argument would typically be the parent's `self` handle or its `outbox` handle.
         *   `next: (handle: SpawnedActorResolver<I>) => ActorCommand<T>`: A callback function that returns a command that is executed after the child actor has been spawned. It receives a `SpawnedActorResolver<I>` that refers to the `ActorHandle<I>` of the new child actor and must return an `ActorCommand<T>` to be executed by the parent actor.
-    *   **Return Value:** `SpawnAction<T, I, O>`: An `ActorCommand` that, when executed by the parent actor, will spawn the child actor defined by `factory`, then execute the command returned by the `next` callback (whose actor handle resolver will resolve to the handle of the newly-resolved child actor).
-    *   **Behavior:** When the `SpawnAction` is executed within a parent actor's command sequence (e.g., `sequence`), the runtime system first spawns the child actor. Once the child is active, the command returned by `next` is then executed by the parent, with the child actor's `ActorHandle` exposed via the `SpawnedActorResolver` accessor.
+    *   **Return Value:** `SpawnAction<T, C, I, O>`: An `ActorCommand` that, when executed by the parent actor, will spawn the child actor defined by `factory` with the given `config`, then execute the command returned by the `next` callback (whose actor handle resolver will resolve to the handle of the newly-resolved child actor).
+    *   **Behavior:** When the `SpawnAction` is executed within a parent actor's command sequence (e.g., `sequence`), the runtime system first spawns the child actor using the provided `factory` and `config`. Once the child is active, the command returned by `next` is then executed by the parent, with the child actor's `ActorHandle` exposed via the `SpawnedActorResolver` accessor.
     *   **Example:**
         ```typescript
-        type ParentMsg = { type: 'CHILD_RESPONSE', data: string } | { type: 'INIT_CHILD' } | { type: 'CHILD_RESPONSE_RECEIVED' };
+        type ParentMsg = { type: 'CHILD_RESPONSE', data: string } | { type: 'INIT_CHILD' } | { type: 'CHILD_RESPONSE_RECEIVED', payload: string };
         type ChildMsg = { type: 'GREET', from: string } | { type: 'RESPOND_TO_PARENT', payload: string };
 
         // Define the child actor
-        const childActorDefinition = act<ChildMsg>((self, { outbox, complete }) =>
+        // Define the child actor
+        const childActorDefinition = act<ChildMsg, ActorHandle<ParentMsg>>((_self, parentOutbox) =>
           sequence<ChildMsg>(() => [
             waitFor((msg): msg is Extract<ChildMsg, { type: 'GREET' }> => msg.type === 'GREET',
               (msgHandle) =>
-                send(outbox, readState(msgHandle, (greetMsg) => ({ 
-                  type: 'RESPOND_TO_PARENT', 
-                  payload: `Hello ${greetMsg.from}! Child received your greeting.`
-                })))
+                send(parentOutbox, readState(msgHandle, (greetMsg) => ({ 
+                  type: 'CHILD_RESPONSE', 
+                  data: `Hello ${greetMsg.from}! Child received your greeting.`
+                } as ParentMsg))) // Ensure message type matches parent's outbox
             ),
-            complete()
+            // Child might complete or do other things
           ])
         );
 
@@ -860,13 +863,15 @@ This section describes the helper functions provided within the `helpers` object
             send(outbox, { type: 'INIT_CHILD' }),
             spawn(
               childActorDefinition,
+              outbox, // Pass parent's outbox as config to the child
               (childHandle) =>
                 sequence(() => [
+                  // childHandle is ActorHandle<ChildMsg>
                   send(childHandle, { type: 'GREET', from: 'ParentActor' }),
                   waitFor((msg): msg is Extract<ParentMsg, { type: 'CHILD_RESPONSE' }> => msg.type === 'CHILD_RESPONSE',
                     (msgHandle) =>
                       sequence(() => [
-                        send(outbox, readState(msgHandle, (msg) => ({ type: 'CHILD_RESPONSE_RECEIVED', payload: msg.payload }))),
+                        send(outbox, readState(msgHandle, (responseMsg) => ({ type: 'CHILD_RESPONSE_RECEIVED', payload: responseMsg.data } as ParentMsg))),
                         complete() // Parent completes
                       ])
                   )
