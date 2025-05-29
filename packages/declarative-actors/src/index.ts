@@ -1,3 +1,4 @@
 export * from './act';
-export * from './commands';
+export * from './action';
+export * from './actions';
 export * from './types';
