@@ -11,67 +11,6 @@ The compiler relies heavily on the Regenerator babel transform to handle the tra
 
 For detailed information about the Babel integration and Regenerator internals, see the [Babel Integration](./babel-integration.spec.md) specification.
 
-## Requirements
-
-### Core Functionality
-1. Async Function Transformation
-   - Must transform async functions into reactive expressions
-   - Must handle generator state management
-   - Must preserve function parameters and scope
-   - Must support nested async functions
-   - Must handle function hoisting
-
-2. JSX Transformation
-   - Must transform JSX elements into function calls
-   - Must handle JSX fragments and expressions
-   - Must support custom elements
-   - Must preserve props and attributes
-   - Must handle async JSX contexts
-
-3. Symbol Management
-   - Must add type symbols to expressions
-   - Must add hash symbols for caching
-   - Must add generator metadata
-   - Must preserve symbol context
-   - Must handle symbol collisions
-
-4. Code Generation
-   - Must generate valid JavaScript
-   - Must preserve source maps
-   - Must handle error locations
-   - Must support incremental compilation
-   - Must optimize generated code
-
-### Type System Integration
-1. Type Safety
-   - Must preserve TypeScript types
-   - Must handle generic types
-   - Must support type inference
-   - Must validate type constraints
-   - Must handle type declarations
-
-2. Expression Types
-   - Must define expression interfaces
-   - Must handle type composition
-   - Must support type narrowing
-   - Must preserve type information
-   - Must enable type checking
-
-### Performance Requirements
-1. Compilation Speed
-   - Must minimize transformation overhead
-   - Must optimize AST traversal
-   - Must handle large codebases
-   - Must support incremental updates
-   - Must enable parallel processing
-
-2. Code Quality
-   - Must generate efficient code
-   - Must minimize runtime overhead
-   - Must optimize memory usage
-   - Must handle code splitting
-   - Must support tree shaking
-
 ## Examples
 
 ### Async Function Transformation
