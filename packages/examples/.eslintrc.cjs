@@ -6,6 +6,10 @@ module.exports = {
     ...base.parserOptions,
     tsconfigRootDir: __dirname,
   },
+  rules: {
+    ...base.rules,
+    'no-console': 'off',
+  },
   overrides: [
     ...base.overrides,
     {
