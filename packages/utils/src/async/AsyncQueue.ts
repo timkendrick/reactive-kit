@@ -1,36 +1,5 @@
-import { Enum, VARIANT, type GenericEnum } from './enum';
-
-export interface AsyncTrigger<T> {
-  signal: Promise<T>;
-  emit: (value: T) => void;
-}
-
-export function createAsyncTrigger<T>(): AsyncTrigger<T> {
-  let emit: (value: T) => void;
-  const signal = new Promise<T>((resolve) => {
-    emit = resolve;
-  });
-  return { signal, emit: emit! };
-}
-
-export function subscribeAsyncIterator<T, V>(
-  source: AsyncIterator<T, V, undefined>,
-  callback: (value: T) => void | PromiseLike<void>,
-): Promise<V> {
-  return new Promise<V>((resolve, reject) => {
-    return next();
-
-    function next(): void {
-      source.next().then((result) => {
-        if (result.done) {
-          resolve(result.value);
-        } else {
-          Promise.resolve(callback(result.value)).then(() => next());
-        }
-      }, reject);
-    }
-  });
-}
+import { Enum, VARIANT, type GenericEnum } from '../enum';
+import { unreachable } from '../type';
 
 // The queue can either be blocked on subscribers or on values, so model the state accordingly
 type AsyncQueueState<T> = Enum<{
@@ -58,9 +27,13 @@ const AsyncQueueState = Enum.create<GenericAsyncQueueState>({
   [AsyncQueueStateType.Completed]: true,
 });
 
-export class AsyncQueue<T> implements AsyncIterator<T, null> {
+export class AsyncQueue<T> implements AsyncIterator<T, null, undefined> {
+  private state: AsyncQueueState<T> = AsyncQueueState.AwaitingValues({
+    subscribers: [],
+  });
+
   private static DONE: IteratorReturnResult<null> = { done: true, value: null };
-  private state: AsyncQueueState<T> = AsyncQueueState.AwaitingValues({ subscribers: [] });
+
   public push(value: T): void {
     const state = this.state;
     switch (state[VARIANT]) {
@@ -82,8 +55,12 @@ export class AsyncQueue<T> implements AsyncIterator<T, null> {
       case AsyncQueueStateType.Completed: {
         return;
       }
+      default: {
+        return unreachable(state);
+      }
     }
   }
+
   public next(): Promise<IteratorResult<T, null>> {
     const state = this.state;
     switch (state[VARIANT]) {
@@ -108,6 +85,7 @@ export class AsyncQueue<T> implements AsyncIterator<T, null> {
       }
     }
   }
+
   public return(): Promise<IteratorReturnResult<null>> {
     const state = this.state;
     switch (state[VARIANT]) {
