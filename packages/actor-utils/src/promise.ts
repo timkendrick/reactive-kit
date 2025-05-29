@@ -3,13 +3,13 @@ import {
   type AsyncTaskFactory,
   type AsyncTaskInbox,
   type AsyncTaskOutbox,
+  type AsyncTaskResult,
   type AsyncTaskType,
-  type HandlerResult,
 } from '@reactive-kit/actor';
 
 export function fromPromiseFactory<C, T>(
   type: AsyncTaskType,
-  factory: (config: C) => Promise<HandlerResult<T>>,
+  factory: (config: C) => Promise<AsyncTaskResult<T>>,
 ): AsyncTaskFactory<C, never, T> {
   return {
     type,
@@ -36,7 +36,7 @@ interface CancelablePromise<T> {
 
 export function fromCancelablePromiseFactory<C, T>(
   type: AsyncTaskType,
-  factory: (config: C) => CancelablePromise<HandlerResult<T>>,
+  factory: (config: C) => CancelablePromise<AsyncTaskResult<T>>,
 ): AsyncTaskFactory<C, never, T> {
   return fromPromiseFactory(type, (config) => {
     // FIXME: Support promise cancellation in async tasks

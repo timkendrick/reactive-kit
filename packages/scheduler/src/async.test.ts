@@ -42,20 +42,26 @@ describe(AsyncScheduler, () => {
         switch (message.type) {
           case AppMessageType.Increment:
             return [
-              HandlerAction.Send(this.output, {
-                type: AppMessageType.Result,
-                payload: { value: ++this.counter },
+              HandlerAction.Send({
+                target: this.output,
+                message: {
+                  type: AppMessageType.Result,
+                  payload: { value: ++this.counter },
+                },
               }),
             ];
           case AppMessageType.Decrement:
             return [
-              HandlerAction.Send(this.output, {
-                type: AppMessageType.Result,
-                payload: { value: --this.counter },
+              HandlerAction.Send({
+                target: this.output,
+                message: {
+                  type: AppMessageType.Result,
+                  payload: { value: --this.counter },
+                },
               }),
             ];
           case AppMessageType.Destroy:
-            return [HandlerAction.Kill(context.self())];
+            return [HandlerAction.Kill({ target: context.self() })];
           default:
             return null;
         }
