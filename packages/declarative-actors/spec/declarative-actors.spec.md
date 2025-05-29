@@ -157,22 +157,30 @@ Dynamic runtime values can be used interchangeably with static values wherever a
 
 ### Internal Architecture
 
-The `act()` function, when invoked with an actor definition, doesn't directly execute the described behavior. Instead, it compiles the declarative actor definition into a sequence of virtual machine (VM) instructions. This sequence is then internally executed by a lightweight, stack-based interpreter.
+The `act()` function, when invoked with an actor definition, doesn't directly execute the described behavior. Instead, it compiles the declarative actor definition into a sequence of virtual machine (VM) instructions. This sequence is then internally executed by a lightweight, stack-based interpreter. The actor created by `act()` is a **synchronous actor**. Its `handle(message, context)` method drives the VM's execution.
 
 #### 1. VM Architecture overview
 
 The core components of the internal VM are:
 
 *   **Instruction Queue:** A list of VM instructions derived from the user's `ActorCommand` definitions. The `act` function effectively translates the command tree into a linear sequence of these instructions.
-*   **Execution Stack (VM Stack):** A runtime stack used to manage control flow, store intermediate values, and manage lexically-scoped state. `StateHandle`s created by `withState` refer to data held within specific frames on this stack. It is distinct from any JavaScript call stack.
+*   **Execution Stack (VM Stack):** A runtime stack used to manage control flow (including block and loop contexts), store intermediate values, and manage lexically-scoped state. `StateHandle`s created by `withState` refer to data held within specific frames on this stack. It is distinct from any JavaScript call stack.
 *   **Instruction Pointer (IP):** A pointer that indicates the next VM instruction to be fetched and executed from the Instruction Queue.
-*   **Execution Engine:** A central loop that fetches the instruction at the current IP, decodes it, and dispatches it to the appropriate handler logic. This engine also manages interactions with the actor system for message passing and timers.
+*   **Execution Engine (Internal to VM):** A central loop within the VM's generator function that fetches the instruction at the current IP, decodes it, and dispatches it to the appropriate handler logic. This engine also manages interactions with the actor system for message passing and timers *by yielding command descriptors to the synchronous actor's `handle` method*.
 
-When an actor definition begins execution, the `ActorDefinition` (the output of `act(...)`) is processed. The VM is initialized with the instruction sequence, an empty stack, and its IP set to the start of the sequence. The execution engine then runs until a terminal instruction (like `complete` or `fail`) is encountered, or until the instruction queue is exhausted under normal completion.
+When an actor definition begins execution (typically when the synchronous `act` actor receives its first message or during its initialization), the `ActorDefinition` (the output of `act(...)`) is processed. The VM is initialized with the instruction sequence, an empty stack (for block, loop, and state contexts), and its IP set to the start of the sequence. The `handle()` method of the synchronous actor then calls the VM's interpreter (e.g., `interpreter.next()`). The VM's execution engine runs until a terminal instruction (like `complete` or `fail`) is encountered, an instruction requiring external asynchronous action (like `delay` or `spawn`) is yielded, or until the VM needs to pause to `await_message`.
+
+**Managing Asynchronous Operations:**
+Operations like `delay` or awaiting specific messages (`waitFor`, `when`) involve pausing the VM's execution.
+*   For `delay`: The VM yields a `DELAY` command descriptor. The synchronous actor's `handle` method then uses `context.spawn()` to create a short-lived asynchronous child "timer" actor. This timer actor waits for the specified duration and sends a "delay complete" message back to the parent (the main declarative actor). The parent actor, upon receiving this message, resumes its VM.
+*   For `waitFor` (or `when`): The VM yields an `AWAIT_MESSAGE` command descriptor. The synchronous actor's `handle` method then pauses the VM. When a new message arrives that the actor's `handle` method processes, it will resume the VM, passing the message content for the VM to evaluate against its predicate.
+*   For `spawn`: The VM yields a `SPAWN` command descriptor containing the child actor factory. The synchronous actor's `handle` method uses `context.spawn()` to create the child and then resumes the VM, passing the new child's `ActorHandle` back into the VM.
+
+The synchronous actor is responsible for storing and restoring the VM's state (the generator instance) when it's paused and resumed.
 
 #### 2. VM Instruction Set
 
-The declarative commands provided in an actor definition (e.g., `send`, `waitFor`, `withState`) are compiled into a lower-level VM instruction set. Each instruction is a simple operation that the VM's execution engine can process. The translation from the high-level API to VM instructions aims to flatten the nested structure of commands into a linear sequence where possible, with control flow instructions managing jumps and conditional execution.
+The declarative commands provided in an actor definition (e.g., `send`, `waitFor`, `withState`) are compiled into a lower-level VM instruction set. Each instruction is a simple operation that the VM's execution engine can process. The translation from the high-level API to VM instructions aims to flatten the nested structure of commands into a linear sequence where possible, with structured control flow instructions managing block and loop exits and continuations.
 
 The instruction set can be broadly categorized:
 
@@ -183,25 +191,70 @@ The instruction set can be broadly categorized:
     *   `ACTOR_KILL`: Corresponds to `kill()`. Takes a target actor handle.
     *   `NOOP`: Corresponds to `noop()`.
 
-*   **State Management Operations:**
-    *   `STATE_PUSH`: Marks the beginning of a `withState` block. Initializes the state and pushes its handle onto the VM stack or a dedicated part of the current stack frame. The operand would be the initial state (or a resolver for it).
-    *   `STATE_POP`: Marks the end of a `withState` block, removing the state scope.
-    *   `STATE_UPDATE`: Corresponds to `modifyState()`. Takes a state handle (resolved from the stack) and an updater function.
-    *   *Note: `readState` and `computeState` don't necessarily translate to dedicated VM instructions. Instead, their results (which are specific types of `ValueRef<V>`) are operands to other instructions (like `ACTOR_SEND`, `JUMP_IF_STATE`, `DELAY`). The VM resolves these dynamic `ValueRef<V>` instances at the point the consuming instruction is executed.*
-
 *   **Control Flow Operations:**
-    *   `AWAIT_MESSAGE`: Corresponds to `waitFor()`. Pauses execution. Takes a predicate. If the predicate has a `commandIfTrue` factory, this instruction might be followed by instructions generated from that factory, or a conditional jump.
+    *   **`BLOCK_ENTER_AWAIT`**: Pauses execution to await an incoming message. Upon message receipt, it makes the message available as a temporary, scoped state.
+        *   **Operand:** `length: number`. This defines the scope/lifetime of the temporary message state.
+        *   **Behavior:**
+            1.  Yields a command descriptor (e.g., `{ type: 'AWAIT_MESSAGE' }`) to the external runner and pauses VM execution.
+            2.  When the runner resumes the VM with a received message `M`:
+                a.  The VM pushes message `M` onto its stack.
+                b.  The VM pushes a new "temporary message block context" onto the stack. This context is associated with message `M`, stores the provided `length`, and makes an implicit `StateHandle<typeof M>` available.
+                c.  Execution continues with the next instruction. The message `M` (via its `StateHandle`) is accessible to instructions within the defined `length` of this block.
+            3.  The compiler MUST ensure that the last instruction within this `length` is a `BLOCK_BREAK` that terminates this temporary message block. When this `BLOCK_BREAK` is executed, both the temporary message block context and the message `M` itself are popped from the stack. Note that a terminating `BLOCK_BREAK` instruction with a `blockIndex` greater than `0` is allowed; this will additionally terminate the corresponding number of parent blocks.
+        *   **Compiler Note for `when()` and `waitFor()` predicates:**
+            *   **`when(msg_predicate, ...)`:**
+                *   A `BLOCK_ENTER_AWAIT { length: L_scope }` is emitted first. `L_scope` covers all instructions for the `when` command.
+                *   The `msg_predicate` (and any type guard) is compiled into a resolver referencing the message `StateHandle` from `BLOCK_ENTER_AWAIT`.
+                *   This resolver is used in conditional logic (e.g., `BLOCK_BREAK_IF`) to direct flow to the `thenCmd` or `elseCmd` branches.
+                *   The message `StateHandle` is exposed to the output of the respective command factories.
+            *   **`waitFor(msg_predicate, ...)`:**
+                *   `waitFor` is compiled into an explicit loop structure to repeatedly await messages until the `msg_predicate` is met.
+                *   The general structure is:
+                    1.  `LOOP_ENTER { length: L_waitFor_loop }` - This instruction initiates the waiting loop.
+                    2.    `BLOCK_ENTER_AWAIT { length: L_message_scope }` - Inside the loop, this instruction pauses execution to await an incoming message. When a message `M` arrives, it's made available via an implicit `StateHandle`.
+                    3.    A conditional block structure follows, using the `msg_predicate` (resolved against message `M`):
+                        *   If `msg_predicate(M)` is `false`: Instructions are executed (e.g., `LOOP_CONTINUE { loopIndex: 0 }`) to discard message `M` (by allowing `L_message_scope` to terminate) and continue the `L_waitFor_loop`, effectively going back to step 2 to await the next message.
+                        *   If `msg_predicate(M)` is `true`:
+                            *   The compiled instructions for `commandIfTrue` (if any) are executed. The `StateHandle` for message `M` is exposed to the output of the `commandIfTrue` factory if provided.
+                            *   A `LOOP_EXIT { loopIndex: 0 }` instruction is executed to terminate the `L_waitFor_loop`.
+                    4.  The compiler ensures proper block termination (e.g., `BLOCK_BREAK` for `L_message_scope`) within the loop's structure.
+                *   This explicit loop compiled from `waitFor` ensures that message consumption and predicate checking repeat until a match.
     *   `DELAY`: Corresponds to `delay()`. Pauses execution. Takes a duration (or a resolver for it).
-    *   `JUMP`: Unconditional jump to a different IP. Used to implement loops and the `sequence()` `done()` control.
-    *   `JUMP_IF_STATE`: Corresponds to `whenState()`. Takes a `StateValueResolver<boolean>` and a target IP for the "true" branch. The "false" branch is typically the next instruction in sequence or an explicit `JUMP`.
-    *   `JUMP_IF_MESSAGE`: Corresponds to `when()`. Consumes a message, evaluates a predicate against it. Takes a target IP for the "true" branch. The "false" branch is handled similarly. The factories (`commandIfTrue`, `commandIfFalse`) from `when()` would compile to instruction sub-sequences.
-    *   `LOOP_ENTER / LOOP_EXIT_IF / LOOP_CONTINUE`: Instructions to manage `whileLoop()`. `LOOP_ENTER` might set up a loop context on the stack. `LOOP_EXIT_IF` would check a condition (often involving a `StateValueResolver` or a message predicate) and jump out of the loop. `LOOP_CONTINUE` would jump to the beginning of the loop's body.
-    *   `BLOCK_PUSH`: The `sequence()` command translates to a sequence of instructions. `BLOCK_PUSH` might set up a new frame or marker on the stack to handle `controls.done()`.
-    *   `BLOCK_POP`: `controls.done()` would compile to a `JUMP` instruction targeting after the corresponding `BLOCK_POP`.
+    *   `BLOCK_ENTER`: Marks the beginning of a generic block (e.g., for `sequence`, or conditional branches of `whenState`/`when`, or the implicit block around `withState` or `whileLoop` bodies). Pushes a new block context onto the VM stack.
+        *   **Operand:** `length: number`. The total number of VM instructions contained within this block, *excluding* the `BLOCK_ENTER` instruction itself. This length allows the VM and compiler to determine the block's boundaries.
+        *   The compiler MUST ensure that the last instruction within this `length` is a `BLOCK_BREAK` that terminates the current block. This `BLOCK_BREAK` handles the explicit or implicit termination of the block scope. Note that a terminating `BLOCK_BREAK` instruction with a `blockIndex` greater than `0` is allowed; this will additionally terminate the corresponding number of parent blocks.
+    *   `BLOCK_ENTER_STATE`: Marks the beginning of a block that declares a local state value (e.g. `withState`). Pushes a new block context onto the VM stack.
+        *   **Operands:** `initialStateResolver: ValueRef<() => S>`, `length: number`.
+        *   **Behavior:**
+            1.  Evaluates `initialStateResolver` to get the initial state value.
+            2.  Pushes this state value onto the VM stack.
+            3.  Pushes a new "stateful block context" onto the VM stack. This context is associated with the pushed state and stores its `length`.
+        *   The `length` is the total number of VM instructions within this stateful block, *excluding* the `BLOCK_ENTER_STATE` instruction itself. The state is active for the duration of this block. The compiler MUST ensure that the last instruction within this `length` is a `BLOCK_BREAK` that terminates the current stateful block. This `BLOCK_BREAK` handles the explicit or implicit termination of the block scope. Note that a terminating `BLOCK_BREAK` instruction with a `blockIndex` greater than `0` is allowed; this will additionally terminate the corresponding number of parent blocks.
+    *   `BLOCK_BREAK`: Exits an enclosing block
+        *   **Operand:** `blockIndex: number`. `0` for the innermost active block, `1` for the next outer, etc.
+        *   **Behavior:** Unconditionally transfers control flow to the instruction immediately following the conceptual end of the block identified by `blockIndex`. It is used for explicit exits (e.g., `sequence().controls.done()`) and is also MANDATORILY inserted by the compiler as the final instruction within a `BLOCK_ENTER`, `BLOCK_ENTER_STATE` or `BLOCK_ENTER_AWAIT` block's defined `length` to handle implicit block termination. The `blockIndex` refers to any active scope context on the stack, including those established by `BLOCK_ENTER...` instructions (generic blocks, stateful blocks, message blocks) and `LOOP_ENTER` instructions (loop blocks). When `BLOCK_BREAK` is executed, all intervening scope contexts up to and including the target scope at `blockIndex` are popped from the VM's context stack, and any associated values (from stateful or message blocks) are popped from the value stack.
+    *   `BLOCK_BREAK_IF`: Conditionally exits an enclosing block
+        *   **Operands:** `predicate: ValueRef<boolean>`, `blockIndex: number`.
+        *   **Behavior:** If the resolved `predicate` is true, behaves like `BLOCK_BREAK { blockIndex }`. Otherwise, execution continues sequentially. Used to compile conditional branches of `whenState()` and message-based conditional breaks like in `when()`.
+    *   **`LOOP_ENTER`**: Marks the beginning of a `whileLoop()` block. Pushes a new loop context onto the VM stack.
+        *   **Operands:** `length: number`.
+        *   **Behavior:** Pushes a new loop context onto the VM stack. This context includes the starting IP of the loop's body (for `LOOP_CONTINUE` purposes), the `length` of the loop (for `LOOP_EXIT`), and is used by `LOOP_EXIT` and `LOOP_CONTINUE` to identify the target loop.
+        *   The `length` is the total number of VM instructions contained within this loop, *excluding* the `LOOP_ENTER` instruction itself. The compiler MUST ensure that the last instruction within this `length` is a `LOOP_CONTINUE` for the current loop, which handles implicit loop repetition. The `length` allows the VM to determine the loop's boundaries for `LOOP_EXIT` purposes.
+    *   **`LOOP_EXIT`**: Unconditionally exits an enclosing loop.
+        *   **Operand:** `loopIndex: number` (`0` for innermost loop, etc.).
+        *   **Behavior:** Unconditionally terminates the loop identified by `loopIndex`. The VM uses the `length` stored in the target `LoopContext` (and the original IP where `LOOP_ENTER` was executed) to calculate the jump target, which is the instruction immediately following the conceptual end of that loop. Corresponds to `whileLoop().controls.break()`.
+    *   **`LOOP_CONTINUE`** (Revised):
+        *   **Operand:** `loopIndex: number` (`0` for innermost loop, etc.).
+        *   **Behavior:** Transfers control to the beginning of the body of the loop identified by `loopIndex`. Used for `whileLoop().controls.continue()`. It is also ALWAYS inserted by the compiler as the final instruction within a `LOOP_ENTER` block's defined `length` to handle implicit loop repetition.
+            If `loopIndex` targets an outer loop (i.e., `loopIndex > 0`), before transferring control, the VM MUST first unwind all intervening scope contexts (i.e., any `BlockContext` or inner `LoopContext` frames on the context stack between the current execution point and the target `LoopContext`). This unwinding process involves popping these intervening frames from the context stack and, for any `BlockContext` associated with a value (from `BLOCK_ENTER_STATE` or `BLOCK_ENTER_AWAIT`), popping the corresponding value from the value stack. This ensures that when the target outer loop continues, the VM stack is consistent with the lexical scope of that loop's body.
+
+*   **State Management Operations:**
+    *   `STATE_UPDATE`: Corresponds to `modifyState()`. Takes a state handle (resolved from the stack) and an updater function.
+    *   *Note: `readState` and `computeState` don't necessarily translate to dedicated VM instructions. Instead, their results (which are specific types of `ValueRef<V>`) are operands to other instructions (like `ACTOR_SEND`, `BLOCK_BREAK_IF`, `DELAY`). The VM resolves these dynamic `ValueRef<V>` instances at the point the consuming instruction is executed.*
 
 *   **Operand Types:** VM instructions operate on two main kinds of inputs: *Immediates* and *Operands (Values)*.
-    *   **Immediates:** These are values directly encoded with the instruction, typically used for control flow.
-        *   Example: IP offsets or labels used by jump instructions to specify target locations within the instruction queue.
+    *   **Immediates:** These are values directly encoded with the instruction.
+        *   Example: `blockIndex` or `loopIndex` values used by structured control flow instructions.
     *   **Operands (Values):** These represent data that instructions act upon. They are all encompassed by the `ValueRef<V>` abstraction, which allows commands to interchangeably use static values or values that are dynamically resolved at runtime. Operands can be further categorized:
         *   **Static Operands:** Values known at compile time or directly available without further resolution by the VM from its internal state.
             *   Literal values (e.g., numbers, strings, booleans).
@@ -212,37 +265,105 @@ The instruction set can be broadly categorized:
             *   `ComputeStateValueResolver<S[], V>`: Created by the `computeState` helper, this resolves a value by applying a computer function to an array of `StateRef<S>` instances.
             *   `SpawnedActorResolver<T>`: A specialized `ValueRef<ActorHandle<T>>` created by the `spawn` command. It resolves to the `ActorHandle<T>` of a newly spawned child actor.
 
-This instruction set allows the VM to interpret the complex, declarative actor definitions by breaking them down into manageable, sequential steps with explicit control flow. The compilation process (from `ActorCommand` tree to linear VM instructions) is a key part of `act()`'s internal setup.
+This instruction set allows the VM to interpret the complex, declarative actor definitions by breaking them down into manageable, sequential steps with explicit, structured control flow. The compilation process (from `ActorCommand` tree to linear VM instructions) is a key part of `act()`'s internal setup.
+
+##### 2.1. Conditional Logic
+
+Conditional commands like `whenState(predicate, { then: thenCmd, else: elseCmd })` (and similarly, `when()`) are compiled into a sequence of block operations to manage distinct execution paths. The compilation strategy ensures a consistent structure for both cases where an 'else' branch is present and where it is absent.
+
+The general compilation pattern is as follows:
+
+*   `BLOCK_ENTER`: The main conditional block.
+    *   `BLOCK_ENTER`: Nested block for the 'else' path.
+        *   `BLOCK_BREAK_IF { blockIndex: 0 }` - Predicate check; conditionally exits the 'else' block.
+        *   *Else path instructions*
+        *   `BLOCK_BREAK { blockIndex: 1 }` - Exit the main conditional block.
+    *   *Then path instructions*
+    *   `BLOCK_BREAK { blockIndex: 0 }` - Exit the main conditional block.
+
+In more detail:
+
+*   **`BLOCK_ENTER B_CONDITIONAL { length: L_total }`**: The main conditional block.
+    *   `L_total` encompasses all instructions from `B_ELSE`'s `BLOCK_ENTER` to `B_CONDITIONAL`'s own final `BLOCK_BREAK`.
+    *   The VM stack now includes `Context_Conditional`.
+    *   Instruction Pointer (IP) advances.
+
+    *   **`BLOCK_ENTER B_ELSE { length: L_else }`**: The block for the 'else' path. This block is *always* generated.
+        *   If `elseCmd` is provided: `L_else` covers the compiled instructions for `elseCmd` plus its terminating `BLOCK_BREAK`.
+        *   If no `elseCmd` is provided: `L_else` covers a single `BLOCK_BREAK` instruction that targets `B_CONDITIONAL`.
+        *   The VM stack now includes `Context_Else` (innermost, `blockIndex: 0`), on top of `Context_Conditional` (`blockIndex: 1`).
+        *   IP advances.
+
+    *   **`BLOCK_BREAK_IF { predicate: P_original, blockIndex: 0 }`**: Predicate check.
+        *   `P_original` is the *original* predicate from `whenState` or `when`.
+        *   `blockIndex: 0` targets `B_ELSE`.
+        *   IP advances past this instruction.
+        *   **If `P_original` resolves to `true`**:
+            *   `B_ELSE` is broken. `Context_Else` is popped from the VM stack.
+            *   IP jumps to the instruction immediately following the conceptual end of `B_ELSE` (i.e., to the start of the 'Then' Path Instructions).
+        *   **If `P_original` resolves to `false`**:
+            *   Execution continues sequentially into the body of `B_ELSE`.
+
+    *   **Else Path Instructions (Body of `B_ELSE`)**:
+        *   These are executed only if `P_original` was `false`.
+        *   **If `elseCmd` was provided**:
+            *   The compiled instructions for `elseCmd` are executed here.
+            *   These instructions must be followed by:
+            *   `BLOCK_BREAK { blockIndex: 1 }` (targets `B_CONDITIONAL`). `Context_Conditional` and `Context_Else` are popped. IP jumps past `B_CONDITIONAL`.
+        *   **If no `elseCmd` was provided**:
+            *   This path contains a single instruction:
+            *   `BLOCK_BREAK { blockIndex: 1 }` (targets `B_CONDITIONAL`). `Context_Conditional` and `Context_Else` are popped. IP jumps past `B_CONDITIONAL`.
+        *   IP advances through these instructions.
+
+    *   **Then Path Instructions**:
+        *   These are executed only if `P_original` was `true` (due to the jump from `BLOCK_BREAK_IF`).
+        *   The compiled instructions for `thenCmd` are executed here.
+        *   These instructions must be followed by (often compiler-inserted if `thenCmd` doesn't naturally end with a compatible break):
+        *   `BLOCK_BREAK { blockIndex: 0 }` (targets `B_CONDITIONAL`). `Context_Conditional` is popped. IP jumps past `B_CONDITIONAL`.
+        *   IP advances through these instructions.
+
+This structured approach, with `B_ELSE` always present, ensures that:
+1.  The predicate `P_original` is always evaluated directly (no inversion needed).
+2.  If `P_original` is true, the 'else' path (`B_ELSE`) is skipped, and the 'then' path is executed.
+3.  If `P_original` is false, the 'else' path (`B_ELSE`) is executed. If an `elseCmd` was provided, its instructions run; otherwise, the effective "empty else" (a `BLOCK_BREAK` targeting `B_CONDITIONAL`) ensures the 'then' path is skipped.
+4.  Control flow correctly exits the main conditional structure (`B_CONDITIONAL`) regardless of which path is taken.
 
 #### 3. VM Stack and State Management
 
-The VM's execution stack is central to its operation, serving not only for control flow but also for managing the lifecycle of stateful contexts introduced by `withState` and temporary message data.
+The VM's execution stack is central to its operation, serving not only for structured control flow (managing block and loop contexts) but also for managing the lifecycle of stateful contexts introduced by `withState` and temporary message data.
 
-*   **Stack Frames:**
-    *   The stack is composed of frames. A new frame might be pushed for contexts like `sequence()` blocks (especially if they need to manage `controls.done()` jumps), `whileLoop()` iterations, or when `withState()` introduces a new lexical state scope.
-    *   Frames hold information such as the return Instruction Pointer (IP) for when a block or scope finishes, and local data relevant to that scope.
+*   **Stack Frames / Contexts:**
+    *   The stack is composed of contexts. A new context is pushed for:
+        *   `BLOCK_ENTER`: Pushes a generic block context. The `length` property of the `BLOCK_ENTER` instruction defines the extent of this block. This context is used by `BLOCK_BREAK...` operations to identify their target block. The compiler ensures this block ends with a `BLOCK_BREAK` instruction.
+        *   `BLOCK_ENTER_STATE` (from `withState`): Evaluates the initial state, pushes the state value onto the stack, then pushes a "stateful block context". This context is aware of the state it introduced. Its `length` property defines the extent of the stateful block. The compiler ensures this block ends with a `BLOCK_BREAK` instruction.
+        *   `BLOCK_ENTER_AWAIT` (from `when`, `waitFor`): After a message is received, pushes the message value onto the stack, then pushes a "temporary message block context". This context is aware of the message it introduced. Its `length` property defines the extent of this temporary message's scope. The compiler ensures this block ends with a `BLOCK_BREAK` instruction.
+        *   `LOOP_ENTER`: Pushes a loop context. This context includes information like the starting IP of the loop's body (for `LOOP_CONTINUE` purposes), the `length` of the loop (for `LOOP_EXIT`), and is referenced in the `loopIndex` property of `LOOP_EXIT` and `LOOP_CONTINUE` to identify the target loop. The compiler ensures this loop's body instructions end with a `LOOP_CONTINUE { loopIndex: 0 }`.
+    *   Frames hold information such as the defining characteristics of the block or loop (like `BLOCK_ENTER.length` or `LOOP_ENTER.length`), and local data relevant to that scope (like state values or received messages).
+    *   Exiting a block (via `BLOCK_BREAK` or `BLOCK_BREAK_IF`) pops its respective context(s) from the stack. When a "stateful block context" (from `BLOCK_ENTER_STATE`) or a "temporary message block context" (from `BLOCK_ENTER_AWAIT`) is popped, the VM also automatically pops the associated state value or message value from the stack. The termination of loops (explicitly via `LOOP_EXIT`) also pops their respective `LoopContext`. Target instruction pointer after block/loop termination is determined using the `length` that was provided in the `BLOCK_ENTER` / `BLOCK_ENTER_STATE` / `BLOCK_ENTER_AWAIT` / `LOOP_ENTER` instruction corresponding to the (outermost) block to be terminated.
 
 *   **State Scopes and `StateHandle` Resolution:**
-    *   When a `STATE_PUSH` instruction (generated from `withState`) is executed, the initial state value (potentially resolved from a `StateValueResolver` itself) is computed and stored within the current or a newly created stack frame.
-    *   A `StateHandle` provided to the user's factory function is, internally, a reference that allows the VM to locate this state data on the stack. This could be an index into a specific part of a stack frame or a pointer to a memory region managed by the frame.
-    *   `readState` and `computeState` operations, when encountered as operands to other instructions, use these internal `StateHandle` references to access the appropriate data from the relevant stack frame(s). The VM traverses the stack (or uses a more direct pointer if the handle encodes its frame) to find the frame containing the state associated with the handle.
-    *   The `STATE_POP` instruction removes the state data from the stack, effectively ending the lexical scope of that `StateHandle`. This typically occurs when the stack frame associated with the `withState` block is popped.
+    *   When a `BLOCK_ENTER_STATE` instruction (generated from `withState`) is executed, the initial state value is computed and stored on the stack. A "stateful block context" is also pushed, linked to this state.
+    *   When a `BLOCK_ENTER_AWAIT` instruction is resumed with a message, the message is stored on the stack. A "temporary message block context" is pushed, linked to this message.
+    *   A `StateHandle` provided to the user's factory function is, internally, a reference that allows the VM to locate the corresponding state or message data on the stack based on its association with an active stateful or temporary message block context.
+    *   `readState` and `computeState` operations, when encountered as operands to other instructions, use these internal `StateHandle` references to access the appropriate data from the relevant contexts on the stack.
+    *   State data (from `BLOCK_ENTER_STATE`) or message data (from `BLOCK_ENTER_AWAIT`) is removed from the stack automatically when its respective block context is popped by its terminating `BLOCK_BREAK` instruction. This ensures state and temporary message lifetimes are strictly tied to their lexical scopes.
 
 *   **Temporary Message Handles:**
-    *   Commands like `AWAIT_MESSAGE` and `JUMP_IF_MESSAGE` consume an incoming message. If their associated factory functions (e.g., `commandIfTrue` in `waitFor` or `when`) are invoked, a temporary `StateHandle` for the consumed message is created.
-    *   The data for this message (the message object itself) is also stored on the stack, typically in the current frame, and the temporary `StateHandle` points to it.
-    *   This message-specific `StateHandle` is only valid for the duration of the factory callback's execution. Once the instructions generated from that factory complete, the part of the stack frame holding the message data might be reclaimed or marked as invalid.
+    *   The `BLOCK_ENTER_AWAIT` instruction is responsible for consuming an incoming message and making it available as a temporary, scoped state on the VM stack.
+    *   The VM pushes the message object itself onto the stack and creates an associated "temporary message block context" with a defined `length`.
+    *   A `StateHandle` (referred to as `messageHandle` in user-facing factory functions like in `when` or `waitFor`) is implicitly created by the VM for this message. This handle allows `readState` (and by extension, `computeState` if needed) to access the fields of the consumed message.
+    *   This `StateHandle` is valid only for the duration of the block defined by `BLOCK_ENTER_AWAIT`'s `length`. The message data is popped from the stack when this scope is exited via its compiler-inserted `BLOCK_BREAK`.
+    *   This mechanism ensures that predicates operating on message content (e.g., in `when`) and command factories that need to access message data (e.g., `thenCmd` in `when`, `commandIfTrue` in `waitFor`) can do so using the standard `StateHandle` and `readState` utilities, treating the consumed message as a short-lived piece of state.
 
-*   **Control Flow Information:**
-    *   The stack stores return addresses for jumps (e.g., after a `BLOCK_PUSH` completes or a loop iteration finishes).
-    *   For `whileLoop`, the stack might hold information about the loop's start IP to allow `LOOP_CONTINUE` to jump back, and status flags or counters if needed (though most loop logic will rely on `StateHandle`s).
+*   **Control Flow Resolution (Block and Loop Indices):**
+    *   The `blockIndex` and `loopIndex` operands in `BLOCK_BREAK`, `BLOCK_BREAK_IF`, `LOOP_EXIT`, and `LOOP_CONTINUE` are resolved by the VM against the current stack of block and loop contexts. An index of `0` refers to the innermost context of the relevant type (block or loop), `1` to the next one out, and so on. The VM uses this to determine the correct scope to break from, continue, or exit. The `length` property of `BLOCK_ENTER` is crucial for the compiler to correctly calculate jump targets for `BLOCK_BREAK` and for the VM to understand block boundaries for lexical scope.
 
 *   **Dynamic `ValueRef<V>` Resolution:**
     *   Dynamic `ValueRef<V>` accessors (like `StateRef`, `ReadStateValueResolver`, `ComputeStateValueResolver`) can be used as placeholder operands to VM instructions in order to compute the operand value dynamically at runtime.
-    *   When an instruction like `ACTOR_SEND` has a dynamic `ValueRef<V>` as its message operand, or `JUMP_IF_STATE` has one as its predicate, the VM's execution logic for that instruction is responsible for:
-        1.  Identifying the underlying `StateHandle`(s) or other references within the `ValueRef`.
-        2.  Using these handles/references to retrieve the current or derived state value(s) from the stack or other dynamic execution environment state (like spawned actor handles).
-        3.  Using the final resolved value to proceed with evaluating the instruction (e.g., sending the resolved message, making the jump decision).
+    *   When an instruction like `ACTOR_SEND` has a dynamic `ValueRef<V>` as its message operand, or `BLOCK_BREAK_IF` has one as its predicate, the VM's execution logic for that instruction is responsible for:
+        1.  Identifying the underlying `StateHandle`(s) or other references within the `ValueRef` (this includes `StateHandle`s for regular state from `BLOCK_ENTER_STATE` and temporary message state from `BLOCK_ENTER_AWAIT`).
+        2.  Using these handles/references to retrieve the current or derived state/message value(s) from the stack or other dynamic execution environment state (like spawned actor handles).
+        3.  Using the final resolved value to proceed with evaluating the instruction (e.g., sending the resolved message, making the break decision).
 
 This tight integration of state management with the stack ensures that state lifetimes are naturally coupled to their lexical scopes, simplifying the VM's design.
 
@@ -252,85 +373,109 @@ The execution of an actor definition, created using the `act()` function and its
 
 1.  **The Virtual Machine (VM):** Implemented as a synchronous generator function. The VM is responsible for interpreting the compiled sequence of instructions derived from the actor definition. It processes instructions related to internal state management, synchronous control flow (like conditional jumps based on state), and preparing descriptors for external actions. When an instruction requires interaction with the outside world (e.g., sending a message, waiting for a delay, or awaiting an incoming message), the VM yields a command descriptor and pauses its execution.
 
-2.  **The External Runner:** An asynchronous JavaScript function or component that "drives" the VM generator. The runner initiates the VM by calling its `next()` method. It then receives command descriptors yielded by the VM. Based on these descriptors, the runner performs the actual asynchronous operations (e.g., interfacing with the actor system for message passing, managing timers) or handles task lifecycle events. Once an asynchronous operation completes or an event occurs, the runner resumes the VM by calling `generator.next(result)`, passing any relevant data (like a received message) back into the VM.
+2.  **The Synchronous Actor's `handle` Method (The "Runner"):** The `handle(message, context)` method of the synchronous actor created by `act()` serves as the "runner" for the VM. It initiates the VM (typically on the first relevant message or during actor setup) by calling `interpreter.next()`. It then receives command descriptors `yield`ed by the VM.
+    *   Based on these descriptors, the `handle` method performs actions:
+        *   For `SEND`, `KILL`: Translates the descriptor into the corresponding `HandlerAction` to be returned by `handle()`. It then typically resumes the VM immediately (`interpreter.next(null)`).
+        *   For `SPAWN`: Uses its `context.spawn(factoryFromDescriptor)` to create the child actor. It then resumes the VM by calling `interpreter.next(childActorHandle)`, passing the handle of the newly spawned actor back into the VM.
+        *   For `DELAY`: Spawns a short-lived asynchronous timer child actor using `context.spawn()`. This timer actor sends a "delay complete" message back to its parent (the main declarative actor) after the specified duration. The `handle` method pauses the VM (i.e., does not call `interpreter.next()` in the current invocation for the `DELAY` descriptor). The VM is resumed when the "delay complete" message is processed by a subsequent invocation of `handle()`.
+        *   For `AWAIT_MESSAGE`: The `handle` method pauses the VM. When a new message arrives that is relevant to the actor, a subsequent invocation of `handle()` will resume the VM by calling `interpreter.next(receivedMessage)`, passing the received message back into the VM for predicate checking and processing.
+        *   For `COMPLETE` or `FAIL`: The `handle` method finalizes the actor's lifecycle, potentially returning a final `HandlerAction.Kill(self)` or propagating an error.
+    *   The `handle` method is responsible for storing the VM's generator instance when it's paused and ensuring it's correctly resumed.
 
-This division of labor allows the VM's core logic to remain relatively simple and synchronous, focusing on instruction interpretation and state transitions. The runner, on the other hand, handles the complexities of asynchronous event management and interaction with the broader JavaScript environment and the ReactiveKit actor system.
+This division of labor allows the VM's core logic to remain relatively simple and synchronous (as a generator), focusing on instruction interpretation and state transitions. The synchronous actor's `handle` method manages interactions with the actor system (spawning, sending messages) and orchestrates the pausing and resuming of the VM in response to external events or self-initiated asynchronous operations (like `delay`).
 
 The overall flow is as follows:
-*   The runner starts the VM generator.
+*   The `act()` actor's `handle` method is invoked with an initialization message.
+*   The handler method initializes the VM by calling `interpreter.next()` to start execution.
 *   The VM executes instructions internally until it needs to perform an external action or wait for an event.
-*   The VM `yields` a command descriptor to the runner.
-*   The runner processes the command, performs any necessary asynchronous operations, and waits for completion/events.
-*   The runner calls `generator.next(result)` to resume the VM.
-*   This cycle repeats until the VM completes its instruction sequence (e.g., by yielding a `COMPLETE` or `FAIL` descriptor, or by the generator function returning).
+*   The VM `yields` a command descriptor to the `handle` method.
+*   The `handle` method processes the command:
+    *   If the command is synchronous (e.g., `SEND`), it prepares the `HandlerAction`, calls `interpreter.next(null)` to continue VM execution for any further synchronous steps, and eventually returns the collected `HandlerAction`s.
+    *   If the command requires pausing (e.g., `DELAY`, `AWAIT_MESSAGE`), the `handle` method sets up the condition for resumption (e.g., spawns a timer, notes it's awaiting a message) and does *not* call `interpreter.next()` in this turn. The VM remains paused.
+    *   If the command is `SPAWN`, `handle` uses `context.spawn()` to spawn an actor handle for the new actor, then calls `interpreter.next(newActorHandle)`.
+*   This cycle repeats, this time calling `interpreter.next(messagePayloadFromPreviousPause)` to resume the suspended operation. The VM is driven forward by calls to `interpreter.next()` from the `handle` method, either immediately (for synchronous VM steps) or in response to messages that unblock a previously paused state.
+*   Eventually, the VM completes its instruction sequence (e.g., by yielding a `COMPLETE` or `FAIL` descriptor, or by the generator function returning).
 
 The following subsections detail the internal workings of the VM's execution cycle and the specific responsibilities of the external runner.
 
 ##### 4.1. Internal VM Execution Cycle
 
-The VM generator's core is an internal execution loop that processes instructions from the Instruction Queue. This loop runs synchronously within each invocation of `generator.next()` by the external runner.
+The VM generator's core is an internal execution loop that processes instructions from the Instruction Queue. This loop runs synchronously within each invocation of `generator.next()` by the synchronous actor's `handle` method.
 
 *   **The Main Loop:**
     *   The loop continues as long as the Instruction Pointer (IP) is within the bounds of the Instruction Queue and no terminal instruction (like `TASK_COMPLETE` or `TASK_FAIL`) has been executed or yielded.
     *   In each iteration, the engine performs the following steps:
         1.  **Fetch:** Retrieve the instruction located at the current IP from the Instruction Queue.
-        2.  **Decode (Implicit):** The instruction's type (e.g., `ACTOR_SEND`, `JUMP_IF_STATE`) determines the operation to be performed. Operands are part of the instruction structure.
+        2.  **Decode (Implicit):** The instruction's type (e.g., `ACTOR_SEND`, `BLOCK_BREAK_IF`) determines the operation to be performed. Operands are part of the instruction structure.
         3.  **Execute:** Dispatch the instruction to its corresponding handler logic. This is where the primary work of the VM occurs.
-        4.  **Advance IP:** Typically, the IP is incremented to point to the next instruction in sequence. However, control flow instructions (like `JUMP`, `JUMP_IF_STATE`) will modify the IP according to their specific logic. For instructions that `yield`, the IP might not be advanced until the generator is resumed.
+        4.  **Advance IP:** Typically, the IP is incremented to point to the next instruction in sequence. However, control flow instructions (like `BLOCK_BREAK`, `BLOCK_BREAK_IF`, `LOOP_CONTINUE`, `LOOP_EXIT`) will modify the IP according to their specific logic, potentially jumping to different locations or causing the VM to adjust its stack of block/loop contexts. For instructions that `yield` to the `handle` method, the IP might not be advanced by the generator for these yielded instructions; it will resume at the same IP when `next()` is called again by the `handle` method.
 
 *   **Instruction Dispatch:**
     *   The VM contains a set of handler functions, one for each type of VM instruction (e.g., a handler for `ACTOR_SEND`, another for `STATE_PUSH`, etc.).
     *   The "execute" step involves calling the appropriate handler based on the fetched instruction's type.
     *   Each handler function implements the semantics of its instruction:
-        *   It may interact with the VM stack (pushing/popping frames or values).
-        *   It may resolve `StateValueResolver`s if they are operands.
-        *   It may modify the IP (e.g., for jumps).
+        *   It may interact with the VM stack (pushing/popping contexts or values).
+        *   It may resolve `ValueRef`s if they are operands.
+        *   It may modify the IP based on structured control flow logic (e.g., moving to the instruction after a popped block, or to the start of a continued loop).
         *   For asynchronous operations, it prepares a command descriptor to be `yield`ed by the generator.
 
 *   **Synchronous vs. Asynchronous Instructions (Generator Model):**
-    *   Many instructions execute synchronously within the generator's internal loop (e.g., `NOOP`, `STATE_PUSH`, `STATE_UPDATE`, `JUMP`). Their handlers complete their work, update the IP, and the loop immediately proceeds to the next instruction within the same call to `generator.next()`.
-    *   Some instructions are inherently asynchronous, requiring interaction with the external environment (e.g., `AWAIT_MESSAGE`, `DELAY`, `ACTOR_SEND`). When such an instruction is encountered by the generator's internal loop:
-        *   Its handler logic prepares a command descriptor (e.g., `{ type: 'DELAY', duration: 100 }`, `{ type: 'AWAIT_MESSAGE' }`, or `{ type: 'SEND', target: ..., message: ... }`).
-        *   The generator then `yields` this command descriptor, pausing its execution. The IP is typically not advanced by the generator for these yielded instructions; it will resume at the same IP when `next()` is called again by the runner.
-        *   Upon resumption (via `generator.next(result)` from the runner), the generator's internal loop continues from where it paused. It may use the `result` passed to `next()` to complete the processing of the asynchronous instruction (e.g., placing a received message onto the stack) before advancing the IP.
+    *   Many instructions execute synchronously within the generator's internal loop (e.g., `NOOP`, `STATE_PUSH`, `STATE_UPDATE`, `BLOCK_ENTER` etc.). Their handlers complete their work, update the IP and VM stack as needed, and the loop immediately proceeds to the next instruction within the same call to `generator.next()`.
+    *   Some instructions are inherently asynchronous, requiring interaction with the external environment (e.g., `BLOCK_ENTER_AWAIT`, `DELAY`, `ACTOR_SEND`, `ACTOR_SPAWN`). When such an instruction is encountered by the generator's internal loop:
+        *   Its handler logic prepares a command descriptor (e.g., `{ type: 'AWAIT_MESSAGE' }` for the `BLOCK_ENTER_AWAIT` operation, or `{ type: 'DELAY', duration: 100 }` for `DELAY`, or `{ type: 'SEND', target: ..., message: ... }` for `ACTOR_SEND`, or `{ type: 'SPAWN', factory: ...}` for `ACTOR_SPAWN`).
+        *   The generator then `yields` this command descriptor, pausing its execution. The IP is typically not advanced by the generator for these yielded instructions; it will resume at the same IP when `next()` is called again by the `handle` method.
+        *   Upon resumption (via `generator.next(result)` from the `handle` method), the generator's internal loop continues from where it paused.
+            *   For the `AWAIT_MESSAGE` command descriptor, the `result` (the message) is used to set up the temporary message state on the stack.
+            *   For `DELAY`, the `result` (e.g. `null`) signals the delay has completed.
+            *   For `SPAWN`, the `result` is the `ActorHandle` of the newly spawned child.
+            *   For `SEND`, `KILL`, `COMPLETE`, `FAIL`, the `result` is typically `null` as these often don't pass data back into the VM's immediate next step but rather signal to the `handle` method what `HandlerAction` to return.
 
-This internal cycle allows the VM to manage its state and control flow deterministically, preparing command descriptors for any operations that require external handling by the runner.
+This internal cycle allows the VM to manage its state and control flow deterministically, preparing command descriptors for any operations that require external handling by the `handle` method.
 
 ##### 4.2. External Runner and Asynchronous Event Management
 
-The external runner is responsible for driving the VM generator and managing all interactions with the asynchronous environment and the actor system. Its key duties are detailed below.
+The synchronous actor's `handle(message, context)` method serves as the external runner and is responsible for driving the VM generator and managing all interactions with the actor system, including asynchronous operations initiated by VM commands.
 
 *   **Processing Yielded Command Descriptors:**
     *   The VM `yields` command descriptor objects when it requires an external action or needs to pause for an event. These descriptors define the operation and its parameters. Examples include:
         *   `ACTOR_SEND`: `{ type: 'SEND', targetActor: ActorHandle, message: any }`
         *   `ACTOR_KILL`: `{ type: 'KILL', targetActor: ActorHandle }`
+        *   `ACTOR_SPAWN`: `{ type: 'SPAWN', factory: ActorFactory<ActorHandle<I>, I, O> }`
         *   `DELAY`: `{ type: 'DELAY', durationMs: number }`
-        *   `AWAIT_MESSAGE`: `{ type: 'AWAIT_MESSAGE' }` (The VM internally manages any associated predicate).
+        *   `AWAIT_MESSAGE`: `{ type: 'AWAIT_MESSAGE' }`
     *   Terminal conditions are also communicated:
         *   `TASK_COMPLETE`: via `{ type: 'COMPLETE' }` or generator return.
         *   `TASK_FAIL`: via `{ type: 'FAIL', error: Error }` or generator throwing an error.
 
-*   **Core Runner Loop and Responsibilities:**
-    *   The runner initiates the VM by calling `generator.next()` for the first time.
-    *   It then enters a loop, processing values yielded by the generator:
+*   **Core `handle` Method Responsibilities:**
+    *   The `handle` method is invoked by the scheduler when an initialization message is delivered to the actor, and subsequently whenever incoming messages are dispatched to the actor's inbox (potentially originating from itself).
+    *   Depending on the input message, it initiates the VM generator if not already started, or resumes it if it was paused, potentially passing the incoming `message` (or a result from a previous operation like a child actor's handle or a delay completion signal) to `generator.next(result)`.
+    *   It then enters a loop, processing command descriptors yielded by the generator:
         1.  Receives the yielded command descriptor.
         2.  Interprets the `type` of the command.
-        3.  Performs the actual asynchronous operation or handles the event:
-            *   For `ACTOR_SEND`: Interacts with the ReactiveKit actor system to dispatch the message.
-            *   For `ACTOR_KILL`: Interacts with the actor system to terminate the target.
-            *   For `DELAY`: Interacts with the runtime environment to pause for the specified duration.
-            *   For `AWAIT_MESSAGE`: Waits for an incoming message for the actor (details below).
-            *   For `COMPLETE` or `FAIL`: Finalizes the actor's lifecycle.
-        4.  Once the operation is complete or the event occurs (e.g., timer expired, message received), the runner calls `generator.next(result)` to resume the VM. The `result` is the received message for `AWAIT_MESSAGE` states, or typically `undefined` for others like `DELAY`.
+        3.  Performs the necessary action:
+            *   For `ACTOR_SEND`, `ACTOR_KILL`: Prepares the corresponding `HandlerAction`. Resumes the VM (`generator.next(null)`) to see if more synchronous commands follow.
+            *   For `ACTOR_SPAWN`: Calls `context.spawn(factoryFromDescriptor)`. Resumes the VM with the new `ActorHandle` (`generator.next(newHandle)`).
+            *   For `DELAY`: Spawns an internal timer child actor using `context.spawn()`. The `handle` method then *pauses* the VM for this turn (does not call `generator.next()`). The timer child will send a message back to this actor when the delay is complete, and a future invocation of `handle` will process that message and resume the VM.
+            *   For `AWAIT_MESSAGE`: The `handle` method *pauses* the VM. Future invocations of `handle` (due to new messages arriving) will check if the actor is in this awaiting state. If so, and the incoming message is relevant, it will resume the VM with `generator.next(incomingMessage)`.
+            *   For `COMPLETE` or `FAIL`: Prepares to terminate the actor, possibly returning a final `HandlerAction.Kill(self)` or re-throwing an error to be handled by the scheduler.
+        4.  If the VM yields multiple synchronous commands (e.g., several `SEND`s in a row without an intervening `DELAY` or `AWAIT_MESSAGE`), the `handle` method's internal loop continues to call `generator.next(null)` and accumulates `HandlerAction`s.
+        5.  Once the VM yields a command that requires pausing (like `DELAY` or `AWAIT_MESSAGE`), or completes/fails, or its synchronous instruction sequence for the current resumption is exhausted (generator returns `{ done: true }` or yields a non-pausing command and the `handle` method decides to break its internal loop), the `handle` method returns the accumulated `HandlerAction[]` (or `null`) to the scheduler.
 
-*   **Message Handling by the Runner:**
-    *   **Buffering:** The runner should implement a message buffer for the actor. If messages arrive from the actor system while the VM generator is paused for other reasons (e.g., `DELAY`) or while the runner is processing a previous command, these messages are queued. When the VM yields `AWAIT_MESSAGE`, the runner first checks this buffer before waiting for new messages from the actor system.
-    *   **Resuming VM on Message Arrival:** When `AWAIT_MESSAGE` is active, and a message is available (either from the buffer or newly arrived), the runner passes this message as the `result` to `generator.next()`. The VM is then responsible for any predicate evaluation to determine if the message is the one it was waiting for (as detailed in 4.1 under how `AWAIT_MESSAGE` and related instructions like `JUMP_IF_MESSAGE` are processed by the VM). If the VM determines the message is not suitable (for a `waitFor`), it will re-yield `AWAIT_MESSAGE`.
+*   **Message Handling by the `handle` Method:**
+    *   The actor's internal state must track when it's paused due to a `DELAY` or `AWAIT_MESSAGE` descriptor from the VM.
+    *   If the actor is currently in an "awaiting message" state when a new message arrives (invoking `handle()`):
+        *   The `handle` method passes the incoming message to `generator.next(incomingMessage)`.
+        *   The VM then resumes. Its compiled instructions (e.g., for `when()` or `waitFor()`) will evaluate any predicates against this message.
+        *   If the message doesn't satisfy a `waitFor` predicate, the VM's internal loop might yield `AWAIT_MESSAGE` again.
+        *   If the message is consumed (satisfies predicate or is processed by `when`), the VM continues to the next instruction.
+    *   If the actor is currently in an "awaiting delay" state when a new message arrives, `generator.next()` is invoked with a `null` argument to resume execution.
+    *   The `handle` method does not need its own message buffer beyond what the scheduler provides, as it processes one external message per invocation. The "pausing" refers to the VM's generator state.
 
 *   **Task Lifecycle Integration:**
-    *   The runner manages the overall lifecycle of the actor (e.g., the `AsyncTask` instance representing the actor's execution). It translates the VM's terminal state (`COMPLETE` or `FAIL` descriptors) into the appropriate resolution or rejection of this actor's execution, making the outcome observable to the testing framework.
+    *   The `handle` method, by processing `COMPLETE` or `FAIL` descriptors from the VM, manages the actor's lifecycle. It can return `HandlerAction.Kill(self)` to the scheduler when the declarative definition completes or fails.
 
-This cooperative model allows the VM's internal logic to remain synchronous and focused on instruction execution, while the runner handles the complexities of asynchronous operations and event management.
+This cooperative model ensures the main declarative actor remains synchronous, leveraging existing actor messaging primitives for all interactions and for managing the execution flow of its internal, synchronous VM generator.
 
 ### Top-level APIs
 
@@ -462,10 +607,16 @@ This section describes the helper functions provided within the `helpers` object
         *   `commandIfTrue?: (messageHandle: StateHandle<TNarrowed>) => ActorCommand<T>`: An optional factory function called if the `predicate` returns `true`. It receives a `StateHandle` for the consumed (and potentially type-narrowed) message and must return an `ActorCommand` to be executed.
     *   **Return Value:** `WaitForAction<T, TNarrowed>`: A command that, when executed, will wait for and process a message according to the predicate.
     *   **Behavior:**
-        1.  Actor execution pauses.
-        2.  On message arrival, evaluate `predicate(message)`.
-        3.  If `true`, calls `commandIfTrue(messageHandle)` and executes the returned command.
-        4.  If `false`, the command is not executed, and the actor continues to the next instruction.
+        1.  Actor execution pauses, awaiting an incoming message. This awaiting process is part of a loop inherent to the `waitFor` command's compiled structure.
+        2.  On message arrival, the `predicate(message)` is evaluated.
+        3.  If the `predicate` returns `true`:
+            a.  If `commandIfTrue` was provided, it is called with a `StateHandle` for the consumed (and potentially type-narrowed) message. The command returned by this factory is then executed.
+            b.  If no `commandIfTrue` was provided (i.e., it's an implicit `noop`), the `waitFor` command completes successfully.
+            c.  The internal loop of the `waitFor` command is then exited, and execution proceeds to the next command in the actor's sequence.
+        4.  If the `predicate` returns `false`:
+            a.  The current message is effectively discarded.
+            b.  The `waitFor` command continues its internal loop, re-entering a state of awaiting the next incoming message.
+            c.  This process repeats until a message satisfies the `predicate`.
     *   **Example:**
         ```typescript
         withState(() => ({ status: 'idle', userRole: 'user' }), appStateHandle =>
@@ -580,16 +731,16 @@ This section describes the helper functions provided within the `helpers` object
         )
         ```
 
-*   **`whenState<T>(predicateResolver: ValueRef<boolean>, commandIfTrue: ActorCommand<T>, commandIfFalse?: ActorCommand<T>): WhenStateAction<T>`**
-    *   **Description:** Conditionally executes a command based on a `ValueRef<boolean>`. The `predicateResolver` is typically created using `readState` (for single state dependency) or `computeState` (for multiple state dependencies), both of which return specific types of `ValueRef<boolean>`.
+*   **`whenState<T>(predicate: ValueRef<boolean>, commandIfTrue: ActorCommand<T>, commandIfFalse?: ActorCommand<T>): WhenStateAction<T>`**
+    *   **Description:** Conditionally executes a command based on a `ValueRef<boolean>`. The `predicate` is typically created using `readState` (for single state dependency) or `computeState` (for multiple state dependencies), both of which return specific types of `ValueRef<boolean>`.
     *   **Type Parameters:**
         *   `T`: The message type of the actor definition, for command type consistency of the conditional commands.
     *   **Parameters:**
-        *   `predicateResolver: ValueRef<boolean>`: The boolean predicate. This determines which command branch is executed.
-        *   `commandIfTrue: ActorCommand<T>`: The command to execute if the `predicateResolver` resolves to `true`.
-        *   `commandIfFalse?: ActorCommand<T>`: An optional command to execute if the `predicateResolver` resolves to `false`.
+        *   `predicate: ValueRef<boolean>`: The boolean predicate. This determines which command branch is executed.
+        *   `commandIfTrue: ActorCommand<T>`: The command to execute if the `predicate` resolves to `true`.
+        *   `commandIfFalse?: ActorCommand<T>`: An optional command to execute if the `predicate` resolves to `false`.
     *   **Return Value:** `WhenStateAction<T>`: A command that, when executed, will conditionally run one of the provided commands based on resolved state.
-    *   **Behavior:** Evaluates the `predicateResolver`. Executes `commandIfTrue` or `commandIfFalse` accordingly.
+    *   **Behavior:** Evaluates the `predicate`. Executes `commandIfTrue` or `commandIfFalse` accordingly.
     *   **Example:**
         ```typescript
         withState(() => ({ status: 'idle', userRole: 'user' }), appStateHandle =>
@@ -618,8 +769,8 @@ This section describes the helper functions provided within the `helpers` object
         *   `TNarrowed extends T`: A narrowed subtype of `T`, used when the `predicate` acts as a type guard.
     *   **Parameters:**
         *   `predicate: ValueRef<((message: T) => message is TNarrowed)>`: A function (often a type guard) that evaluates the incoming message.
-        *   `commandIfTrue: (messageHandle: StateHandle<TNarrowed>) => ActorCommand<T>`: A factory function called if the `predicate` returns `true`. It receives a `StateHandle` for the consumed (and type-narrowed) message and must return an `ActorCommand` to be executed.
-        *   `commandIfFalse?: (messageHandle: StateHandle<T>) => ActorCommand<T>`: An optional factory function called if the `predicate` returns `false`. It receives a `StateHandle` for the consumed message (not narrowed) and must return an `ActorCommand` to be executed.
+        *   `commandIfTrue: (messageHandle: StateHandle<TNarrowed>) => ActorCommand<T>`: A factory function that returns the command that will be executed if the `predicate` returns `true`. It receives a `StateHandle` for the consumed (and type-narrowed) message and must return an `ActorCommand` to be executed.
+        *   `commandIfFalse?: (messageHandle: StateHandle<T>) => ActorCommand<T>`: An optional factory function that returns the command that will be executed if the `predicate` returns `false`. It receives a `StateHandle` for the consumed message (not narrowed) and must return an `ActorCommand` to be executed.
     *   **Return Value:** `ActorCommand<T>`: A command that, when executed, will consume a message and conditionally execute further commands based on that message.
     *   **Behavior:**
         1.  Awaits an incoming message and consumes it from the inbox.
@@ -644,9 +795,9 @@ This section describes the helper functions provided within the `helpers` object
     *   **Type Parameters:**
         *   `T`: The message type of the actor definition, for command type consistency of the commands within the loop and the loop control commands.
     *   **Parameters:**
-        *   `factory: (controls: { break: () => ActorCommand<T>, continue: () => ActorCommand<T> }) => ActorCommand<T>`: A factory function that is called at the beginning of each loop iteration. It receives a `controls` object with `break` and `continue` functions (which return commands to control the loop) and must return an `ActorCommand<T>` representing the body of the loop for that iteration.
+        *   `factory: (controls: { break: () => ActorCommand<T>, continue: () => ActorCommand<T> }) => ActorCommand<T>`: A factory function that returns a command that will be executed at the beginning of each loop iteration. The factory receives a `controls` object with `break` and `continue` functions (which return commands to control the loop) and must return an `ActorCommand<T>` representing the body of the loop for that iteration.
     *   **Return Value:** `WhileLoopAction<T>`: A command that, when executed, will run the loop.
-    *   **Behavior:** Executes the command returned by `factory` repeatedly. Executing the command returned by `controls.break()` terminates the loop. Executing the command returned by `controls.continue()` immediately skips to the next iteration, re-evaluating the factory. If the command sequence returned by the `factory` completes without an explicit `controls.break()` or `controls.continue()` being executed, the loop implicitly continues to the next iteration.
+    *   **Behavior:** Executes the command returned by `factory` repeatedly. Executing the command returned by `controls.break()` terminates the loop. Executing the command returned by `controls.continue()` immediately skips to the next iteration, re-evaluating the command returned by the factory. If the command returned by the `factory` completes without an explicit `controls.break()` or `controls.continue()` being executed, the loop implicitly continues to the next iteration.
     *   **Example:**
         ```typescript
         withState(() => ({ count: 0 }), handle =>
@@ -674,18 +825,15 @@ This section describes the helper functions provided within the `helpers` object
         ```
 
 *   **`spawn<T, I, O>(factory: ActorFactory<ActorHandle<I>, I, O>, next: (handle: SpawnedActorResolver<I>) => ActorCommand<T>): SpawnAction<T, I, O>`**
-    *   **Description:** Creates a command to spawn a new child actor and then execute a subsequent command that can use the child actor's handle. The `factory` argument is the definition of the child actor. The `next` function is a callback that receives the `ActorHandle` of the newly spawned child and must return an `ActorCommand` (typically for the parent actor) to be executed after the child is successfully spawned.
+    *   **Description:** Creates a command to spawn a new child actor and then execute a subsequent command that can use the child actor's handle. The `factory` argument expects a child actor definition (e.g. one created via the `act()` API). The `next` function is a callback that receives the `ActorHandle` of the newly spawned child and must return an `ActorCommand` that the parent actor will execute after the child actor has been spawned.
     *   **Type Parameters:**
         *   `T`: The message type of the parent actor's definition (the context where `spawn` is used).
         *   `I`: The input message type of the child actor being spawned.
         *   `O`: The output message type of the child actor being spawned.
     *   **Parameters:**
-        *   `factory: ActorFactory<ActorHandle<I>, I, O>`: The factory function or `ActorDefinition` for the child actor to be spawned. This is typically the result of calling `act<I>(...)`.
-        *   `next: (handle: SpawnedActorResolver<I>) => ActorCommand<T>`: A callback function that is invoked after the child actor has been successfully spawned. It receives a `SpawnedActorResolver<I>` that refers to the `ActorHandle<I>` of the new child actor and must return an `ActorCommand<T>` to be executed by the parent actor. This is where you define what the parent does immediately after spawning the child (e.g., send it an initial message, store its handle, etc.).
-    *   **Return Value:** `SpawnAction<T, I, O>`: An `ActorCommand` that, when executed by the parent actor, will:
-        1.  Spawn the child actor defined by `factory`.
-        2.  Invoke the `next` callback with the child's handle.
-        3.  Execute the command returned by the `next` callback.
+        *   `factory: ActorFactory<ActorHandle<I>, I, O>`: The factory function or `ActorDefinition` for the child actor to be spawned. takes as its configuration its own inbox handle. This is typically the result of calling `act<I>(...)`.
+        *   `next: (handle: SpawnedActorResolver<I>) => ActorCommand<T>`: A callback function that returns a command that is executed after the child actor has been spawned. It receives a `SpawnedActorResolver<I>` that refers to the `ActorHandle<I>` of the new child actor and must return an `ActorCommand<T>` to be executed by the parent actor.
+    *   **Return Value:** `SpawnAction<T, I, O>`: An `ActorCommand` that, when executed by the parent actor, will spawn the child actor defined by `factory`, then execute the command returned by the `next` callback (whose actor handle resolver will resolve to the handle of the newly-resolved child actor).
     *   **Behavior:** When the `SpawnAction` is executed within a parent actor's command sequence (e.g., `sequence`), the runtime system first spawns the child actor. Once the child is active, the command returned by `next` is then executed by the parent, with the child actor's `ActorHandle` exposed via the `SpawnedActorResolver` accessor.
     *   **Example:**
         ```typescript
@@ -732,43 +880,52 @@ This section describes the helper functions provided within the `helpers` object
 
 ### State accessors
 
-*   **`readState<S, V>(stateHandle: StateHandle<S>, selector: (currentState: S) => V): ReadStateValueResolver<S, V>`**
-    *   **Description:** Creates a placeholder operand that is dynamically resolved at runtime to retrieve a value derived from a single state variable, according to the provided `compute` function. The placeholder operand can be used as an argument to any command that accepts a `ValueRef<V>`.
+*   **`readState<S, V>(input: ValueRef<S>, selector: (currentState: S) => V): ReadStateValueResolver<S, V>`**
+    *   **Description:** Creates a placeholder operand that is dynamically resolved at runtime to retrieve a value derived from a single input `ValueRef<S>`, according to the provided `selector` function. The placeholder operand can be used as an argument to any command that accepts a `ValueRef<V>`.
     *   **Type Parameters:**
-        *   `S`: The type of the state being read from.
-        *   `V`: The type of the value selected from the state.
+        *   `S`: The type of the value resolved from the `input` ValueRef.
+        *   `V`: The type of the value returned by the `selector` function.
     *   **Parameters:**
-        *   `stateHandle: StateHandle<S>`: The handle to the state from which to read.
-        *   `selector: (currentState: S) => V`: A function that takes the current state `S` and returns a selected value `V`.
-    *   **Return Value:** `ReadStateValueResolver<S, V>`: An opaque resolver object (a specific kind of `ValueRef<V>`) that, when used by a command, will provide the value selected from the state at the time of resolution.
-    *   **Behavior:** Returns an opaque `ReadStateValueResolver<S, V>` object containing the `stateHandle` and the `selector`. The command execution engine uses this to fetch the actual value from state when needed.
+        *   `input: ValueRef<S>`: The `ValueRef` (e.g., a `StateHandle` or another resolver) whose resolved value will be passed to the `selector`.
+        *   `selector: (currentState: S) => V`: A function that takes the resolved value `S` from the `input` and returns a selected value `V`.
+    *   **Return Value:** `ReadStateValueResolver<S, V>`: An opaque resolver object that, when used by a command, will provide the value selected from the resolved input at the time of resolution.
+    *   **Behavior:** Returns an opaque `ReadStateValueResolver<S, V>` object. The command execution engine uses this to: 1. Resolve the `input: ValueRef<S>`. 2. Apply the `selector` to the resolved value. The result of the `selector` is the final value.
     *   **Example:**
         ```typescript
-        // Used with send:
+        // Used with send, input is a StateHandle:
         send(outbox, readState(dataHandle, s => ({ type: "CURRENT_DATA", payload: s.info })));
 
-        // Used with delay:
+        // Used with delay, input is a StateHandle:
         delay(readState(configHandle, s => s.timeoutMs));
+        
+        // Chained example: input is another readState resolver
+        const getConfig = () => ({ complex: { timeoutMs: 500 } });
+        withState(getConfig, configHandle => 
+          delay(readState(
+            readState(configHandle, config => config.complex), // Inner readState resolves to { timeoutMs: 500 }
+            complexConfig => complexConfig.timeoutMs // Outer readState selects timeoutMs
+          ))
+        );
         ```
 
-*   **`computeState<S extends unknown[], R>(handles: Readonly<{[K in keyof S]: StateHandle<S[K]>}>, compute: (...values: S) => R): ComputeStateValueResolver<S, R>`**
-    *   **Description:** Creates a placeholder operand that is dynamically resolved at runtime to retrieve a value derived from multiple state variables, according to the provided `compute` function. The placeholder operand can be used as an argument to any command that accepts a `ValueRef<V>`.
+*   **`computeState<S extends ReadonlyArray<unknown>, V>(inputs: { [K in keyof S]: ValueRef<S[K]> }, combine: (...values: S) => V): ComputeStateValueResolver<S, V>`**
+    *   **Description:** Creates a placeholder operand that is dynamically resolved at runtime to retrieve a value derived from an array of `ValueRef`s, according to the provided `combine` function. The placeholder operand can be used as an argument to any command that accepts a `ValueRef<V>`.
     *   **Type Parameters:**
-        *   `S`: A tuple type representing the types of the states managed by the input `handles` (e.g., `[StateType1, StateType2]`).
-        *   `R`: The type of the value returned by the `compute` function and consequently the type of the resolved value.
+        *   `S`: A tuple type representing the types of the values that will be resolved from the `inputs` array.
+        *   `V`: The type of the value returned by the `combine` function and consequently the type of the resolved value.
     *   **Parameters:**
-        *   `handles: Readonly<{[K in keyof S]: StateHandle<S[K]>}>`: A read-only array (tuple) of `StateHandle`s. Each handle corresponds to a state that will be an input to the `compute` function.
-        *   `compute: (...values: S) => R`: A function that takes the resolved values of the states (in the same order as the `handles` array) and returns a computed value `R`.
-    *   **Return Value:** `ComputeStateValueResolver<S, R>`: An opaque resolver object (a specific kind of `ValueRef<R>`) that, when used by a command, will provide the computed value `R` at the time of resolution.
+        *   `inputs: { [K in keyof S]: ValueRef<S[K]> }`: A read-only array (tuple) of `ValueRef`s. Each `ValueRef` in this array will be resolved.
+        *   `combine: (...values: S) => V`: A function that takes the resolved values from the `inputs` array (in the same order) and returns a computed value `V`.
+    *   **Return Value:** `ComputeStateValueResolver<S, V>`: An opaque resolver object that, when used by a command, will provide the computed value `V` at the time of resolution.
     *   **Behavior:** When resolved by the interpreter:
-        1.  Each `StateHandle` in `handles` is resolved to its current state value.
-        2.  The `compute` function is called with these resolved state values in the same order as the handles.
-        3.  The return value of `compute` is the result of this `computeState` operation, encapsulated within the `ComputeStateValueResolver`.
+        1.  Each `ValueRef` in the `inputs` array is resolved to its respective value.
+        2.  The `combine` function is called with these resolved values in the same order as the `inputs` array.
+        3.  The return value of `combine` is the result of this `computeState` operation, encapsulated within the `ComputeStateValueResolver`.
     *   **Example:**
         ```typescript
         const greetingResolver = computeState(
-          [appStateHandle, userPrefsHandle],
-          (appState, userPrefs) => 
-            `Hello, ${appState.name}! Your lang is ${userPrefs.preferredLang} on theme ${appState.settings.theme}.`
+          [appStateHandle, userPrefsHandle, readState(configHandle, c => c.appName)], // inputs can be handles or other resolvers
+          (appState, userPrefs, appName) => 
+            `Hello, ${appState.name} on ${appName}! Your lang is ${userPrefs.preferredLang}.`
         );
         ```
