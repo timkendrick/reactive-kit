@@ -510,7 +510,7 @@ importers:
         specifier: 10.20.2
         version: 10.20.2
 
-  packages/declarative-actors:
+  packages/scripted-workers:
     dependencies:
       eslint:
         specifier: ^8
