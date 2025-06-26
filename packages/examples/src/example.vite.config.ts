@@ -1,8 +1,9 @@
-import { babel } from '@rollup/plugin-babel';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { defineConfig, mergeConfig, Plugin } from 'vite';
+
+import { babel } from '@rollup/plugin-babel';
+import { defineConfig, mergeConfig, type Plugin } from 'vite';
 
 import base from '../../build-config/templates/vite/base.vite.config';
 

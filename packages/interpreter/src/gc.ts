@@ -1,6 +1,7 @@
-import { EffectExpression, Expression, isEffectExpression } from '@reactive-kit/types';
-import { EvaluationCache, EvaluationCacheValue } from './types';
-import { Hash, hash } from '@reactive-kit/hash';
+import { hash, type Hash } from '@reactive-kit/hash';
+import { isEffectExpression, type EffectExpression, type Expression } from '@reactive-kit/types';
+
+import type { EvaluationCache, EvaluationCacheValue } from './types';
 
 export function gc<T>(
   cache: EvaluationCache,

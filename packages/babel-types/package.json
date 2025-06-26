@@ -31,18 +31,25 @@
       }
     }
   },
-  "devDependencies": {
-    "@reactive-kit/build-config": "workspace:*",
-    "@babel/core": "7.24.4",
-    "@babel/types": "7.24.0",
+  "dependencies": {
+    "@babel/core": "7.26.10",
+    "@babel/generator": "7.26.10",
+    "@babel/parser": "7.26.10",
+    "@babel/template": "7.4.4",
+    "@babel/types": "7.26.10",
     "@types/babel__core": "7.20.5",
-    "@types/babel__traverse": "7.20.5"
+    "@types/babel__generator": "7.6.8",
+    "@types/babel__template": "7.4.4",
+    "@types/babel__traverse": "7.20.6"
+  },
+  "devDependencies": {
+    "@reactive-kit/build-config": "workspace:*"
   },
   "peerDependencies": {
     "eslint": "^8",
-    "typedoc": "^0.27",
+    "typedoc": "^0.28",
     "typescript": "^5",
     "vite": "^6",
-    "vitest": "^2"
+    "vitest": "^3"
   }
 }

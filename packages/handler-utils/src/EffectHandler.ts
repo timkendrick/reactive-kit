@@ -16,10 +16,10 @@ import {
   type UnsubscribeEffectsMessage,
 } from '@reactive-kit/runtime-messages';
 import {
-  type EffectExpression,
-  type Expression,
-  type EffectId,
   createPending,
+  type EffectExpression,
+  type EffectId,
+  type Expression,
 } from '@reactive-kit/types';
 import { nonNull } from '@reactive-kit/utils';
 
@@ -42,14 +42,14 @@ export abstract class EffectHandler<
   protected readonly next: ActorHandle<EffectHandlerOutputMessage>;
 
   protected constructor(
-    effectTypes: T['type'] | T['type'][],
+    effectTypes: T['type'] | Array<T['type']>,
     next: ActorHandle<EffectHandlerOutputMessage>,
   ) {
     this.effectTypes = new Set(Array.isArray(effectTypes) ? effectTypes : [effectTypes]);
     this.next = next;
   }
 
-  protected abstract getInitialValue(effect: T): Expression<any> | null;
+  protected abstract getInitialValue(effect: T): Expression<unknown> | null;
 
   protected abstract onSubscribe(
     effect: T,
@@ -98,7 +98,7 @@ export abstract class EffectHandler<
     context: HandlerContext<EffectHandlerInput<TInternal>>,
   ): EffectHandlerOutput<TInternal> {
     const { effects } = message.payload;
-    const effectsByType = new Map<T['type'], T[]>();
+    const effectsByType = new Map<T['type'], Array<T>>();
 
     for (const effectType of this.effectTypes) {
       const typedEffects = getTypedEffects<T>(effectType, effects);
@@ -109,12 +109,12 @@ export abstract class EffectHandler<
 
     if (effectsByType.size === 0) return null;
 
-    const initialValuesByType = new Map<T['type'], Map<EffectId, Expression<any>>>();
+    const initialValuesByType = new Map<T['type'], Map<EffectId, Expression<unknown>>>();
 
     for (const [effectType, typedEffects] of effectsByType) {
       const initialValues = new Map(
         typedEffects
-          .map((effect): [EffectId, Expression<any>] | null => {
+          .map((effect): [EffectId, Expression<unknown>] | null => {
             const stateToken = effect.id;
             const initialValue = this.getInitialValue(effect);
             return [stateToken, initialValue ?? createPending()];
@@ -167,7 +167,7 @@ export abstract class EffectHandler<
 
   protected emit(
     effectType: T['type'],
-    values: Map<EffectId, Expression<any>>,
+    values: Map<EffectId, Expression<unknown>>,
   ): HandlerAction<EffectHandlerOutputMessage> {
     const effectValues = new Map([[effectType, values]]);
     const emitMessage = createEmitEffectValuesMessage({ updates: effectValues });

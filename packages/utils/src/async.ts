@@ -1,4 +1,4 @@
-import { Enum, EnumVariant, VARIANT, instantiateEnum } from './enum';
+import { VARIANT, instantiateEnum, type Enum, type EnumVariant } from './enum';
 
 export interface AsyncTrigger<T> {
   signal: Promise<T>;

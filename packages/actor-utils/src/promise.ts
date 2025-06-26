@@ -1,10 +1,10 @@
 import {
-  AsyncTaskResult,
-  AsyncTaskReturnResult,
-  AsyncTaskFactory,
   HandlerAction,
-  HandlerResult,
-  AsyncTaskType,
+  type AsyncTaskFactory,
+  type AsyncTaskResult,
+  type AsyncTaskReturnResult,
+  type AsyncTaskType,
+  type HandlerResult,
 } from '@reactive-kit/actor';
 
 export function fromPromiseFactory<C, T>(

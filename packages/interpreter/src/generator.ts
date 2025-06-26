@@ -1,23 +1,23 @@
-import { hash, HASH, Hashable } from '@reactive-kit/hash';
+import { HASH, hash, type Hashable } from '@reactive-kit/hash';
 import {
-  AsyncExpression,
   CONTINUE,
-  createSuspense,
-  Expression,
-  GeneratorArgs,
-  GeneratorContext,
-  GeneratorContinuation,
-  GeneratorIntermediates,
-  GeneratorLocals,
-  GeneratorState,
-  GeneratorStateMachine,
-  GeneratorStatics,
-  ResultExpression,
-  SuspenseExpression,
-  SuspenseState,
   TYPE_GENERATOR,
+  createSuspense,
   wrapExpression,
   wrapResult,
+  type AsyncExpression,
+  type Expression,
+  type GeneratorArgs,
+  type GeneratorContext,
+  type GeneratorContinuation,
+  type GeneratorIntermediates,
+  type GeneratorLocals,
+  type GeneratorState,
+  type GeneratorStateMachine,
+  type GeneratorStatics,
+  type ResultExpression,
+  type SuspenseExpression,
+  type SuspenseState,
 } from '@reactive-kit/types';
 
 export function createAsyncState<T>(expression: AsyncExpression<T>): SuspenseState {
@@ -387,8 +387,9 @@ class AsyncGeneratorContext<
       const entry = this.tryEntries[i];
       if (entry.tryLoc === tryLoc) {
         const record = entry.completion;
+        let thrown: unknown;
         if (record.type === 'throw') {
-          var thrown = record.arg;
+          thrown = record.arg;
           resetTryEntry(entry);
         }
         return thrown;

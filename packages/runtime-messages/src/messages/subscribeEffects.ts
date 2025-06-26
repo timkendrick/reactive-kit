@@ -1,4 +1,5 @@
 import type { EffectExpression, EffectType } from '@reactive-kit/types';
+
 import type { Message } from '../message';
 
 export const MESSAGE_SUBSCRIBE_EFFECTS = 'core::subscribeEffects';
@@ -7,8 +8,10 @@ export interface SubscribeEffectsMessagePayload {
   effects: Map<EffectType, Array<EffectExpression<unknown>>>;
 }
 
-export interface SubscribeEffectsMessage
-  extends Message<typeof MESSAGE_SUBSCRIBE_EFFECTS, SubscribeEffectsMessagePayload> {}
+export type SubscribeEffectsMessage = Message<
+  typeof MESSAGE_SUBSCRIBE_EFFECTS,
+  SubscribeEffectsMessagePayload
+>;
 
 export function createSubscribeEffectsMessage(
   payload: SubscribeEffectsMessagePayload,

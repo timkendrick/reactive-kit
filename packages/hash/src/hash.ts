@@ -1,3 +1,5 @@
+import { getStringBytes } from './string';
+
 export const HASH: unique symbol = Symbol.for('@reactive-kit/symbols/hash');
 
 export type Hash = bigint;
@@ -21,7 +23,7 @@ export interface CustomHashable {
 
 type CustomHashFactory = (hash: (...values: Array<Hashable>) => Hash) => Hash;
 
-export function assignCustomHash<T extends object | Function>(
+export function assignCustomHash<T extends object>(
   hash: Hash | CustomHashFactory,
   value: T,
 ): T & CustomHashable {
@@ -43,8 +45,6 @@ export class HashError extends Error {
 const HASH_BITS = 64;
 const HASH_SEED = 14_695_981_039_346_656_037n;
 const HASH_STEP = 1_099_511_628_211n;
-
-const STRING_ENCODER = new TextEncoder();
 
 export function hashSeed(): Hash {
   return HASH_SEED;
@@ -159,7 +159,7 @@ export function writeBooleanHash(state: Hash, value: boolean): Hash {
 }
 
 export function writeStringHash(state: Hash, value: string): Hash {
-  const bytes = STRING_ENCODER.encode(value);
+  const bytes = getStringBytes(value);
   return writeUint8ArrayHash(state, bytes);
 }
 

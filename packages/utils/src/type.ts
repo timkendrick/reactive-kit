@@ -3,7 +3,7 @@ export function nonNull<T>(value: T): value is NonNullable<T> {
 }
 
 export function unreachable(value: never): never {
-  throw null;
+  throw new Error(`Unexpected value: ${value}`);
 }
 
 export function noop(): void {}

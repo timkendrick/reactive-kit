@@ -1,40 +1,35 @@
 import { describe, expect, test } from 'vitest';
-import { CustomHashable, hash, HASH } from '@reactive-kit/hash';
+
+import { DependencyGraph } from '@reactive-kit/cache';
+import { HASH, type CustomHashable } from '@reactive-kit/hash';
 import {
+  TYPE,
+  TYPE_GENERATOR,
   createAsync,
   createEffect,
+  createEvaluationPendingResult,
+  createEvaluationSuccessResult,
   createFallback,
   createPending,
   createResult,
-  EffectExpression,
-  Expression,
-  TYPE,
-  CONTINUE,
-  GeneratorContext,
-  TYPE_GENERATOR,
-  FallbackExpression,
-  isEffectExpression,
-  createEvaluationPendingResult,
-  createEvaluationSuccessResult,
+  type CONTINUE,
+  type EffectExpression,
+  type Expression,
+  type FallbackExpression,
+  type GeneratorContext,
+  type GeneratorIntermediates,
+  type GeneratorLocals,
+  type GeneratorStatics,
 } from '@reactive-kit/types';
 
-import { EvaluationCache, EvaluationCacheValue } from './types';
 import { evaluate } from './evaluate';
-import { DependencyGraph } from '@reactive-kit/cache';
 import { gc } from './gc';
+import type { EvaluationCache } from './types';
 
 function withNonceHash<T extends object>(value: T): T & CustomHashable {
   return Object.assign(value, {
     [HASH]: BigInt(Math.round(Math.random() * Number.MAX_SAFE_INTEGER)),
   });
-}
-
-function isEvaluationCacheEffectResult<T>(
-  result: EvaluationCacheValue<T>,
-): result is EvaluationCacheValue<T> & {
-  expression: EffectExpression<T>;
-} {
-  return isEffectExpression(result.expression);
 }
 
 describe(evaluate, () => {
@@ -121,9 +116,9 @@ describe(evaluate, () => {
         (
           context: GeneratorContext<
             { foo: string; bar: string },
-            {},
-            {},
-            {},
+            GeneratorLocals,
+            GeneratorIntermediates,
+            GeneratorStatics,
             never,
             never,
             never,
@@ -163,9 +158,9 @@ describe(evaluate, () => {
         (
           context: GeneratorContext<
             { foo: string; bar: string },
-            {},
-            {},
-            {},
+            GeneratorLocals,
+            GeneratorIntermediates,
+            GeneratorStatics,
             EffectExpression<string>,
             string,
             never,
@@ -229,9 +224,9 @@ describe(evaluate, () => {
         (
           context: GeneratorContext<
             { foo: string; bar: string },
-            {},
-            {},
-            {},
+            GeneratorLocals,
+            GeneratorIntermediates,
+            GeneratorStatics,
             EffectExpression<string>,
             string,
             never,
@@ -295,9 +290,9 @@ describe(evaluate, () => {
         (
           context: GeneratorContext<
             { foo: string; bar: string },
-            {},
-            {},
-            {},
+            GeneratorLocals,
+            GeneratorIntermediates,
+            GeneratorStatics,
             EffectExpression<string>,
             string,
             never,
@@ -361,9 +356,9 @@ describe(evaluate, () => {
         (
           context: GeneratorContext<
             { foo: string; bar: string },
-            {},
-            {},
-            {},
+            GeneratorLocals,
+            GeneratorIntermediates,
+            GeneratorStatics,
             FallbackExpression<string, string>,
             string,
             never,
@@ -444,9 +439,9 @@ describe(evaluate, () => {
         (
           context: GeneratorContext<
             { foo: string; bar: string },
-            {},
-            {},
-            {},
+            GeneratorLocals,
+            GeneratorIntermediates,
+            GeneratorStatics,
             never,
             never,
             never,
@@ -486,9 +481,9 @@ describe(evaluate, () => {
         (
           context: GeneratorContext<
             { foo: string; bar: string },
-            {},
-            {},
-            {},
+            GeneratorLocals,
+            GeneratorIntermediates,
+            GeneratorStatics,
             EffectExpression<string>,
             string,
             never,

@@ -1,4 +1,10 @@
 import {
+  NODE_FIELDS,
+  VISITOR_KEYS,
+  type FieldOptions,
+  type types as t,
+} from '@reactive-kit/babel-types';
+import {
   hashSeed,
   writeByteHash,
   writeNullHash,
@@ -7,12 +13,6 @@ import {
   type Hash,
   type Hashable,
 } from '@reactive-kit/hash';
-import {
-  NODE_FIELDS,
-  VISITOR_KEYS,
-  type FieldOptions,
-  type types as t,
-} from '@reactive-kit/babel-types';
 
 type AstNode = t.Node;
 type AstNodeType = AstNode['type'];

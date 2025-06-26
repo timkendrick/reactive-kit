@@ -1,9 +1,10 @@
-import { printAst, template, types as t } from '@reactive-kit/babel-test-utils';
-import { hashAstNode } from '@reactive-kit/babel-plugin-reactive-functions/src/utils/ast';
 import { describe, expect, test } from 'vitest';
 
+import { hashAstNode } from '@reactive-kit/babel-plugin-reactive-functions/src/utils/ast';
+import { printAst, template, types as t } from '@reactive-kit/babel-test-utils';
+
 import { compile } from './compile';
-import { CompilerOptions } from './types';
+import type { CompilerOptions } from './types';
 
 describe(compile, () => {
   test('transforms top-level async functions', () => {

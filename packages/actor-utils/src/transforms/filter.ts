@@ -1,9 +1,9 @@
 import {
-  Actor,
-  ActorHandle,
   HandlerAction,
-  HandlerContext,
-  HandlerResult,
+  type Actor,
+  type ActorHandle,
+  type HandlerContext,
+  type HandlerResult,
 } from '@reactive-kit/actor';
 
 export class FilterActor<T, T2 extends T = T> implements Actor<T, T2> {
@@ -17,7 +17,7 @@ export class FilterActor<T, T2 extends T = T> implements Actor<T, T2> {
     this.next = next;
   }
 
-  public handle(message: T, context: HandlerContext<T>): HandlerResult<T2> {
+  public handle(message: T, _context: HandlerContext<T>): HandlerResult<T2> {
     if (!this.predicate(message)) return null;
     return [HandlerAction.Send(this.next, message)];
   }

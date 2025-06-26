@@ -4,7 +4,8 @@ import type { Hashable } from '@reactive-kit/hash';
 import { Runtime } from '@reactive-kit/runtime';
 import { wrapExpression, type Expression } from '@reactive-kit/types';
 import { subscribeAsyncIterator } from '@reactive-kit/utils';
-import { renderDom, RenderedNode } from './vdom';
+
+import { renderDom, type RenderedNode } from './vdom';
 
 export function render(root: JSX.Element, container: Element | DocumentFragment): Promise<null> {
   const runtime = new Runtime(handlers);

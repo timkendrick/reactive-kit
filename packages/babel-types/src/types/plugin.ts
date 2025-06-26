@@ -1,7 +1,8 @@
-import type { PluginPass, PluginObj, PluginOptions } from '@babel/core';
+import type { PluginObj, PluginOptions, PluginPass } from '@babel/core';
+import type * as BabelCore from '@babel/core';
+
 export type { Scope, Binding, TraverseOptions } from '@babel/traverse';
 export type { PluginObj, PluginPass } from '@babel/core';
-import type * as BabelCore from '@babel/core';
 
 export type * as types from '@babel/types';
 

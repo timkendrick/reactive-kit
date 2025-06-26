@@ -1,9 +1,9 @@
 import {
-  Actor,
-  ActorHandle,
   HandlerAction,
-  HandlerContext,
-  HandlerResult,
+  type Actor,
+  type ActorHandle,
+  type HandlerContext,
+  type HandlerResult,
 } from '@reactive-kit/actor';
 
 export class ScanActor<T, S> implements Actor<T, S> {
@@ -17,7 +17,7 @@ export class ScanActor<T, S> implements Actor<T, S> {
     this.next = next;
   }
 
-  public handle(message: T, context: HandlerContext<T>): HandlerResult<S> {
+  public handle(message: T, _context: HandlerContext<T>): HandlerResult<S> {
     const result = this.reducer(this.state, message);
     this.state = result;
     return [HandlerAction.Send(this.next, result)];

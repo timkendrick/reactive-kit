@@ -1,9 +1,9 @@
 import {
-  Actor,
-  ActorHandle,
   HandlerAction,
-  HandlerContext,
-  HandlerResult,
+  type Actor,
+  type ActorHandle,
+  type HandlerContext,
+  type HandlerResult,
 } from '@reactive-kit/actor';
 
 export class MapActor<T, T2> implements Actor<T, T2> {
@@ -15,7 +15,7 @@ export class MapActor<T, T2> implements Actor<T, T2> {
     this.next = next;
   }
 
-  public handle(message: T, context: HandlerContext<T>): HandlerResult<T2> {
+  public handle(message: T, _context: HandlerContext<T>): HandlerResult<T2> {
     return [HandlerAction.Send(this.next, this.iteratee(message))];
   }
 }

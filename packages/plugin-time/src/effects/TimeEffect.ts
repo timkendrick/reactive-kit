@@ -11,7 +11,7 @@ export type TimeEffectType = typeof EFFECT_TYPE_TIME;
 
 export type TimeEffectPayload = number;
 
-export interface TimeHeaders extends Record<string, string> {}
+export type TimeHeaders = Record<string, string>;
 
 export function createTimeEffect(interval: number): TimeEffect {
   return createEffect(EFFECT_TYPE_TIME, interval);

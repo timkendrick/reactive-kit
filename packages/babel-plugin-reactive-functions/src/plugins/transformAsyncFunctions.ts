@@ -1,16 +1,16 @@
+import destructuringTransform from '@babel/plugin-transform-destructuring';
 import {
-  type Binding,
   type BabelPlugin,
+  type Binding,
   type Node,
   type NodePath,
+  type PluginObj,
+  type PluginPass,
   type Scope,
+  type TraverseOptions,
   type types as t,
-  TraverseOptions,
-  PluginPass,
-  PluginObj,
 } from '@reactive-kit/babel-types';
-import { Hash } from '@reactive-kit/hash';
-import destructuringTransform from '@babel/plugin-transform-destructuring';
+import type { Hash } from '@reactive-kit/hash';
 import regeneratorTransform from 'regenerator-transform';
 import '../transform-destructuring.d.ts';
 import '../regenerator-transform.d.ts';
@@ -442,8 +442,10 @@ export const transformAsyncFunctions: BabelPlugin = (babel): PluginObj<PluginPas
       const identifiers = getterReference.isIdentifier()
         ? [getterReference]
         : getterReference.isPatternLike()
-        ? getPatternIdentifiers(getterReference).filter((identifier) => identifier.node.name === id)
-        : [];
+          ? getPatternIdentifiers(getterReference).filter(
+              (identifier) => identifier.node.name === id,
+            )
+          : [];
       for (const reference of identifiers) {
         getterReference.replaceWith(transform(reference));
       }
@@ -496,8 +498,8 @@ export const transformAsyncFunctions: BabelPlugin = (babel): PluginObj<PluginPas
               ? property.node.value
               : null
             : property.isIdentifier()
-            ? property.node.name
-            : null;
+              ? property.node.name
+              : null;
           switch (propertyName) {
             case 'prev':
             case 'next': {

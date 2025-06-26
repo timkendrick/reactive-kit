@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 
-export default function (api: {}, opts: {}) {
+export default function (_api: object, _opts: object) {
   return {
     parserOpts: {
       plugins: ['jsx'],

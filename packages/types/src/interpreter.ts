@@ -1,9 +1,10 @@
 import type { Hashable } from '@reactive-kit/hash';
+
 import type { EffectExpression, ResultExpression } from './expression';
 
 export interface InterpreterResult<T> {
   result: EvaluationResult<T>;
-  effects: EffectExpression<unknown>[];
+  effects: Array<EffectExpression<unknown>>;
 }
 
 export type EvaluationResult<T> =

@@ -1,5 +1,6 @@
 import type * as Preact from 'preact';
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace JSX {
   export type IntrinsicElements = {
     [T in keyof Preact.JSX.IntrinsicElements]: ConvertChildren<
@@ -19,7 +20,7 @@ export namespace JSX {
 
   export type IntrinsicElementType = keyof IntrinsicElements;
 
-  export type ElementType = IntrinsicElementType | Component<{}>;
+  export type ElementType = IntrinsicElementType | Component<object>;
 
   export type Key = string | number | bigint | boolean | null;
 
@@ -34,11 +35,12 @@ export namespace JSX {
     ref?: Ref<T> | undefined;
   }
 
-  export type ElementProps<T extends ElementType> = T extends Component<infer P>
-    ? P
-    : T extends keyof IntrinsicElements
-    ? IntrinsicElements[T]
-    : {};
+  export type ElementProps<T extends ElementType> =
+    T extends Component<infer P>
+      ? P
+      : T extends keyof IntrinsicElements
+        ? IntrinsicElements[T]
+        : object;
 
   export type ElementDomNode<T extends ElementType> = T extends keyof JSX.IntrinsicElements
     ? JSX.IntrinsicElements[T] extends JSX.HTMLAttributes<infer E>
@@ -46,7 +48,7 @@ export namespace JSX {
       : never
     : never;
 
-  export interface Component<P extends {}> {
+  export interface Component<P extends object> {
     (props: P): Promise<ChildNode>;
   }
 
@@ -55,6 +57,7 @@ export namespace JSX {
   export type Children = ChildNode | Array<ChildNode>;
 
   type ExcludeSignals<T extends object> = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [K in keyof T]: Exclude<T[K], Preact.JSX.SignalLike<any>>;
   };
 

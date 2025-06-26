@@ -1,12 +1,13 @@
 import {
-  AsyncTaskFactory,
   HandlerAction,
   type ActorHandle,
+  type AsyncTaskFactory,
   type HandlerResult,
 } from '@reactive-kit/actor';
 import { fromAsyncIteratorFactory } from '@reactive-kit/actor-utils';
 import type { AsyncTaskId } from '@reactive-kit/handler-utils';
 import { createAsyncTrigger, type AsyncTrigger } from '@reactive-kit/utils';
+
 import type { TimeEffect } from '../effects';
 import { createTimeHandlerEmitMessage, type TimeHandlerEmitMessage } from '../messages';
 

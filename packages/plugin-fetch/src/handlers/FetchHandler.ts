@@ -1,16 +1,17 @@
-import { ActorFactory, type ActorHandle, type HandlerContext } from '@reactive-kit/actor';
+import { type ActorFactory, type ActorHandle, type HandlerContext } from '@reactive-kit/actor';
 import {
   AsyncTaskHandler,
-  AsyncTaskId,
+  type AsyncTaskId,
   type EffectHandlerInput,
   type EffectHandlerOutput,
   type EffectHandlerOutputMessage,
 } from '@reactive-kit/handler-utils';
 import type { Message } from '@reactive-kit/runtime-messages';
 import { createResult, type Expression } from '@reactive-kit/types';
+
 import { EFFECT_TYPE_FETCH, type FetchEffect } from '../effects';
 import { isFetchHandlerResponseMessage, type FetchHandlerResponseMessage } from '../messages';
-import { FETCH_TASK, FetchTaskFactory, type FetchTaskConfig } from '../tasks';
+import { FETCH_TASK, type FetchTaskConfig, type FetchTaskFactory } from '../tasks';
 
 type FetchHandlerInternalMessage = FetchHandlerResponseMessage;
 
@@ -40,7 +41,7 @@ export class FetchHandler extends AsyncTaskHandler<
     super(EFFECT_TYPE_FETCH, next);
   }
 
-  protected override getInitialValue(effect: FetchEffect): Expression<any> | null {
+  protected override getInitialValue(_effect: FetchEffect): Expression<unknown> | null {
     return null;
   }
 
@@ -73,11 +74,11 @@ export class FetchHandler extends AsyncTaskHandler<
 
   protected override handleTaskMessage(
     message: FetchHandlerInternalMessage,
-    state: FetchTaskConfig,
+    _state: FetchTaskConfig,
     effect: FetchEffect,
-    context: HandlerContext<EffectHandlerInput<FetchHandlerInternalMessage>>,
+    _context: HandlerContext<EffectHandlerInput<FetchHandlerInternalMessage>>,
   ): EffectHandlerOutput<FetchHandlerInternalMessage> {
-    const { response } = message;
+    const { response } = message.payload;
     const effectValue = createResult(response);
     const action = this.emit(EFFECT_TYPE_FETCH, new Map([[effect.id, effectValue]]));
     return [action];

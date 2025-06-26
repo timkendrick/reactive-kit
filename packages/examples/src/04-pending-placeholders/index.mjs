@@ -1,4 +1,4 @@
-import { useFetch, useFallback } from '@reactive-kit/hooks';
+import { useFallback, useFetch } from '@reactive-kit/hooks';
 
 async function main() {
   const response = await useFallback(

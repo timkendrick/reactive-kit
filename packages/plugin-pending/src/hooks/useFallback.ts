@@ -1,5 +1,5 @@
+import type { Hashable } from '@reactive-kit/hash';
 import { useReactive } from '@reactive-kit/reactive-utils';
-import { type Hashable } from '@reactive-kit/hash';
 import { createFallback, wrapExpression, type Expression } from '@reactive-kit/types';
 
 export function useFallback<T, V extends Hashable>(

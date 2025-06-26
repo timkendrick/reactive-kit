@@ -1,9 +1,9 @@
 import {
-  ActorHandle,
   HandlerAction,
-  HandlerContext,
-  HandlerResult,
-  Actor,
+  type Actor,
+  type ActorHandle,
+  type HandlerContext,
+  type HandlerResult,
 } from '@reactive-kit/actor';
 
 export class BroadcastActor<T> implements Actor<T, T> {
@@ -15,7 +15,7 @@ export class BroadcastActor<T> implements Actor<T, T> {
     }
   }
 
-  public handle(message: T, context: HandlerContext<T>): HandlerResult<T> {
+  public handle(message: T, _context: HandlerContext<T>): HandlerResult<T> {
     return this.targets.map((target) => HandlerAction.Send(target, message));
   }
 }

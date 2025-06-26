@@ -1,12 +1,12 @@
 import {
   HASH,
-  hash,
   HashError,
+  hash,
   isHashable,
   type CustomHashable,
   type Hashable,
 } from '@reactive-kit/hash';
-import { TYPE } from './type';
+
 import type {
   GeneratorArgs,
   GeneratorContinuation,
@@ -15,6 +15,7 @@ import type {
   GeneratorStateMachine,
   GeneratorStatics,
 } from './generator';
+import { TYPE } from './type';
 
 /*
 The following kinds of expressions are supported by the interpreter:
@@ -43,8 +44,8 @@ export type EXPRESSION_TYPE = typeof EXPRESSION_TYPE;
 
 declare const RESULT_TYPE: unique symbol;
 
-function withResultType<T>(value: any): typeof value & { [RESULT_TYPE]: T } {
-  return value;
+function withResultType<T>(): <V>(value: V) => V & { [RESULT_TYPE]: T } {
+  return <V>(value: V) => value as V & { [RESULT_TYPE]: T };
 }
 
 export interface ResultExpression<T> extends CustomHashable {
@@ -57,12 +58,12 @@ export const EXPRESSION_TYPE_RESULT: unique symbol = Symbol.for(
 );
 export type EXPRESSION_TYPE_RESULT = typeof EXPRESSION_TYPE_RESULT;
 export function createResult<T extends Hashable>(value: T): ResultExpression<T> {
-  return withResultType<T>({
+  return {
     [HASH]: hash('@reactive-kit/symbols/expression/type/result', value),
     [TYPE]: TYPE_EXPRESSION,
     [EXPRESSION_TYPE]: EXPRESSION_TYPE_RESULT,
     value,
-  });
+  };
 }
 export function isResultExpression<T>(value: Expression<T>): value is ResultExpression<T> {
   return value[EXPRESSION_TYPE] === EXPRESSION_TYPE_RESULT;
@@ -91,7 +92,7 @@ export function createEffect<T extends EffectType, P extends Hashable, V>(
   payload: P;
 } {
   const id = hash('@reactive-kit/symbols/expression/type/effect', type, payload);
-  return withResultType<V>({
+  return withResultType<V>()({
     [HASH]: id,
     [TYPE]: TYPE_EXPRESSION,
     [EXPRESSION_TYPE]: EXPRESSION_TYPE_EFFECT,
@@ -146,17 +147,23 @@ export function createAsync<
   > &
     Hashable,
   args: Array<TArgs[Extract<keyof TArgs, string>]>,
-): AsyncExpression<TResult> & {
-  target: typeof target;
-  args: typeof args;
-} {
-  return withResultType<TResult>({
+): AsyncExpression<TResult> {
+  return withResultType<TResult>()({
     [HASH]: hash('@reactive-kit/symbols/expression/type/async', target, args),
     [TYPE]: TYPE_EXPRESSION,
     [EXPRESSION_TYPE]: EXPRESSION_TYPE_ASYNC,
-    target,
+    target: target as unknown as GeneratorStateMachine<
+      GeneratorArgs,
+      GeneratorLocals,
+      GeneratorIntermediates,
+      GeneratorStatics,
+      Hashable,
+      Hashable,
+      Hashable,
+      TResult
+    >,
     args,
-  });
+  }) as AsyncExpression<TResult>;
 }
 export function isAsyncExpression<T>(value: Expression<T>): value is AsyncExpression<T> {
   return value[EXPRESSION_TYPE] === EXPRESSION_TYPE_ASYNC;
@@ -182,7 +189,7 @@ export function createSuspense<T>(
   parent: typeof parent;
   state: typeof state;
 } {
-  return withResultType<T>({
+  return withResultType<T>()({
     [HASH]: hash('@reactive-kit/symbols/expression/type/suspense', dependencies, parent, state),
     [TYPE]: TYPE_EXPRESSION,
     [EXPRESSION_TYPE]: EXPRESSION_TYPE_SUSPENSE,

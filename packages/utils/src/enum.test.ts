@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { Enum, match, VARIANT } from './enum';
+
+import { Enum, VARIANT, match } from './enum';
 import { unreachable } from './type';
 
 describe('enums', () => {
@@ -94,12 +95,14 @@ describe('enums', () => {
     const color = eraseColorType(Color.Rgb({ r: 0, g: 128, b: 255 }));
     const value = (() => {
       switch (color[VARIANT]) {
-        case 'Rgb':
+        case 'Rgb': {
           const { r, g, b } = color;
           return { r, g, b };
-        case 'Hsl':
+        }
+        case 'Hsl': {
           const { h, s, l } = color;
           return { h, s, l };
+        }
       }
     })();
     expect(value).toEqual({ r: 0, g: 128, b: 255 });

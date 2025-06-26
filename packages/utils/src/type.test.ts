@@ -1,16 +1,10 @@
 import { describe, expect, test } from 'vitest';
+
 import { nonNull, noop, unreachable } from './type';
 
 describe(unreachable, () => {
   test('throws', () => {
-    expect(() => {
-      try {
-        return unreachable(undefined as never);
-      } catch (error) {
-        if (error === null) throw new Error('foo');
-        throw error;
-      }
-    }).toThrow('foo');
+    expect(() => unreachable(undefined as never)).toThrow('Unexpected value: undefined');
   });
 });
 

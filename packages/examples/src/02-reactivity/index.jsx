@@ -1,5 +1,5 @@
-import { useTime } from '@reactive-kit/hooks';
 import { render } from '@reactive-kit/dom';
+import { useTime } from '@reactive-kit/hooks';
 
 async function Main() {
   // Current timestamp in milliseconds (sampled every 1000 milliseconds)

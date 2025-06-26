@@ -1,5 +1,5 @@
-import { useFetch, useFallback } from '@reactive-kit/hooks';
 import { render } from '@reactive-kit/dom';
+import { useFallback, useFetch } from '@reactive-kit/hooks';
 
 async function Main() {
   const response = await useFallback(

@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export const VARIANT = '@@type';
 
 export type EnumDiscriminantKey = typeof VARIANT;
 
 export type Enum<V extends { [K in keyof V]: object | void }> = {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   [K in keyof V]: { [VARIANT]: K } & (V[K] extends object ? V[K] : {});
 }[keyof V];
 
