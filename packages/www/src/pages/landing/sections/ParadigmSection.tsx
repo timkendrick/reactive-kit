@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 
-import { BuildingBlock } from '@/components/BuildingBlock';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function ParadigmSection(): ReactNode {
   const reactiveComponentsIcon = (
-    <svg width="74" height="70" viewBox="0 0 74 70" className="text-gray-400">
+    <svg width="74" height="70" viewBox="0 0 74 70" className="text-muted-foreground">
       {/* Top level: Multiple data sources */}
       <rect x="5" y="5" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
       <rect x="28" y="5" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
@@ -33,16 +33,16 @@ export function ParadigmSection(): ReactNode {
         opacity="0.6"
       />
       {/* Bottom level: Single computed result (highlighted) */}
-      <rect x="19" y="36" width="36" height="12" rx="3" fill="rgb(99, 102, 241)" opacity="0.8" />
+      <rect x="19" y="36" width="36" height="12" rx="3" fill="var(--primary)" opacity="0.8" />
     </svg>
   );
 
   const scriptedWorkersIcon = (
-    <svg width="120" height="50" viewBox="0 0 120 50" className="text-gray-400">
+    <svg width="120" height="50" viewBox="0 0 120 50" className="text-muted-foreground">
       {/* Sequential chain of blocks */}
       <rect x="5" y="17" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
       <rect x="35" y="17" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
-      <rect x="65" y="17" width="18" height="12" rx="2" fill="rgb(99, 102, 241)" opacity="0.8" />
+      <rect x="65" y="17" width="18" height="12" rx="2" fill="var(--primary)" opacity="0.8" />
       <rect x="95" y="17" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
 
       {/* Right-pointing arrows */}
@@ -71,11 +71,11 @@ export function ParadigmSection(): ReactNode {
   );
 
   const transportLayerIcon = (
-    <svg width="102" height="65" viewBox="0 0 102 65" className="text-gray-400">
+    <svg width="102" height="65" viewBox="0 0 102 65" className="text-muted-foreground">
       <defs>
         <linearGradient id="transportGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" style={{ stopColor: 'rgb(99, 102, 241)', stopOpacity: 0.2 }} />
-          <stop offset="100%" style={{ stopColor: 'rgb(99, 102, 241)', stopOpacity: 0.8 }} />
+          <stop offset="0%" style={{ stopColor: 'var(--primary)', stopOpacity: 0.2 }} />
+          <stop offset="100%" style={{ stopColor: 'var(--primary)', stopOpacity: 0.8 }} />
         </linearGradient>
       </defs>
 
@@ -132,64 +132,91 @@ export function ParadigmSection(): ReactNode {
     </svg>
   );
 
+  const buildingBlocks = [
+    {
+      emoji: '⚡',
+      title: 'Reactive Components',
+      description: 'Define complex live computations anywhere on your stack',
+      icon: reactiveComponentsIcon,
+      useCases: [
+        'Dynamic front-end UI widgets',
+        'Back-end streaming API endpoints',
+        'Real-time dashboard panels',
+      ],
+    },
+    {
+      emoji: '🔄',
+      title: 'Scripted Workers',
+      description: 'Stateful, repeatable process orchestration',
+      icon: scriptedWorkersIcon,
+      useCases: [
+        'Complex client-side form validation',
+        'Data processing pipelines',
+        'Alerting mechanisms',
+      ],
+    },
+  ];
+
   return (
-    <section className="bg-gray-50 py-16">
+    <section className="bg-muted py-16">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold mb-6">A New Paradigm for Real-Time Systems</h2>
-          <p className="text-xl text-gray-600 max-w-4xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-4xl mx-auto">
             ReactiveKit offers a unified and simplified approach by combining three powerful
             building blocks:
           </p>
         </div>
 
         {/* Three Building Blocks */}
-        <div className="grid grid-cols-2 gap-8 mb-8">
-          <BuildingBlock
-            emoji="⚡"
-            title="Reactive Components"
-            description="Define complex live computations anywhere on your stack"
-            icon={reactiveComponentsIcon}
-            useCases={[
-              'Dynamic front-end UI widgets',
-              'Back-end streaming API endpoints',
-              'Real-time dashboard panels',
-            ]}
-          />
-          <BuildingBlock
-            emoji="🔄"
-            title="Scripted Workers"
-            description="Stateful, repeatable process orchestration"
-            icon={scriptedWorkersIcon}
-            useCases={[
-              'Complex client-side form validation',
-              'Data processing pipelines',
-              'Alerting mechanisms',
-            ]}
-          />
+        <div className="grid md:grid-cols-2 gap-8 mb-12">
+          {buildingBlocks.map((block) => (
+            <Card key={block.title} className="text-center flex flex-col">
+              <CardHeader className="pb-2">
+                <div className="text-3xl mb-2">{block.emoji}</div>
+                <CardTitle className="text-xl font-semibold">{block.title}</CardTitle>
+                <CardDescription className="pt-1">{block.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col flex-grow">
+                <div className="flex justify-center my-4">{block.icon}</div>
+                <div className="text-left border-t border-border pt-4 mt-auto">
+                  <h4 className="text-sm font-medium text-foreground mb-2">Use cases:</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    {block.useCases.map((useCase) => (
+                      <li key={useCase}>• {useCase}</li>
+                    ))}
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         <div className="mb-12">
-          <div className="text-center bg-white rounded-lg shadow-lg p-6">
-            <div className="text-3xl mb-4">🌐</div>
-            <h3 className="text-xl font-semibold mb-2">Intelligent Transport Layer</h3>
-            <p className="text-gray-600 mb-4">Deterministic, observable system backbone</p>
-
-            <div className="flex justify-center mb-4">{transportLayerIcon}</div>
-
-            <div className="text-left border-t border-gray-200 pt-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Key features:</h4>
-              <ul className="text-sm text-gray-500 space-y-1">
-                <li>• Ordered event bus synchronizes all interactions</li>
-                <li>• All application communication flows through this layer</li>
-                <li>• Single source of truth for deterministic system behavior</li>
-              </ul>
-            </div>
-          </div>
+          <Card className="text-center">
+            <CardHeader>
+              <div className="text-3xl mb-4">🌐</div>
+              <CardTitle className="text-xl font-semibold">Intelligent Transport Layer</CardTitle>
+              <CardDescription className="pt-1">
+                Deterministic, observable system backbone
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-center mb-4">{transportLayerIcon}</div>
+              <div className="text-left border-t border-border pt-4">
+                <h4 className="text-sm font-medium text-foreground mb-2">Key features:</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Ordered event bus synchronizes all interactions</li>
+                  <li>• All application communication flows through this layer</li>
+                  <li>• Single source of truth for deterministic system behavior</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="text-center mb-12">
-          <p className="text-xl text-gray-600 max-w-4xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-4xl mx-auto">
             The combination of these three building blocks ensures that your system is always in
             sync,
             <br />
