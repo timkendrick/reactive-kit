@@ -4,28 +4,28 @@ import { CodeBlock, CodeLine, CodeToken } from '@/components/CodeBlock';
 
 export function ReactiveComponentsSection(): ReactNode {
   return (
-    <section className="bg-white py-16">
+    <section className="py-16">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-12">
           <div>
             <h2 className="text-3xl font-bold mb-2">⚡ Reactive Components</h2>
-            <p className="text-gray-400 mb-6">
+            <p className="text-muted-foreground mb-6">
               Define complex live computations anywhere on the stack
             </p>
-            <p className="text-lg text-gray-600 mb-6">
+            <p className="text-lg text-subtitle mb-6">
               Reactive Components express a <strong>live computation</strong>, written as an{' '}
               <code>async</code> function.
             </p>
-            <p className="text-md text-gray-600 mb-6">
+            <p className="text-md text-muted-foreground mb-6">
               Unlike standard UI framework components, Reactive Components are managed by
               ReactiveKit's runtime, enabling automatic dependency tracking, efficient incremental
               re-computation, and causal logging across the entire stack.
             </p>
-            <p className="text-md text-gray-600 mb-6">
+            <p className="text-md text-muted-foreground mb-6">
               Just use <code>await</code> keywords wherever you read from a live data stream, and
               ReactiveKit ensures it's always up-to-date with the underlying data, automatically.
             </p>
-            <p className="text-md text-gray-600 mb-6">
+            <p className="text-md text-muted-foreground mb-6">
               The output of a Reactive Component can be a UI element, a streaming value to be
               exposed via an API, or any other serializable data structure, allowing the same
               component to be used interchangeably on both front-end and back-end.
@@ -33,7 +33,7 @@ export function ReactiveComponentsSection(): ReactNode {
 
             <div className="text-sm space-y-4 mb-6">
               <div className="flex items-start">
-                <span className="text-blue-500 mr-2">•</span>
+                <span className="text-primary mr-2">•</span>
                 <span>
                   <strong>Declarative & Composable</strong>
                   <br />
@@ -42,7 +42,7 @@ export function ReactiveComponentsSection(): ReactNode {
                 </span>
               </div>
               <div className="flex items-start">
-                <span className="text-blue-500 mr-2">•</span>
+                <span className="text-primary mr-2">•</span>
                 <span>
                   <strong>Efficient Updates</strong>
                   <br />
@@ -51,7 +51,7 @@ export function ReactiveComponentsSection(): ReactNode {
                 </span>
               </div>
               <div className="flex items-start">
-                <span className="text-blue-500 mr-2">•</span>
+                <span className="text-primary mr-2">•</span>
                 <span>
                   <strong>Truly Full-Stack</strong>
                   <br />

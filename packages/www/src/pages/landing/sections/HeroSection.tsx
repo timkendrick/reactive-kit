@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 
-import { Button } from '@/components/Button';
+import { Button } from '@/components/ui/button';
 
 export function HeroSection(): ReactNode {
   return (
-    <header className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white py-20">
+    <header className="bg-primary text-primary-foreground py-20">
       <div className="max-w-6xl mx-auto px-6 text-center">
         <h1 className="text-5xl md:text-6xl font-bold mb-6">ReactiveKit</h1>
         <h2 className="text-2xl md:text-3xl font-light mb-8">
@@ -20,7 +20,7 @@ export function HeroSection(): ReactNode {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button variant="primary" size="lg">
+          <Button variant="secondary" size="lg">
             ⭐ Star on GitHub
           </Button>
           <Button variant="outline" size="lg">

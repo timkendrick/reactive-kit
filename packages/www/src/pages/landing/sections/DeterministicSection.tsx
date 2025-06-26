@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 export function DeterministicSection(): ReactNode {
   return (
-    <section className="bg-white py-16">
+    <section className="py-16">
       <div className="max-w-6xl mx-auto px-6">
         <div className="mb-12">
           <h2 className="text-4xl font-bold mb-4">
@@ -10,12 +10,12 @@ export function DeterministicSection(): ReactNode {
             <br />
             Every state change.
             <br />
-            <span className="text-indigo-600">Completely deterministic.</span>
+            <span className="text-primary">Completely deterministic.</span>
           </h2>
-          <h3 className="text-2xl text-gray-600 mb-4">
+          <h3 className="text-2xl text-subtitle mb-4">
             Isolate any bug and trace every decision with <b>perfect reproducibility.</b>
           </h3>
-          <p className="text-md text-gray-600 mb-8">
+          <p className="text-md text-muted-foreground mb-8">
             Build with confidence, knowing your system's behavior is predictable and reproducible.
           </p>
         </div>
@@ -35,18 +35,20 @@ export function DeterministicSection(): ReactNode {
           </div>
 
           <div>
-            <h3 className="text-2xl font-semibold mb-4">Debug with surgical precision</h3>
-            <ul className="space-y-3 text-gray-700">
+            <h3 className="text-2xl font-semibold mb-4 text-foreground">
+              Debug with surgical precision
+            </h3>
+            <ul className="space-y-3 text-foreground">
               <li className="flex items-start">
-                <span className="text-green-500 mr-2">✓</span>
+                <span className="text-positive mr-2">✓</span>
                 <span>Replay any system state from any point in time</span>
               </li>
               <li className="flex items-start">
-                <span className="text-green-500 mr-2">✓</span>
+                <span className="text-positive mr-2">✓</span>
                 <span>Trace exact causal chains across distributed components</span>
               </li>
               <li className="flex items-start">
-                <span className="text-green-500 mr-2">✓</span>
+                <span className="text-positive mr-2">✓</span>
                 <span>Test edge cases with perfect reproducibility</span>
               </li>
             </ul>
