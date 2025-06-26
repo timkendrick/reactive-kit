@@ -1,143 +1,106 @@
+import { Settings } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-import { CodeBlock, CodeLine, CodeToken } from '@/components/CodeBlock';
+import { CodeBlock } from '@/components/CodeBlock';
+import { FeatureGrid } from '@/components/FeatureGrid';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { executeTrade, riskAlert } from '@/examples';
 
 export function ScriptedWorkersSection(): ReactNode {
   return (
-    <section className="bg-muted py-16">
+    <section className="border-t border-border/50 py-16">
       <div className="max-w-6xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-12">
-          <div>
-            <h2 className="text-3xl font-bold mb-2">🔄 Scripted Workers</h2>
-            <p className="text-muted-foreground mb-6">Stateful, repeatable process orchestration</p>
-            <p className="text-lg text-subtitle mb-6">
-              Scripted Workers are composable runners for{' '}
-              <strong>deterministic procedural workflows</strong>, suitable for both short-lived
-              one-off tasks and long-running event-driven services.
-            </p>
-            <p className="text-md text-muted-foreground mb-6">
-              Define their behavior as a clear, logic-driven sequence of operations, managing
-              internal state and communicating via messages for reliable process automation.
-            </p>
-            <p className="text-md text-muted-foreground mb-6">
-              Determinism is enforced by operating solely on input messages and internal state, with
-              all side effects mediated via the Intelligent Transport Layer to ensure perfect
-              replayability.
-            </p>
-
-            <div className="text-sm space-y-4">
-              <div className="flex items-start">
-                <span className="text-primary mr-2">•</span>
-                <span>
-                  <strong>Declarative & Composable</strong>
-                  <br />
-                  The intuitive declarative API and powerful combinators make it simple to build up
-                  clear, testable, and maintainable logic.
-                </span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-primary mr-2">•</span>
-                <span>
-                  <strong>Deterministic Stateful Logic</strong>
-                  <br />
-                  Similar to state machines or actors, define synchronous and asynchronous workflows
-                  step-by-step, ensuring predictable, testable behavior and state transitions.
-                </span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-primary mr-2">•</span>
-                <span>
-                  <strong>Message-Driven Communication</strong>
-                  <br />
-                  Interact with Reactive Components or other Scripted Workers via a simple
-                  message-passing API that integrates deeply with ReactiveKit's intelligent
-                  transport layer to communicate with the rest of the system.
-                </span>
-              </div>
+        <div className="md:flex md:items-center md:gap-2 xl:relative">
+          <Badge
+            className="mb-4 md:mb-0 xl:absolute xl:my-4 xl:mr-4 xl:right-full"
+            variant="outline"
+          >
+            Deep-dive
+          </Badge>
+          <div className="md:flex-none flex gap-2 items-center">
+            <Settings className="w-8 h-8 -mt-1" />
+            <h2 className="text-2xl md:text-3xl tracking-tight font-bold mb-2 whitespace-nowrap">
+              Scripted Workers
+            </h2>
+          </div>
+        </div>
+        <p className="text-muted-foreground text-sm tracking-tight font-semibold mb-6">
+          Stateful, repeatable process orchestration
+        </p>
+        <p className="text-lg text-subtitle mb-6">
+          Scripted Workers are composable runners for{' '}
+          <strong>deterministic procedural workflows</strong>,<br />
+          suitable for both short-lived one-off tasks and long-running event-driven services.
+        </p>
+        <div className="lg:flex lg:flex-row lg:space-x-12">
+          <div className="lg:flex-1">
+            <div>
+              <p className="text-md text-muted-foreground mb-6">
+                Scripted Workers provide a structured way to orchestrate multi-step operations,
+                ensuring each step is executed according to strict logical rules. This makes them
+                ideal for anything from data processing pipelines to user interaction flows.
+              </p>
+              <p className="text-md text-muted-foreground mb-6">
+                Build complex workflows using powerful control flow primitives for operation
+                sequences, conditional branching, iterative loops, internal state management, and
+                message-passing communication.
+              </p>
+              <p className="text-md text-muted-foreground mb-6">
+                Determinism is enforced by operating solely on input messages and internal state,
+                with all side effects mediated via the Intelligent Transport Layer to ensure perfect
+                replayability.
+              </p>
             </div>
           </div>
 
-          <div>
-            <CodeBlock title="OrderExecutionWorker.js">
-              <CodeLine>
-                <CodeToken color="blue">import</CodeToken>{' '}
-                <CodeToken color="white">
-                  {'{ act, sequence, waitFor, send, modifyState, readState }'}
-                </CodeToken>{' '}
-                <CodeToken color="blue">from</CodeToken>{' '}
-                <CodeToken color="orange">'@reactive-kit/scripted-workers'</CodeToken>;
-              </CodeLine>
-              <CodeLine>
-                <CodeToken color="blue">import</CodeToken>{' '}
-                <CodeToken color="white">
-                  {
-                    '{ OrderRequestMsg, ExchangeAPI, PortfolioActor, NotificationService, TradeConfirmationMsg }'
-                  }
-                </CodeToken>{' '}
-                <CodeToken color="blue">from</CodeToken>{' '}
-                <CodeToken color="orange">'./trading-interfaces'</CodeToken>;
-              </CodeLine>
-              <div className="h-2"></div>
-              <CodeLine>
-                <CodeToken color="blue">const</CodeToken>{' '}
-                <CodeToken color="yellow">orderExecutionWorker</CodeToken> ={' '}
-                <CodeToken color="green">act</CodeToken>((self, {'{ outbox, complete, fail }'}){' '}
-                {'=>'}
-              </CodeLine>
-              <CodeLine indent={1}>
-                <CodeToken color="green">sequence</CodeToken>(() {'=>'} [
-              </CodeLine>
-              <CodeLine indent={2}>
-                <CodeToken color="green">waitFor</CodeToken>(
-              </CodeLine>
-              <CodeLine indent={3}>
-                (msg): msg is OrderRequestMsg {'=>'} msg.type ==={' '}
-                <CodeToken color="orange">'ORDER_REQUEST'</CodeToken>,
-              </CodeLine>
-              <CodeLine indent={3}>
-                (orderMsgHandle) {'=>'} <CodeToken color="green">send</CodeToken>(ExchangeAPI,{' '}
-                <CodeToken color="green">readState</CodeToken>(orderMsgHandle, (order) {'=>'} ({'{'}{' '}
-                type: <CodeToken color="orange">'PLACE_TRADE'</CodeToken>, details: order.payload{' '}
-                {'}'})))
-              </CodeLine>
-              <CodeLine indent={2}>),</CodeLine>
-              <CodeLine indent={2}>
-                <CodeToken color="green">waitFor</CodeToken>(
-              </CodeLine>
-              <CodeLine indent={3}>
-                (msg): msg is TradeConfirmationMsg {'=>'} msg.type ==={' '}
-                <CodeToken color="orange">'TRADE_CONFIRMATION'</CodeToken>,
-              </CodeLine>
-              <CodeLine indent={3}>
-                (confirmMsgHandle) {'=>'} <CodeToken color="green">sequence</CodeToken>(() {'=>'} [
-              </CodeLine>
-              <CodeLine indent={4}>
-                <CodeToken color="gray">
-                  // Assuming PortfolioActor is another worker/actor this worker can message
-                </CodeToken>
-              </CodeLine>
-              <CodeLine indent={4}>
-                <CodeToken color="green">send</CodeToken>(PortfolioActor,{' '}
-                <CodeToken color="green">readState</CodeToken>(confirmMsgHandle, (confirmation){' '}
-                {'=>'} ({'{'} type: <CodeToken color="orange">'UPDATE_PORTFOLIO'</CodeToken>, trade:
-                confirmation.payload {'}'})),
-              </CodeLine>
-              <CodeLine indent={4}>
-                <CodeToken color="green">send</CodeToken>(NotificationService,{' '}
-                <CodeToken color="green">readState</CodeToken>(confirmMsgHandle, (confirmation){' '}
-                {'=>'} ({'{'} type: <CodeToken color="orange">'TRADE_COMPLETE'</CodeToken>, details:
-                confirmation.payload {'}'})))
-              </CodeLine>
-              <CodeLine indent={3}>])</CodeLine>
-              <CodeLine indent={2}>),</CodeLine>
-              <CodeLine indent={2}>
-                <CodeToken color="green">complete</CodeToken>()
-              </CodeLine>
-              <CodeLine indent={1}>])</CodeLine>
-              <CodeLine>);</CodeLine>
-            </CodeBlock>
+          <div className="lg:flex-1 overflow-hidden">
+            <Tabs defaultValue="server">
+              <TabsList className="w-full">
+                <TabsTrigger value="server">Task worker</TabsTrigger>
+                <TabsTrigger value="client">Service worker</TabsTrigger>
+              </TabsList>
+              <TabsContent value="server">
+                <CodeBlock source={executeTrade} />
+              </TabsContent>
+              <TabsContent value="client">
+                <CodeBlock source={riskAlert} />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
+        <FeatureGrid
+          itemsPerRow={3}
+          features={[
+            {
+              title: 'Declarative & Composable',
+              description: (
+                <>
+                  The intuitive declarative API and powerful logic combinators make it simple to
+                  build up clear, testable, and maintainable logic.
+                </>
+              ),
+            },
+            {
+              title: 'Deterministic Stateful Logic',
+              description: (
+                <>
+                  Define synchronous and asynchronous workflows step-by-step, ensuring predictable,
+                  testable behavior and state transitions.
+                </>
+              ),
+            },
+            {
+              title: 'Message-Driven Communication',
+              description: (
+                <>
+                  Interact with other workers and components via a simple actor-style
+                  message-passing API that integrates with ReactiveKit&rsquo;s transport layer.
+                </>
+              ),
+            },
+          ].map(({ title, description }) => ({ icon: null, title, description }))}
+        />
       </div>
     </section>
   );
