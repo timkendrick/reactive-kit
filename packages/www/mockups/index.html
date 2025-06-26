@@ -1,0 +1,1133 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme {
+    }
+    
+    .border-t-dashed {
+      border-top-style: dashed;
+    }
+    .border-b-dashed {
+      border-bottom-style: dashed;
+    }
+    </style>
+</head>
+
+<body class="bg-white">
+
+  <!-- Hero Section -->
+  <header class="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white py-20">
+    <div class="max-w-6xl mx-auto px-6 text-center">
+      <h1 class="text-5xl md:text-6xl font-bold mb-6">ReactiveKit</h1>
+      <h2 class="text-2xl md:text-3xl font-light mb-8">
+        The Full-Stack Framework for <span class="font-semibold">[Deterministic | Debuggable | Testable | Replayable |
+          Observable]</span> Real-Time Distributed Systems
+      </h2>
+      <p class="text-xl mb-10 max-w-4xl mx-auto">
+        ReactiveKit is your all-in-one backbone for robust, real-time applications that are testable and debuggable by
+        design – from interactive UIs to data-processing pipelines.
+      </p>
+
+      <!-- CTAs -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <button class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+          ⭐ Star on GitHub
+        </button>
+        <button
+          class="border border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition">
+          Learn More ↓
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Key Benefits Section 1: Live Data -->
+  <section class="bg-gradient-to-r from-blue-50 to-purple-50 py-16">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="mb-8">
+        <h2 class="text-4xl font-bold mb-6">Always live data,<br><span class="text-indigo-600">all the time</span></h2>
+        <h3 class="text-2xl text-gray-600 mb-4">ReactiveKit <b>abstracts away the complexity</b> of subscriptions,
+          callbacks and caches.</h3>
+        <p class="text-md text-gray-600 mb-8">ReactiveKit's full-stack reactivity primitives make stale data a thing of
+          the past. Components throughout your architecture will always reflect the latest live updates, automatically
+          and efficiently, with zero effort.</p>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-8">
+
+        <!-- Code -->
+        <div class="bg-gray-900 rounded-lg p-6 text-sm font-mono">
+          <div class="text-gray-500 mb-2">// usePortfolioValue.js</div>
+          <span class="text-blue-400">async function</span> <span
+            class="text-yellow-300 inline">usePortfolioValue</span>
+          <div class="text-white inline">() {</div>
+          <div class="pl-4 text-white">
+            <div><span class="text-purple-400">const</span> prices = <span class="text-purple-400">await</span> <span
+                class="text-green-400">useMarketData</span>();</div>
+            <div><span class="text-purple-400">const</span> holdings = <span class="text-purple-400">await</span> <span
+                class="text-green-400">usePortfolio</span>();</div>
+            <div><span class="text-purple-400">return</span> holdings.<span class="text-blue-400">reduce</span>((total,
+              stock) => {</div>
+            <div class="pl-4"><span class="text-purple-400">return</span> total + (prices[stock.symbol] * stock.shares);
+            </div>
+            <div>}, <span class="text-orange-400">0</span>);</div>
+          </div>
+          <div class="text-white">}</div>
+        </div>
+
+        <!-- Live Demo -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">Portfolio Value</h3>
+            <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+          </div>
+          <div class="text-3xl font-bold text-green-600 mb-6">$247,892.34</div>
+
+          <div class="space-y-3">
+            <div class="flex justify-between text-sm">
+              <span>AAPL (100 shares)</span>
+              <span class="text-green-600">$15,023.00 ↗</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span>MSFT (50 shares)</span>
+              <span class="text-red-600">$17,845.50 ↘</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span>TSLA (25 shares)</span>
+              <span class="text-green-600">$6,234.75 ↗</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key Benefits Section 2: Observability -->
+  <section class="bg-gradient-to-br from-indigo-50 via-white to-cyan-50 py-16">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <h2 class="text-4xl font-bold mb-6">
+            Build systems that<br>
+            <span class="text-indigo-600">explain themselves</span>
+          </h2>
+          <h3 class="text-2xl text-gray-600 mb-4">
+            ReactiveKit generates a <b>complete causal history</b> of every action.
+          </h3>
+          <p class="text-md text-gray-600 mb-8">
+            Understand precisely why your system is in its current state, with every change automatically traced and
+            linked.
+          </p>
+
+          <div class="space-y-4">
+            <div class="flex items-start space-x-3">
+              <div class="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center mt-1">
+                <span class="text-indigo-600 text-xs">1</span>
+              </div>
+              <div>
+                <div class="font-medium">Write declarative logic</div>
+                <div class="text-gray-600 text-sm">Define what should happen, not how</div>
+              </div>
+            </div>
+            <div class="flex items-start space-x-3">
+              <div class="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center mt-1">
+                <span class="text-indigo-600 text-xs">2</span>
+              </div>
+              <div>
+                <div class="font-medium">Get automatic traceability</div>
+                <div class="text-gray-600 text-sm">Every state change is causally linked</div>
+              </div>
+            </div>
+            <div class="flex items-start space-x-3">
+              <div class="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center mt-1">
+                <span class="text-indigo-600 text-xs">3</span>
+              </div>
+              <div>
+                <div class="font-medium">Debug with precision</div>
+                <div class="text-gray-600 text-sm">Replay exact conditions, trace root causes</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold">System Event Timeline</h3>
+            <div class="flex items-center space-x-2">
+              <div class="text-xs text-gray-500">Paused</div>
+              <div class="w-3 h-3 bg-gray-500 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+
+          <div class="space-y-3 text-sm">
+            <div class="flex items-center space-x-3 p-2 bg-blue-50 rounded">
+              <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span class="font-mono text-xs text-gray-500">14:32:15.102</span>
+              <span>Market data updated: AAPL $147.89</span>
+            </div>
+            <div class="flex items-center space-x-3 p-2 bg-green-50 rounded ml-4">
+              <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span class="font-mono text-xs text-gray-500">14:32:15.114</span>
+              <span>Portfolio component recalculated</span>
+            </div>
+            <div class="flex items-center space-x-3 p-2 bg-blue-50 rounded">
+              <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span class="font-mono text-xs text-gray-500">14:32:15.125</span>
+              <span>Market data updated: AAPL $150.23</span>
+            </div>
+            <div class="flex items-center space-x-3 p-2 bg-orange-50 border-2 border-orange-400 rounded ml-4 shadow-sm">
+              <div class="w-2 h-2 bg-orange-500 rounded-full"></div>
+              <span class="font-mono text-xs text-gray-500">14:32:15.156</span>
+              <span>Alert worker triggered: "High volatility"</span>
+            </div>
+            <div class="flex items-center space-x-3 p-2 bg-purple-50 rounded ml-8">
+              <div class="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <span class="font-mono text-xs text-gray-500">14:32:15.167</span>
+              <span>UI notification sent</span>
+            </div>
+            <div class="flex items-center space-x-3 p-2 bg-green-50 rounded ml-4">
+              <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span class="font-mono text-xs text-gray-500">14:32:15.145</span>
+              <span>Portfolio component recalculated</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key Benefits Section 3: Debugging -->
+  <section class="bg-white py-16">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="mb-12">
+        <h2 class="text-4xl font-bold mb-4">Every message.<br>Every state change.<br><span
+            class="text-indigo-600">Completely deterministic.</span></h2>
+        <h3 class="text-2xl text-gray-600 mb-4">Isolate any bug and trace every decision with <b>perfect
+            reproducibility.</b></h3>
+        <p class="text-md text-gray-600 mb-8">Build with confidence, knowing your system's behavior is predictable and
+          reproducible.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div class="bg-gray-900 rounded-lg p-6 text-green-400 font-mono text-sm">
+          <div class="text-gray-500 mb-2">// Your trading system, 6 months ago</div>
+          <div class="text-yellow-400">REPLAY_SESSION</div>
+          <div class="pl-2">
+            <div>14:32:15.123 → Market data: AAPL $150.23</div>
+            <div>14:32:15.145 → Algorithm triggered: BUY signal</div>
+            <div>14:32:15.156 → Risk check: PASSED</div>
+            <div>14:32:15.167 → Order placed: 100 shares</div>
+            <div class="text-red-400">14:32:15.234 → ERROR: Insufficient funds</div>
+          </div>
+          <div class="text-gray-500 mt-2">// Exact reproduction, every time</div>
+        </div>
+
+        <div>
+          <h3 class="text-2xl font-semibold mb-4">Debug with surgical precision</h3>
+          <ul class="space-y-3 text-gray-700">
+            <li class="flex items-start">
+              <span class="text-green-500 mr-2">✓</span>
+              <span>Replay any system state from any point in time</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-green-500 mr-2">✓</span>
+              <span>Trace exact causal chains across distributed components</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-green-500 mr-2">✓</span>
+              <span>Test edge cases with perfect reproducibility</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Introducing ReactiveKit -->
+  <section class="bg-gray-50 py-16">
+    <div class="max-w-6xl mx-auto px-6">
+
+      <div class="text-center mb-12">
+        <h2 class="text-4xl font-bold mb-6">A New Paradigm for Real-Time Systems</h2>
+        <p class="text-xl text-gray-600 max-w-4xl mx-auto">
+          ReactiveKit offers a unified and simplified approach by combining three powerful building blocks:
+        </p>
+      </div>
+
+      <!-- Three Building Blocks -->
+      <div class="grid grid-cols-2 gap-8 mb-8">
+        <div class="text-center bg-white rounded-lg shadow-lg p-6 relative">
+          <div class="text-3xl mb-4">⚡</div>
+          <h3 class="text-xl font-semibold mb-2">Reactive Components</h3>
+          <p class="text-gray-600 mb-4">Define complex live computations anywhere on your stack</p>
+
+          <!-- Reactive Components icon -->
+          <div class="flex justify-center mb-4">
+            <svg width="74" height="70" viewBox="0 0 74 70" class="text-gray-400">
+              <!-- Top level: Multiple data sources -->
+              <rect x="5" y="5" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
+              <rect x="28" y="5" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
+              <rect x="51" y="5" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
+
+              <!-- Arrows pointing down and converging -->
+              <path d="M14 20 L14 24 Q14 26 16 26 L23 26 Q25 26 25 28 L25 34 M22 31 L25 34 L28 31" stroke="currentColor"
+                stroke-width="1.5" fill="none" opacity="0.6" />
+              <path d="M37 20 L37 34 M34 31 L37 34 L40 31" stroke="currentColor" stroke-width="1.5" fill="none"
+                opacity="0.6" />
+              <path d="M60 20 L60 24 Q60 26 58 26 L51 26 Q49 26 49 28 L49 34 M46 31 L49 34 L52 31" stroke="currentColor"
+                stroke-width="1.5" fill="none" opacity="0.6" />
+              <!-- Bottom level: Single computed result (highlighted) -->
+              <rect x="19" y="36" width="36" height="12" rx="3" fill="rgb(99, 102, 241)" opacity="0.8" />
+            </svg>
+          </div>
+
+          <div class="text-left border-t border-gray-200 pt-4">
+            <h4 class="text-sm font-medium text-gray-700 mb-2">Use cases:</h4>
+            <ul class="text-sm text-gray-500 space-y-1">
+              <li>• Dynamic front-end UI widgets</li>
+              <li>• Back-end streaming API endpoints</li>
+              <li>• Real-time dashboard panels</li>
+            </ul>
+          </div>
+
+          <!-- Connection indicator -->
+          <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-8">
+            <div class="text-gray-500 text-lg">⇅</div>
+          </div>
+        </div>
+        <div class="text-center bg-white rounded-lg shadow-lg p-6 relative">
+          <div class="text-3xl mb-4">🔄</div>
+          <h3 class="text-xl font-semibold mb-2">Scripted Workers</h3>
+          <p class="text-gray-600 mb-4">Stateful, repeatable process orchestration</p>
+
+          <!-- Scripted Workers icon -->
+          <div class="flex justify-center mb-4">
+            <svg width="120" height="50" viewBox="0 0 120 50" class="text-gray-400">
+              <!-- Sequential chain of blocks -->
+              <rect x="5" y="17" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
+              <rect x="35" y="17" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
+              <rect x="65" y="17" width="18" height="12" rx="2" fill="rgb(99, 102, 241)" opacity="0.8" />
+              <rect x="95" y="17" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
+
+              <!-- Right-pointing arrows -->
+              <path d="M26 23 L32 23 M29 20 L32 23 L29 26" stroke="currentColor" stroke-width="1.5" fill="none"
+                opacity="0.6" />
+              <path d="M56 23 L62 23 M59 20 L62 23 L59 26" stroke="currentColor" stroke-width="1.5" fill="none"
+                opacity="0.6" />
+              <path d="M86 23 L92 23 M89 20 L92 23 L89 26" stroke="currentColor" stroke-width="1.5" fill="none"
+                opacity="0.6" />
+            </svg>
+          </div>
+
+          <div class="text-left border-t border-gray-200 pt-4">
+            <h4 class="text-sm font-medium text-gray-700 mb-2">Use cases:</h4>
+            <ul class="text-sm text-gray-500 space-y-1">
+              <li>• Complex client-side form validation</li>
+              <li>• Data processing pipelines</li>
+              <li>• Alerting mechanisms</li>
+            </ul>
+          </div>
+          <!-- Connection indicator -->
+          <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-8">
+            <div class="text-gray-500 text-lg">⇅</div>
+          </div>
+        </div>
+      </div>
+      <div class="mb-12">
+        <div class="text-center bg-white rounded-lg shadow-lg p-6">
+          <div class="text-3xl mb-4">🌐</div>
+          <h3 class="text-xl font-semibold mb-2">Intelligent Transport Layer</h3>
+          <p class="text-gray-600 mb-4">Deterministic, observable system backbone</p>
+
+          <!-- Intelligent Transport Layer icon -->
+          <div class="flex justify-center mb-4">
+            <svg width="102" height="65" viewBox="0 0 102 65" class="text-gray-400">
+              <defs>
+                <linearGradient id="transportGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color:rgb(99, 102, 241);stop-opacity:0.2" />
+                  <stop offset="100%" style="stop-color:rgb(99, 102, 241);stop-opacity:0.8" />
+                </linearGradient>
+              </defs>
+
+              <!-- Top row components (3 blocks) -->
+              <rect x="15" y="5" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
+              <rect x="42" y="5" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
+              <rect x="69" y="5" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
+
+              <!-- Bottom row components (2 blocks, positioned in gaps) -->
+              <rect x="28" y="48" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
+              <rect x="55" y="48" width="18" height="12" rx="2" fill="currentColor" opacity="0.5" />
+
+              <!-- Central pipeline -->
+              <rect x="12" y="27" width="78" height="12" rx="2" fill="url(#transportGradient)" />
+
+              <!-- Arrows from top -->
+              <path d="M24 17 L24 25 M21 22 L24 25 L27 22" stroke="currentColor" stroke-width="1.5" fill="none"
+                opacity="0.6" />
+              <path d="M51 17 L51 25 M48 22 L51 25 L54 22" stroke="currentColor" stroke-width="1.5" fill="none"
+                opacity="0.6" />
+              <path d="M78 17 L78 25 M75 22 L78 25 L81 22" stroke="currentColor" stroke-width="1.5" fill="none"
+                opacity="0.6" />
+
+              <!-- Arrows from bottom -->
+              <path d="M37 48 L37 41 M34 44 L37 41 L40 44" stroke="currentColor" stroke-width="1.5" fill="none"
+                opacity="0.6" />
+              <path d="M64 48 L64 41 M61 44 L64 41 L67 44" stroke="currentColor" stroke-width="1.5" fill="none"
+                opacity="0.6" />
+            </svg>
+          </div>
+
+          <div class="text-left border-t border-gray-200 pt-4">
+            <h4 class="text-sm font-medium text-gray-700 mb-2">Key features:</h4>
+            <ul class="text-sm text-gray-500 space-y-1">
+              <li>• Ordered event bus synchronizes all interactions</li>
+              <li>• All application communication flows through this layer</li>
+              <li>• Single source of truth for deterministic system behavior</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center mb-12">
+        <p class="text-xl text-gray-600 max-w-4xl mx-auto">
+          The combination of these three building blocks ensures that your system is always in sync,<br>
+          allowing you to focus on building your application with confidence.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Reactive Components Deep Dive -->
+  <section class="bg-white py-16">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid lg:grid-cols-2 gap-12">
+        <div>
+          <h2 class="text-3xl font-bold mb-2">⚡ Reactive Components</h2>
+          <p class="text-gray-400 mb-6">Define complex live computations anywhere on the stack</p>
+          <p class="text-lg text-gray-600 mb-6">
+            Reactive Components express a <strong>live computation</strong>, written as an <code>async</code> function.
+          </p>
+          <p class="text-md text-gray-600 mb-6">
+            Unlike standard UI framework components, Reactive Components are managed by ReactiveKit's runtime, enabling automatic dependency tracking, efficient incremental re-computation, and causal logging across the entire stack.
+          </p>
+          <p class="text-md text-gray-600 mb-6">
+            Just use <code>await</code> keywords wherever you read from a live
+            data stream, and ReactiveKit ensures it's always up-to-date with the underlying data, automatically.
+          </p>
+          <p class="text-md text-gray-600 mb-6">
+            The output of a Reactive Component can be a UI element, a streaming value to be exposed via an API, or any other serializable data structure, allowing the same component to be used interchangeably on both front-end and back-end.
+          </p>
+
+          <div class="text-sm space-y-4 mb-6">
+            <div class="flex items-start">
+              <span class="text-blue-500 mr-2">•</span>
+              <span><strong>Declarative & Composable</strong><br>Focus on the "what," not the "how." Build up
+                arbitrarily complex component logic, while ReactiveKit keeps everything in sync.</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-blue-500 mr-2">•</span>
+              <span><strong>Efficient Updates</strong><br>Built-in intelligent dependency caching ensures only the
+                outputs that have changed are re-evaluated, ensuring your application stays performant at scale.</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-blue-500 mr-2">•</span>
+              <span><strong>Truly Full-Stack</strong><br>Use the same familiar syntax to build both dynamic, real-time user interface elements on the front-end, and to define reactive data transformations and services on the backend.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- Frontend Example -->
+          <div class="bg-gray-900 rounded-lg p-4">
+            <div class="text-gray-400 text-sm mb-2">PortfolioOverview.jsx</div>
+            <div class="text-sm font-mono text-white">
+              <div><span class="text-blue-400">import</span> <span class="text-white">{ useMarketExposure, useOpenOrders
+                  }</span> <span class="text-blue-400">from</span> <span
+                  class="text-orange-400">'@reactive-kit/finance-hooks'</span><span class="text-white">;</span></div>
+              <div class="h-2"></div>
+              <div><span class="text-blue-400">async function</span> <span
+                  class="text-yellow-300">PortfolioOverview</span><span class="text-white">() {</span></div>
+              <div class="pl-4 space-y-1">
+                <div><span class="text-purple-400">const</span> marketExposure = <span
+                    class="text-purple-400">await</span> <span class="text-green-400">useMarketExposure</span><span
+                    class="text-white">();</span> <span class="text-gray-500">// Live data stream</span></div>
+                <div><span class="text-purple-400">const</span> openOrders = <span class="text-purple-400">await</span>
+                  <span class="text-green-400">useOpenOrders</span><span class="text-white">();</span> <span
+                    class="text-gray-500">// Live data stream</span>
+                </div>
+                <div class="h-2"></div>
+                <div><span class="text-gray-500">// Combine and format for display</span></div>
+                <div><span class="text-purple-400">return</span> <span class="text-white">{</span></div>
+                <div class="pl-4">
+                  <div><span class="text-white">totalExposure: marketExposure.total,</span></div>
+                  <div><span class="text-white">exposureByAsset: marketExposure.byAsset,</span></div>
+                  <div><span class="text-white">activeOrders: openOrders.</span><span
+                      class="text-blue-400">filter</span><span class="text-white">(order => order.status ===
+                    </span><span class="text-orange-400">'ACTIVE'</span><span class="text-white">).length,</span></div>
+                  <div><span class="text-gray-500">// ... other relevant overview data</span></div>
+                </div>
+                <div><span class="text-white">};</span></div>
+              </div>
+              <div class="text-white">}</div>
+            </div>
+          </div>
+
+          <!-- Backend Example -->
+          <div class="bg-gray-900 rounded-lg p-4">
+            <div class="text-gray-400 text-sm mb-2">PortfolioGateway.js</div>
+            <div class="text-sm font-mono text-white">
+              <div><span class="text-blue-400">import</span> <span class="text-white">{ useUpstreamMarketData,
+                  useOrderSystemEvents }</span> <span class="text-blue-400">from</span> <span
+                  class="text-orange-400">'@reactive-kit/internal-data-hooks'</span><span class="text-white">;</span>
+              </div>
+              <div><span class="text-blue-400">import</span> <span class="text-white">{ transformMarketData,
+                  correlateWithOrders }</span> <span class="text-blue-400">from</span> <span
+                  class="text-orange-400">'./data-processors'</span><span class="text-white">;</span></div>
+              <div class="h-2"></div>
+              <div><span class="text-blue-400">async function</span> <span
+                  class="text-yellow-300">PortfolioWidgetStream</span><span class="text-white">() {</span></div>
+              <div class="pl-4 space-y-1">
+                <div><span class="text-purple-400">const</span> rawMarketData = <span
+                    class="text-purple-400">await</span> <span class="text-green-400">useUpstreamMarketData</span><span
+                    class="text-white">();</span></div>
+                <div><span class="text-purple-400">const</span> orderEvents = <span class="text-purple-400">await</span>
+                  <span class="text-green-400">useOrderSystemEvents</span><span class="text-white">();</span>
+                </div>
+                <div class="h-2"></div>
+                <div><span class="text-purple-400">const</span> processedMarketData = <span
+                    class="text-blue-400">transformMarketData</span><span class="text-white">(rawMarketData);</span>
+                </div>
+                <div><span class="text-purple-400">const</span> livePortfolioView = <span
+                    class="text-blue-400">correlateWithOrders</span><span class="text-white">(processedMarketData,
+                    orderEvents);</span></div>
+                <div class="h-2"></div>
+                <div><span class="text-purple-400">return</span> livePortfolioView; <span class="text-gray-500">// This
+                    stream directly feeds the PortfolioOverview widget</span></div>
+              </div>
+              <div class="text-white">}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scripted Workers Deep Dive -->
+  <section class="bg-gray-50 py-16">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid lg:grid-cols-2 gap-12">
+        <div>
+          <h2 class="text-3xl font-bold mb-2">🔄 Scripted Workers</h2>
+          <p class="text-gray-400 mb-6">Stateful, repeatable process orchestration</p>
+          <p class="text-lg text-gray-600 mb-6">
+            Scripted Workers are composable runners for <strong>deterministic procedural workflows</strong>, suitable
+            for both short-lived one-off tasks and long-running event-driven services.
+          </p>
+          <p class="text-md text-gray-600 mb-6">
+            Define their behavior as a clear,
+            logic-driven sequence of operations, managing internal state and communicating via messages for reliable process automation.
+          </p>
+          <p class="text-md text-gray-600 mb-6">
+            Determinism is enforced by operating solely on input messages and internal state, with all side effects mediated via the Intelligent Transport Layer to ensure perfect replayability.
+          </p>
+
+          <div class="text-sm space-y-4">
+            <div class="flex items-start">
+              <span class="text-purple-500 mr-2">•</span>
+              <span><strong>Declarative & Composable</strong><br>The intuitive declarative API and powerful combinators
+                make it simple to build up clear, testable, and maintainable logic.</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-purple-500 mr-2">•</span>
+              <span><strong>Deterministic Stateful Logic</strong><br>Similar to state machines or actors, define synchronous and asynchronous
+                workflows step-by-step, ensuring predictable, testable behavior and state
+                transitions.</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-purple-500 mr-2">•</span>
+              <span><strong>Message-Driven Communication</strong><br>Interact with Reactive Components or other Scripted
+                Workers via a simple message-passing API that integrates deeply with ReactiveKit's intelligent transport layer to communicate with the rest of the system.</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="bg-gray-900 rounded-lg p-4">
+            <div class="text-gray-400 text-sm mb-2">OrderExecutionWorker.js</div>
+            <div class="text-sm font-mono text-white">
+              <div><span class="text-blue-400">import</span> <span class="text-white">{ act, sequence, waitFor, send,
+                  modifyState, readState }</span> <span class="text-blue-400">from</span> <span
+                  class="text-orange-400">'@reactive-kit/scripted-workers'</span><span class="text-white">;</span></div>
+              <div><span class="text-blue-400">import</span> <span class="text-white">{ OrderRequestMsg, ExchangeAPI,
+                  PortfolioActor, NotificationService, TradeConfirmationMsg }</span> <span
+                  class="text-blue-400">from</span> <span class="text-orange-400">'./trading-interfaces'</span><span
+                  class="text-white">;</span></div>
+              <div class="h-2"></div>
+              <div><span class="text-blue-400">const</span> <span class="text-yellow-300">orderExecutionWorker</span> =
+                <span class="text-green-400">act</span><span class="text-white">((self, { outbox, complete, fail })
+                  =></span>
+              </div>
+              <div class="pl-2">
+                <div><span class="text-green-400">sequence</span><span class="text-white">(() => [</span></div>
+                <div class="pl-4 space-y-1">
+                  <div><span class="text-green-400">waitFor</span><span class="text-white">(</span></div>
+                  <div class="pl-4">
+                    <div><span class="text-white">(msg): msg is OrderRequestMsg => msg.type === </span><span
+                        class="text-orange-400">'ORDER_REQUEST'</span><span class="text-white">,</span></div>
+                  </div>
+                  <div class="pl-4">
+                    <div><span class="text-white">(orderMsgHandle) => </span><span
+                        class="text-green-400">send</span><span class="text-white">(ExchangeAPI, </span><span
+                        class="text-green-400">readState</span><span class="text-white">(orderMsgHandle, (order) => ({
+                        type: </span><span class="text-orange-400">'PLACE_TRADE'</span><span class="text-white">,
+                        details: order.payload })))</span></div>
+                  </div>
+                  <div><span class="text-white">),</span></div>
+                  <div><span class="text-green-400">waitFor</span><span class="text-white">(</span></div>
+                  <div class="pl-4">
+                    <div><span class="text-white">(msg): msg is TradeConfirmationMsg => msg.type === </span><span
+                        class="text-orange-400">'TRADE_CONFIRMATION'</span><span class="text-white">,</span></div>
+                  </div>
+                  <div class="pl-4">
+                    <div><span class="text-white">(confirmMsgHandle) => </span><span
+                        class="text-green-400">sequence</span><span class="text-white">(() => [</span></div>
+                  </div>
+                  <div class="pl-6 space-y-1">
+                    <div><span class="text-gray-500">// Assuming PortfolioActor is another worker/actor this worker can
+                        message</span></div>
+                    <div><span class="text-green-400">send</span><span class="text-white">(PortfolioActor, </span><span
+                        class="text-green-400">readState</span><span class="text-white">(confirmMsgHandle,
+                        (confirmation) => ({ type: </span><span class="text-orange-400">'UPDATE_PORTFOLIO'</span><span
+                        class="text-white">, trade: confirmation.payload }))),</span></div>
+                    <div><span class="text-green-400">send</span><span class="text-white">(NotificationService,
+                      </span><span class="text-green-400">readState</span><span class="text-white">(confirmMsgHandle,
+                        (confirmation) => ({ type: </span><span class="text-orange-400">'TRADE_COMPLETE'</span><span
+                        class="text-white">, details: confirmation.payload })))</span></div>
+                  </div>
+                  <div class="pl-4">
+                    <div><span class="text-white">])</span></div>
+                  </div>
+                  <div><span class="text-white">),</span></div>
+                  <div><span class="text-green-400">complete</span><span class="text-white">()</span></div>
+                </div>
+                <div><span class="text-white">])</span></div>
+              </div>
+              <div><span class="text-white">);</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Intelligent Transport Layer -->
+  <section class="bg-white py-16">
+    <div class="max-w-6xl mx-auto px-6">
+      <h2 class="text-3xl font-bold mb-2">🌐 Intelligent Transport Layer</h2>
+      <p class="text-gray-400 mb-6">Deterministic, observable system backbone</p>
+
+      <!-- New two-column layout -->
+      <div class="grid lg:grid-cols-3 gap-12">
+
+        <!-- Left column (2/3 width) for overview text and diagram -->
+        <div class="lg:col-span-2">
+          <p class="text-lg text-gray-600 mb-6">
+            All ReactiveKit interactions and data pass through a central event bus,
+            producing an <strong>ordered event log</strong> with full causal traceability.
+          </p>
+          <p class="text-md text-gray-600 mb-6">
+            ReactiveKit's transport layer correlates the event logs from distributed ReactiveKit instances, providing a
+            unified view of system-wide operations even when services span different processes or machines.
+          </p>
+          <p class="text-md text-gray-600 mb-12">
+            This transport layer can be easily extended with middleware to provide complex logging,
+            observability, recording, and more. This leads to a truly deterministic, observable, and debuggable system.
+          </p>
+          <!-- Transport Layer Diagram -->
+          <div class="mb-8">
+            <div class="relative">
+              <!-- Main Layout: 10 columns (incl. tracks), 13 conceptual rows (including headers). items-stretch helps align heights. -->
+              <div class="grid gap-x-2 items-stretch"
+                style="grid-template-columns: 1fr 1fr auto 0.125rem 1fr 0.125rem auto 1fr;">
+
+                <!-- Column Headers -->
+                <!-- Reactive Components header (spans first 2 columns) -->
+                <div class="col-start-1 col-span-2 row-start-1 text-center mb-4">
+                  <h4 class="font-semibold text-sm whitespace-nowrap">⚡ Reactive Components</h4>
+                </div>
+
+                <!-- Event Bus header (spans central column) -->
+                <div class="col-start-5 row-start-1 text-center mb-4">
+                  <h4 class="font-semibold text-sm whitespace-nowrap">🌐 Event Bus Messages</h4>
+                </div>
+
+                <!-- Scripted Workers header -->
+                <div class="col-start-8 row-start-1 text-center mb-4">
+                  <h4 class="font-semibold text-sm whitespace-nowrap">🔄 Scripted Workers</h4>
+                </div>
+
+                <!-- Side Effects header -->
+                <div class="col-start-10 row-start-1 text-center mb-4">
+                  <h4 class="font-semibold text-sm whitespace-nowrap">🔮 Side Effects</h4>
+                </div>
+
+                <!-- Column 1: Portfolio Widget -->
+                <!-- Spans from Event Row 2 to Event Row 11 -->
+                <div class="col-start-1 row-start-2 row-span-9 flex items-center justify-center p-1">
+                  <div
+                    class="bg-purple-50 border-l border-r border-purple-200 border-t border-b border-t-dashed border-b-dashed border-t-purple-100 border-b-purple-100 p-3 text-center w-full h-full flex flex-col justify-center">
+                    <div class="overflow-hidden text-ellipsis text-purple-600 font-semibold text-xs">⚡ Portfolio Widget
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Column 2: Alert Dashboard -->
+                <!-- Aligns with RISK_ALERT (Event Row 9) -->
+                <div class="col-start-2 row-start-9 row-span-1 flex items-center justify-center p-1">
+                  <div
+                    class="bg-purple-50 border-l border-r border-purple-200 border-t border-b border-t-dashed border-b-dashed border-t-purple-100 border-b-purple-100 p-2 text-center w-full">
+                    <div class="overflow-hidden text-ellipsis text-purple-600 font-semibold text-xs">⚡ Alert Dashboard
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Column 3: Left Arrows -->
+                <div class="col-start-2 col-span-2 row-start-2 flex items-center justify-center">
+                  <div class="text-gray-400 text-xl">→</div>
+                </div>
+                <div class="col-start-2 col-span-2 row-start-3 flex items-center justify-center">
+                  <div class="text-gray-400 text-xl">←</div>
+                </div>
+                <div class="col-start-2 col-span-2 row-start-6 flex items-center justify-center">
+                  <div class="text-gray-400 text-xl">←</div>
+                </div>
+                <div class="col-start-2 col-span-2 row-start-7 flex items-center justify-center">
+                  <div class="text-gray-400 text-xl">←</div>
+                </div>
+                <div class="col-start-3 row-start-9 flex items-center justify-center">
+                  <div class="text-gray-400 text-xl">←</div>
+                </div>
+                <!-- Arrow: Event Bus (PORTFOLIO_UPDATED) -> Portfolio Widget -->
+                <div class="col-start-2 col-span-2 row-start-10 flex items-center justify-center">
+                  <div class="text-gray-400 text-xl">←</div>
+                </div>
+
+                <!-- Column 4: Left Visual Track for Event Bus -->
+                <div class="col-start-4 row-start-2 row-span-9 w-0.5 bg-gray-300 self-stretch mx-auto"></div>
+
+                <!-- Column 5: Central Event Bus Items -->
+                <div
+                  class="col-start-5 row-start-2 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-1 w-full text-center">
+                  <div class="text-blue-700 overflow-hidden text-ellipsis whitespace-nowrap font-medium text-xs">⏺
+                    UPDATE_PORTFOLIO</div>
+                </div>
+                <div
+                  class="col-start-5 row-start-3 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-1 w-full text-center">
+                  <div class="text-blue-700 overflow-hidden text-ellipsis whitespace-nowrap font-medium text-xs">⏺
+                    INPUT_VALIDATED</div>
+                </div>
+                <div
+                  class="col-start-5 row-start-4 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-1 w-full text-center">
+                  <div class="text-blue-700 overflow-hidden text-ellipsis whitespace-nowrap font-medium text-xs">⏺
+                    EXECUTE_ORDER</div>
+                </div>
+                <div
+                  class="col-start-5 row-start-5 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-1 w-full text-center">
+                  <div class="text-blue-700 overflow-hidden text-ellipsis whitespace-nowrap font-medium text-xs">⏺
+                    ORDER_EXECUTED</div>
+                </div>
+                <div
+                  class="col-start-5 row-start-6 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-1 w-full text-center">
+                  <div class="text-blue-700 overflow-hidden text-ellipsis whitespace-nowrap font-medium text-xs">⏺
+                    FETCH_REQUEST</div>
+                </div>
+                <div
+                  class="col-start-5 row-start-7 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-1 w-full text-center">
+                  <div class="text-blue-700 overflow-hidden text-ellipsis whitespace-nowrap font-medium text-xs">⏺
+                    FETCH_RESPONSE</div>
+                </div>
+                <div
+                  class="col-start-5 row-start-8 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-1 w-full text-center">
+                  <div class="text-blue-700 overflow-hidden text-ellipsis whitespace-nowrap font-medium text-xs">⏺
+                    RISK_ALERT</div>
+                </div>
+                <div
+                  class="col-start-5 row-start-9 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-1 w-full text-center">
+                  <div class="text-blue-700 overflow-hidden text-ellipsis whitespace-nowrap font-medium text-xs">⏺
+                    ORDER_PLACED</div>
+                </div>
+                <div
+                  class="col-start-5 row-start-10 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-1 w-full text-center">
+                  <div class="text-blue-700 overflow-hidden text-ellipsis whitespace-nowrap font-medium text-xs">⏺
+                    PORTFOLIO_UPDATED</div>
+                </div>
+
+                <!-- Column 6: Right Visual Track for Event Bus -->
+                <div class="col-start-6 row-start-2 row-span-9 w-0.5 bg-gray-300 self-stretch mx-auto"></div>
+
+                <!-- Column 7: Right Arrows (some span to reach Side Effects) -->
+                <div class="col-start-7 row-start-2 flex items-center justify-center">
+                  <div class="text-gray-400 text-xl">→</div>
+                </div>
+                <div class="col-start-7 row-start-3 flex items-center justify-center">
+                  <div class="text-gray-400 text-xl">←</div>
+                </div>
+                <div class="col-start-7 row-start-4 flex items-center justify-center">
+                  <div class="text-gray-400 text-xl">→</div>
+                </div>
+                <div class="col-start-7 row-start-5 flex items-center justify-center">
+                  <div class="text-gray-400 text-xl">←</div>
+                </div>
+                <!-- Arrows to Side Effects (span across Scripted Workers column) -->
+                <div class="col-start-7 col-span-3 row-start-6 flex items-center justify-center">
+                  <div class="text-gray-400 text-xl">→</div>
+                </div>
+                <div class="col-start-7 col-span-3 row-start-7 flex items-center justify-center">
+                  <div class="text-gray-400 text-xl">←</div>
+                </div>
+                <div class="col-start-7 row-start-8 flex items-center justify-center">
+                  <div class="text-gray-400 text-xl">→</div>
+                </div>
+
+                <!-- Column 8: Scripted Workers -->
+                <div class="col-start-8 row-start-2 row-span-2 flex items-center justify-center p-1">
+                  <div
+                    class="bg-green-50 border border-green-200 rounded-lg p-3 text-center w-full h-full flex flex-col justify-center">
+                    <div class="overflow-hidden text-ellipsis text-green-600 font-semibold text-xs">🔄 Input validation
+                    </div>
+                  </div>
+                </div>
+                <div class="col-start-8 row-start-4 row-span-2 flex items-center justify-center p-1">
+                  <div
+                    class="bg-green-50 border border-green-200 rounded-lg p-3 text-center w-full h-full flex flex-col justify-center">
+                    <div class="overflow-hidden text-ellipsis text-green-600 font-semibold text-xs">🔄 Order Executor
+                    </div>
+                  </div>
+                </div>
+                <div class="col-start-8 row-start-8 row-span-1 flex items-center justify-center p-1">
+                  <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-center w-full">
+                    <div class="overflow-hidden text-ellipsis text-green-600 font-semibold text-xs">🔄 Send notification
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Column 10: Side Effects -->
+                <div class="col-start-10 row-start-6 row-span-2 flex items-center justify-center p-1">
+                  <div
+                    class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center w-full h-full flex flex-col justify-center">
+                    <div class="overflow-hidden text-ellipsis text-amber-600 font-semibold text-xs">🔮 Exchange API
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Right column (1/3 width) -->
+        <div>
+          <aside class="border-l border-gray-200 pl-4 pb-2 mb-8 lg:sticky lg:top-8">
+            <h3 class="text-lg text-gray-600 font-bold mb-2">What's happening under the hood?</h3>
+            <p class="text-sm text-gray-500 mb-6">
+              All actions are recorded as serialized messages, forming a replayable log.
+              Asynchronous actions that involve external systems are recorded as <strong>side-effects</strong>.
+            </p>
+            <p class="text-sm text-gray-500 mb-6">
+              The event log tracks the point when a side-effect is triggered, and records any incoming results produced
+              by the side-effect. This allows middleware to simulate the side-effect during debugging or replay
+              sessions, accurately reproducing the original behavior.
+            </p>
+            <p class="text-sm text-gray-500 mb-6">
+              Each service within a distributed ReactiveKit system maintains its own <strong>local event log</strong>.
+              All interactions with other services are recorded in the event logs of both services, allowing actions to
+              be traced across services.
+            </p>
+            <p class="text-sm text-gray-500 mb-6">
+              This means that while there can be no universal event log for the distributed system as a whole, the event
+              log of a particular service can be chosen as a frame of reference for debugging and testing, ensuring a
+              consistent view of events.
+            </p>
+            <p class="text-sm text-gray-500">
+              When debugging interactions between services, the event logs of both services are automatically
+              correlated, allowing the causal history of an action to be traced across service boundaries.
+            </p>
+          </aside>
+        </div>
+      </div>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-blue-50 rounded-lg p-6">
+          <h3 class="font-semibold mb-2">🎯 Guaranteed Determinism</h3>
+          <p class="text-sm text-gray-600">Perfectly reproducible behavior for a given sequence of external inputs</p>
+        </div>
+        <div class="bg-green-50 rounded-lg p-6">
+          <h3 class="font-semibold mb-2">📊 Causal Event Log</h3>
+          <p class="text-sm text-gray-600">Every message, interaction, and state change forms an ordered, traceable
+            history</p>
+        </div>
+        <div class="bg-purple-50 rounded-lg p-6">
+          <h3 class="font-semibold mb-2">🔍 Precision Debugging</h3>
+          <p class="text-sm text-gray-600">Trace exact event sequences to diagnose issues or verify behavior</p>
+        </div>
+        <div class="bg-orange-50 rounded-lg p-6">
+          <h3 class="font-semibold mb-2">🎬 Built-in Record/Replay</h3>
+          <p class="text-sm text-gray-600">The event log enables recording and replaying system interactions for
+            in-depth debugging, regression testing, or scenario analysis</p>
+        </div>
+        <div class="bg-indigo-50 rounded-lg p-6">
+          <h3 class="font-semibold mb-2">👁️ Distributed Observability</h3>
+          <p class="text-sm text-gray-600">Gain insights into how different components of your distributed ReactiveKit
+            system interact, even across service boundaries.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Plugin Ecosystem -->
+  <section class="bg-gray-50 py-16">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold mb-4">Batteries included</h2>
+        <p class="text-xl text-gray-600 mb-4">
+          ReactiveKit is built upon a highly pluggable architecture,<br>allowing you to extend its capabilities or
+          integrate with your existing stack.
+        </p>
+        <p class="text-xl text-gray-600">
+          Leverage a growing library of official plugins, or even write your own.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="font-semibold text-green-600 mb-2">✅ Available Now</h3>
+          <ul class="space-y-2 text-sm">
+            <li>• ReactiveKit core bundle</li>
+            <li>• HTTP Fetch</li>
+            <li>• State Management</li>
+            <li>• Timers</li>
+          </ul>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="font-semibold text-blue-600 mb-2">🚀 Coming Soon</h3>
+          <ul class="space-y-2 text-sm">
+            <li>• WebSocket transport</li>
+            <li>• SSE transport</li>
+            <li>• GraphQL (Client & Server)</li>
+            <li>• gRPC (Client & Server)</li>
+          </ul>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="font-semibold text-purple-600 mb-2">🔮 Future</h3>
+          <ul class="space-y-2 text-sm">
+            <li>• SQL (Postgres, MySQL)</li>
+            <li>• NoSQL (MongoDB, Redis)</li>
+            <li>• NATS transport</li>
+            <li>• Kafka transport</li>
+            <li>• Kubernetes orchestration</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why Choose ReactiveKit -->
+  <section class="bg-white py-16">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold mb-8">Why Choose ReactiveKit?</h2>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="text-center">
+          <div class="text-4xl mb-4">🎯</div>
+          <h3 class="text-xl font-semibold mb-2">Deterministic by Design</h3>
+          <p class="text-gray-600">Build real-time systems you can trust to behave predictably and reproducibly.</p>
+        </div>
+        <div class="text-center">
+          <div class="text-4xl mb-4">🧪</div>
+          <h3 class="text-xl font-semibold mb-2">Radically Testable</h3>
+          <p class="text-gray-600">ReactiveKit test utilities make it easy to write comprehensive tests with confidence,
+            from individual units to complex interactions.</p>
+        </div>
+        <div class="text-center">
+          <div class="text-4xl mb-4">🔍</div>
+          <h3 class="text-xl font-semibold mb-2">Deeply Debuggable</h3>
+          <p class="text-gray-600">Untangle complex edge cases with an unprecedented view into your system's causal
+            history.</p>
+        </div>
+        <div class="text-center">
+          <div class="text-4xl mb-4">🛡️</div>
+          <h3 class="text-xl font-semibold mb-2">Inherently Robust</h3>
+          <p class="text-gray-600">Architected for resilience and predictable error recovery.</p>
+        </div>
+        <div class="text-center">
+          <div class="text-4xl mb-4">⚡</div>
+          <h3 class="text-xl font-semibold mb-2">Simplified Development</h3>
+          <p class="text-gray-600">Drastically reduce boilerplate for state synchronization, concurrency, and async
+            logic. Focus on building, not plumbing.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Case Study -->
+  <section class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold mb-4">Case Study: Building a Financial Platform with ReactiveKit</h2>
+        <p class="text-xl opacity-90">
+          See how ReactiveKit helps build powerful distributed systems, integrating with your existing infrastructure
+        </p>
+      </div>
+
+      <!-- System Architecture -->
+      <div class="bg-white/10 backdrop-blur rounded-lg p-8 mb-8">
+        <figure class="text-center">
+          <div class="bg-white/20 h-64 rounded-lg flex items-center justify-center mb-4">
+            <span class="text-white text-lg">🏗️ Financial Platform Architecture</span>
+          </div>
+          <figcaption class="text-sm opacity-75">
+            System architecture overview illustrating the interactions between portfolio widgets, streaming gateways,
+            and order execution workers
+          </figcaption>
+        </figure>
+      </div>
+
+      <!-- Components -->
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="bg-white/10 backdrop-blur rounded-lg p-6">
+          <h3 class="font-semibold mb-2">📊 Portfolio Overview Widget</h3>
+          <p class="text-sm opacity-90">Reactive Component providing live, consolidated view of market exposure</p>
+        </div>
+        <div class="bg-white/10 backdrop-blur rounded-lg p-6">
+          <h3 class="font-semibold mb-2">🌊 Backend Streaming Gateway</h3>
+          <p class="text-sm opacity-90">Processes and unifies multiple data feeds into clean real-time streams</p>
+        </div>
+        <div class="bg-white/10 backdrop-blur rounded-lg p-6">
+          <h3 class="font-semibold mb-2">⚙️ Automated Order Execution</h3>
+          <p class="text-sm opacity-90">Scripted Worker handling complete trade lifecycle with full auditability</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Developer Experience Preview -->
+  <section class="bg-gray-50 py-16">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold mb-4">Coming soon: ReactiveKit Observability Suite</h2>
+        <p class="text-xl text-gray-600">We're committed to an unparalleled developer experience. Our upcoming suite of
+          observability and debugging tools will provide deep insight and control over your ReactiveKit applications.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-8">
+        <!-- Visual Debugger -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+          <h3 class="text-lg font-semibold mb-4">🔍 Visual Debugger</h3>
+          <div class="space-y-4">
+            <figure>
+              <div class="bg-gray-100 h-32 rounded flex items-center justify-center mb-2">
+                <span class="text-gray-500">⏱️ Time-travel debugging interface</span>
+              </div>
+              <figcaption class="text-xs text-gray-600">
+                Mockup 1: Time-travel debugging interface, showing a timeline of events. A slider allows dragging back
+                and forth, with the application state updating to reflect the selected point in time. Event details are
+                shown for a selected event.
+              </figcaption>
+            </figure>
+
+            <figure>
+              <div class="bg-gray-100 h-32 rounded flex items-center justify-center mb-2">
+                <span class="text-gray-500">🕸️ Message flow visualization</span>
+              </div>
+              <figcaption class="text-xs text-gray-600">
+                Mockup 2: A graph visualizing message flows between different Reactive Components and Scripted Workers.
+                Lines connect components, indicating messages, and perhaps dependencies are highlighted.
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+
+        <!-- Performance Tools -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+          <h3 class="text-lg font-semibold mb-4">📊 Performance & Observability</h3>
+          <div class="space-y-4">
+            <figure>
+              <div class="bg-gray-100 h-32 rounded flex items-center justify-center mb-2">
+                <span class="text-gray-500">📈 Performance dashboard</span>
+              </div>
+              <figcaption class="text-xs text-gray-600">
+                Mockup 3: A dashboard UI displaying performance metrics. Charts show component/worker execution times,
+                message latencies, and potential system bottlenecks are flagged.
+              </figcaption>
+            </figure>
+
+            <figure>
+              <div class="bg-gray-100 h-32 rounded flex items-center justify-center mb-2">
+                <span class="text-gray-500">🔗 OpenTelemetry integration</span>
+              </div>
+              <figcaption class="text-xs text-gray-600">
+                Mockup 4: A settings screen or code snippet showing easy integration with OpenTelemetry. Another panel
+                shows a conceptual view of how ReactiveKit data might appear in a Prometheus/Grafana dashboard, or an
+                advanced error tracking service dashboard.
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Get Started -->
+  <footer class="bg-gray-900 text-white py-16">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold mb-8">Get Started</h2>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8 text-center">
+        <div>
+          <div class="text-4xl mb-4">⭐</div>
+          <h3 class="text-xl font-semibold mb-2">Star on GitHub</h3>
+          <p class="text-gray-400 mb-4">Get the code, explore the architecture, and contribute!</p>
+          <button class="bg-white text-gray-900 px-6 py-2 rounded font-semibold hover:bg-gray-100 transition">
+            View on GitHub
+          </button>
+        </div>
+
+        <div>
+          <div class="text-4xl mb-4">💻</div>
+          <h3 class="text-xl font-semibold mb-2">Explore Examples</h3>
+          <p class="text-gray-400 mb-4">Dive into source code examples and see ReactiveKit in action</p>
+          <button class="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700 transition">
+            Browse Examples
+          </button>
+        </div>
+
+        <div>
+          <div class="text-4xl mb-4">📚</div>
+          <h3 class="text-xl font-semibold mb-2">Read the Docs</h3>
+          <p class="text-gray-400 mb-4">Deep dive into concepts, APIs, and comprehensive guides</p>
+          <button class="bg-purple-600 text-white px-6 py-2 rounded font-semibold hover:bg-purple-700 transition">
+            Read Documentation
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+
+</html>
