@@ -4,22 +4,22 @@ import { CodeBlock, CodeLine, CodeToken } from '@/components/CodeBlock';
 
 export function ScriptedWorkersSection(): ReactNode {
   return (
-    <section className="bg-gray-50 py-16">
+    <section className="bg-muted py-16">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-12">
           <div>
             <h2 className="text-3xl font-bold mb-2">🔄 Scripted Workers</h2>
-            <p className="text-gray-400 mb-6">Stateful, repeatable process orchestration</p>
-            <p className="text-lg text-gray-600 mb-6">
+            <p className="text-muted-foreground mb-6">Stateful, repeatable process orchestration</p>
+            <p className="text-lg text-subtitle mb-6">
               Scripted Workers are composable runners for{' '}
               <strong>deterministic procedural workflows</strong>, suitable for both short-lived
               one-off tasks and long-running event-driven services.
             </p>
-            <p className="text-md text-gray-600 mb-6">
+            <p className="text-md text-muted-foreground mb-6">
               Define their behavior as a clear, logic-driven sequence of operations, managing
               internal state and communicating via messages for reliable process automation.
             </p>
-            <p className="text-md text-gray-600 mb-6">
+            <p className="text-md text-muted-foreground mb-6">
               Determinism is enforced by operating solely on input messages and internal state, with
               all side effects mediated via the Intelligent Transport Layer to ensure perfect
               replayability.
@@ -27,7 +27,7 @@ export function ScriptedWorkersSection(): ReactNode {
 
             <div className="text-sm space-y-4">
               <div className="flex items-start">
-                <span className="text-purple-500 mr-2">•</span>
+                <span className="text-primary mr-2">•</span>
                 <span>
                   <strong>Declarative & Composable</strong>
                   <br />
@@ -36,7 +36,7 @@ export function ScriptedWorkersSection(): ReactNode {
                 </span>
               </div>
               <div className="flex items-start">
-                <span className="text-purple-500 mr-2">•</span>
+                <span className="text-primary mr-2">•</span>
                 <span>
                   <strong>Deterministic Stateful Logic</strong>
                   <br />
@@ -45,7 +45,7 @@ export function ScriptedWorkersSection(): ReactNode {
                 </span>
               </div>
               <div className="flex items-start">
-                <span className="text-purple-500 mr-2">•</span>
+                <span className="text-primary mr-2">•</span>
                 <span>
                   <strong>Message-Driven Communication</strong>
                   <br />
