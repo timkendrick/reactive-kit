@@ -1,10 +1,14 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./globals.css";
+@import "./example.css";
+@import "./highlighter.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-sans: -apple-system, BlinkMacSystemFont, Inter, sans-serif;
+  --font-mono: 'Bitstream Vera Sans Mono', 'DM Mono', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -47,36 +51,26 @@
   /* Positive/Negative Colors */
   --color-positive: var(--color-green-600);
   --color-negative: var(--color-red-600);
+
+  /* Live widget border */
+  --color-live-widget-border: var(--color-blue-400);
   
   /* Live/Paused Indicator */
-  --color-live-indicator: var(--color-green-500);
+  --color-live-indicator-background: var(--color-amber-500);
+  --color-live-indicator-foreground: var(--color-amber-600);
   --color-paused-indicator: var(--color-gray-500);
 
   /* Event Timeline Illustration */
   --color-event-timeline-info-background: var(--color-blue-50);
   --color-event-timeline-info-foreground: var(--color-blue-500);
   --color-event-timeline-render-background: var(--color-green-50);
-  --color-event-timeline-render-foreground: var(--color-live-indicator); /* Uses existing alias */
+  --color-event-timeline-render-foreground: var(--color-green-500);
   --color-event-timeline-alert-background: var(--color-orange-50);
-  --color-event-timeline-alert-foreground: var(--color-orange-500); /* For dot & border */
+  --color-event-timeline-alert-foreground: var(--color-orange-500);
   --color-event-timeline-notification-background: var(--color-purple-50);
   --color-event-timeline-notification-foreground: var(--color-purple-500);
-
-  /* Event Bus Diagram */
-  --color-event-bus-diagram-reactive-component-background: var(--color-purple-50);
-  --color-event-bus-diagram-reactive-component-foreground: var(--color-purple-600);
-  --color-event-bus-diagram-reactive-component-border: var(--color-purple-200);
-  --color-event-bus-diagram-reactive-component-border-light: var(--color-purple-100);
-  --color-event-bus-diagram-event-bus-message-background: var(--color-blue-50);
-  --color-event-bus-diagram-event-bus-message-foreground: var(--color-blue-700);
-  --color-event-bus-diagram-event-bus-message-border: var(--color-blue-200);
-  --color-event-bus-diagram-scripted-worker-background: var(--color-green-50);
-  --color-event-bus-diagram-scripted-worker-foreground: var(--color-green-600);
-  --color-event-bus-diagram-scripted-worker-border: var(--color-green-200);
-  --color-event-bus-diagram-side-effect-background: var(--color-amber-50);
-  --color-event-bus-diagram-side-effect-foreground: var(--color-amber-600);
-  --color-event-bus-diagram-side-effect-border: var(--color-amber-200);
 }
+
 
 @layer base {
   * {
@@ -85,4 +79,8 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.border-double > .border {
+  @apply border-2;
 }

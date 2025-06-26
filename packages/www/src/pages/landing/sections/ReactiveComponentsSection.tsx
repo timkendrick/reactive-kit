@@ -1,169 +1,113 @@
+import { SquareActivity } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-import { CodeBlock, CodeLine, CodeToken } from '@/components/CodeBlock';
+import { Code } from '@/components/Code';
+import { CodeBlock } from '@/components/CodeBlock';
+import { FeatureGrid } from '@/components/FeatureGrid';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PortfolioWidget, usePortfolioSummary } from '@/examples';
 
 export function ReactiveComponentsSection(): ReactNode {
   return (
-    <section className="py-16">
+    <section className="py-16 border-t border-border/50 border-dashed">
       <div className="max-w-6xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-12">
-          <div>
-            <h2 className="text-3xl font-bold mb-2">⚡ Reactive Components</h2>
-            <p className="text-muted-foreground mb-6">
-              Define complex live computations anywhere on the stack
-            </p>
-            <p className="text-lg text-subtitle mb-6">
-              Reactive Components express a <strong>live computation</strong>, written as an{' '}
-              <code>async</code> function.
-            </p>
-            <p className="text-md text-muted-foreground mb-6">
-              Unlike standard UI framework components, Reactive Components are managed by
-              ReactiveKit's runtime, enabling automatic dependency tracking, efficient incremental
-              re-computation, and causal logging across the entire stack.
-            </p>
-            <p className="text-md text-muted-foreground mb-6">
-              Just use <code>await</code> keywords wherever you read from a live data stream, and
-              ReactiveKit ensures it's always up-to-date with the underlying data, automatically.
-            </p>
-            <p className="text-md text-muted-foreground mb-6">
-              The output of a Reactive Component can be a UI element, a streaming value to be
-              exposed via an API, or any other serializable data structure, allowing the same
-              component to be used interchangeably on both front-end and back-end.
-            </p>
-
-            <div className="text-sm space-y-4 mb-6">
-              <div className="flex items-start">
-                <span className="text-primary mr-2">•</span>
-                <span>
-                  <strong>Declarative & Composable</strong>
-                  <br />
-                  Focus on the "what," not the "how." Build up arbitrarily complex component logic,
-                  while ReactiveKit keeps everything in sync.
-                </span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-primary mr-2">•</span>
-                <span>
-                  <strong>Efficient Updates</strong>
-                  <br />
-                  Built-in intelligent dependency caching ensures only the outputs that have changed
-                  are re-evaluated, ensuring your application stays performant at scale.
-                </span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-primary mr-2">•</span>
-                <span>
-                  <strong>Truly Full-Stack</strong>
-                  <br />
-                  Use the same familiar syntax to build both dynamic, real-time user interface
-                  elements on the front-end, and to define reactive data transformations and
-                  services on the backend.
-                </span>
-              </div>
+        <div className="md:flex md:items-center md:gap-2 xl:relative">
+          <Badge
+            className="mb-4 md:mb-0 xl:absolute xl:my-4 xl:mr-4 xl:right-full"
+            variant="outline"
+          >
+            Deep-dive
+          </Badge>
+          <div className="md:flex-none flex gap-2 items-center">
+            <SquareActivity className="w-8 h-8 -mt-1" />
+            <h2 className="text-2xl md:text-3xl tracking-tight font-bold mb-2 whitespace-nowrap">
+              Reactive Components
+            </h2>
+          </div>
+        </div>
+        <p className="text-muted-foreground text-sm tracking-tight font-semibold mb-6">
+          Define complex live computations anywhere on your stack
+        </p>
+        <p className="text-lg text-subtitle mb-6">
+          Reactive Components express a <strong>live computation</strong>, written as an{' '}
+          <Code>async</Code> function.
+        </p>
+        <div className="lg:flex lg:flex-row lg:space-x-12">
+          <div className="lg:flex-1">
+            <div>
+              <p className="text-md text-muted-foreground mb-6">
+                The output of a Reactive Component can be a UI element, a streaming value to be
+                exposed via an API, or any other serializable data structure, allowing the same
+                components to be used interchangeably on both front-end and back-end.
+              </p>
+              <p className="text-md text-muted-foreground mb-6">
+                Unlike the components you would typically encounter in UI frameworks, Reactive
+                Components are managed by ReactiveKit&rsquo;s runtime, enabling deterministic
+                execution, efficient incremental re-computation, and causal logging across the
+                entire stack.
+              </p>
+              <p className="text-md text-muted-foreground mb-6">
+                Just use <Code>await</Code> keywords wherever you read from a live data stream, and
+                ReactiveKit ensures it&rsquo;s always up-to-date with the underlying data,
+                automatically.
+              </p>
+              <p className="text-md text-muted-foreground mb-6">
+                <Code>await</Code> calls can be chained to combine dependent data streams
+                intuitively: ReactiveKit performs dynamic joining in the background, so nested
+                dependencies stay synchronized without any manual coordination.
+              </p>
             </div>
           </div>
 
-          <div className="space-y-6">
-            {/* Frontend Example */}
-            <CodeBlock title="PortfolioOverview.jsx">
-              <CodeLine>
-                <CodeToken color="blue">import</CodeToken>{' '}
-                <CodeToken color="white">{'{ useMarketExposure, useOpenOrders }'}</CodeToken>{' '}
-                <CodeToken color="blue">from</CodeToken>{' '}
-                <CodeToken color="orange">'@reactive-kit/finance-hooks'</CodeToken>;
-              </CodeLine>
-              <div className="h-2"></div>
-              <CodeLine>
-                <CodeToken color="blue">async function</CodeToken>{' '}
-                <CodeToken color="yellow">PortfolioOverview</CodeToken>() {'{'}
-              </CodeLine>
-              <CodeLine indent={1}>
-                <CodeToken color="purple">const</CodeToken> marketExposure ={' '}
-                <CodeToken color="purple">await</CodeToken>{' '}
-                <CodeToken color="green">useMarketExposure</CodeToken>();{' '}
-                <CodeToken color="gray">// Live data stream</CodeToken>
-              </CodeLine>
-              <CodeLine indent={1}>
-                <CodeToken color="purple">const</CodeToken> openOrders ={' '}
-                <CodeToken color="purple">await</CodeToken>{' '}
-                <CodeToken color="green">useOpenOrders</CodeToken>();{' '}
-                <CodeToken color="gray">// Live data stream</CodeToken>
-              </CodeLine>
-              <div className="h-2"></div>
-              <CodeLine indent={1}>
-                <CodeToken color="gray">// Combine and format for display</CodeToken>
-              </CodeLine>
-              <CodeLine indent={1}>
-                <CodeToken color="purple">return</CodeToken> {'{'}
-              </CodeLine>
-              <CodeLine indent={2}>totalExposure: marketExposure.total,</CodeLine>
-              <CodeLine indent={2}>exposureByAsset: marketExposure.byAsset,</CodeLine>
-              <CodeLine indent={2}>
-                activeOrders: openOrders.<CodeToken color="blue">filter</CodeToken>
-                (order {'=>'} order.status === <CodeToken color="orange">'ACTIVE'</CodeToken>
-                ).length,
-              </CodeLine>
-              <CodeLine indent={2}>
-                <CodeToken color="gray">// ... other relevant overview data</CodeToken>
-              </CodeLine>
-              <CodeLine indent={1}>{'}'};</CodeLine>
-              <CodeLine>{'}'}</CodeLine>
-            </CodeBlock>
-
-            {/* Backend Example */}
-            <CodeBlock title="PortfolioGateway.js">
-              <CodeLine>
-                <CodeToken color="blue">import</CodeToken>{' '}
-                <CodeToken color="white">
-                  {'{ useUpstreamMarketData, useOrderSystemEvents }'}
-                </CodeToken>{' '}
-                <CodeToken color="blue">from</CodeToken>{' '}
-                <CodeToken color="orange">'@reactive-kit/internal-data-hooks'</CodeToken>;
-              </CodeLine>
-              <CodeLine>
-                <CodeToken color="blue">import</CodeToken>{' '}
-                <CodeToken color="white">
-                  {'{ transformMarketData, correlateWithOrders }'}
-                </CodeToken>{' '}
-                <CodeToken color="blue">from</CodeToken>{' '}
-                <CodeToken color="orange">'./data-processors'</CodeToken>;
-              </CodeLine>
-              <div className="h-2"></div>
-              <CodeLine>
-                <CodeToken color="blue">async function</CodeToken>{' '}
-                <CodeToken color="yellow">PortfolioWidgetStream</CodeToken>() {'{'}
-              </CodeLine>
-              <CodeLine indent={1}>
-                <CodeToken color="purple">const</CodeToken> rawMarketData ={' '}
-                <CodeToken color="purple">await</CodeToken>{' '}
-                <CodeToken color="green">useUpstreamMarketData</CodeToken>();
-              </CodeLine>
-              <CodeLine indent={1}>
-                <CodeToken color="purple">const</CodeToken> orderEvents ={' '}
-                <CodeToken color="purple">await</CodeToken>{' '}
-                <CodeToken color="green">useOrderSystemEvents</CodeToken>();
-              </CodeLine>
-              <div className="h-2"></div>
-              <CodeLine indent={1}>
-                <CodeToken color="purple">const</CodeToken> processedMarketData ={' '}
-                <CodeToken color="blue">transformMarketData</CodeToken>(rawMarketData);
-              </CodeLine>
-              <CodeLine indent={1}>
-                <CodeToken color="purple">const</CodeToken> livePortfolioView ={' '}
-                <CodeToken color="blue">correlateWithOrders</CodeToken>(processedMarketData,
-                orderEvents);
-              </CodeLine>
-              <div className="h-2"></div>
-              <CodeLine indent={1}>
-                <CodeToken color="purple">return</CodeToken> livePortfolioView;{' '}
-                <CodeToken color="gray">
-                  // This stream directly feeds the PortfolioOverview widget
-                </CodeToken>
-              </CodeLine>
-              <CodeLine>{'}'}</CodeLine>
-            </CodeBlock>
+          <div className="lg:flex-1">
+            <Tabs defaultValue="server">
+              <TabsList className="w-full">
+                <TabsTrigger value="server">Server</TabsTrigger>
+                <TabsTrigger value="client">Client</TabsTrigger>
+              </TabsList>
+              <TabsContent value="server">
+                <CodeBlock source={usePortfolioSummary} />
+              </TabsContent>
+              <TabsContent value="client">
+                <CodeBlock source={PortfolioWidget} />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
+        <FeatureGrid
+          itemsPerRow={3}
+          features={[
+            {
+              title: 'Declarative & Composable',
+              description: (
+                <>
+                  Focus on the &quot;what&quot;, not the &quot;how&quot;. Build up arbitrarily
+                  complex component logic, while ReactiveKit keeps everything in sync.
+                </>
+              ),
+            },
+            {
+              title: 'Efficient Updates',
+              description: (
+                <>
+                  Built-in intelligent dependency caching ensures only the outputs that have changed
+                  are re-evaluated, ensuring your application stays performant at scale.
+                </>
+              ),
+            },
+            {
+              title: 'Truly Full-Stack',
+              description: (
+                <>
+                  Use the same familiar syntax to build dynamic user interface elements on the
+                  front-end, and to define reactive data transformations and pipelines on the
+                  backend.
+                </>
+              ),
+            },
+          ].map(({ title, description }) => ({ icon: null, title, description }))}
+        />
       </div>
     </section>
   );
