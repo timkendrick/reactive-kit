@@ -1,21 +1,22 @@
 import type { ReactNode } from 'react';
 
 import { CodeBlock, CodeLine, CodeToken } from '@/components/CodeBlock';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function LiveDataSection(): ReactNode {
   return (
-    <section className="bg-gradient-to-r from-blue-50 to-purple-50 py-16">
+    <section className="bg-muted py-16">
       <div className="max-w-6xl mx-auto px-6">
         <div className="mb-8">
           <h2 className="text-4xl font-bold mb-6">
             Always live data,
             <br />
-            <span className="text-indigo-600">all the time</span>
+            <span className="text-primary">all the time</span>
           </h2>
-          <h3 className="text-2xl text-gray-600 mb-4">
+          <h3 className="text-2xl text-subtitle mb-4">
             ReactiveKit <b>abstracts away the complexity</b> of subscriptions, callbacks and caches.
           </h3>
-          <p className="text-md text-gray-600 mb-8">
+          <p className="text-md text-muted-foreground mb-8">
             ReactiveKit's full-stack reactivity primitives make stale data a thing of the past.
             Components throughout your architecture will always reflect the latest live updates,
             automatically and efficiently, with zero effort.
@@ -53,28 +54,29 @@ export function LiveDataSection(): ReactNode {
             <CodeLine>{'}'}</CodeLine>
           </CodeBlock>
 
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Portfolio Value</h3>
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            </div>
-            <div className="text-3xl font-bold text-green-600 mb-6">$247,892.34</div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span>AAPL (100 shares)</span>
-                <span className="text-green-600">$15,023.00 ↗</span>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg font-semibold">Portfolio Value</CardTitle>
+              <div className="w-3 h-3 bg-live-indicator rounded-full animate-pulse"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-positive mb-6">$247,892.34</div>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span>AAPL (100 shares)</span>
+                  <span className="text-positive">$15,023.00 ↗</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>MSFT (50 shares)</span>
+                  <span className="text-negative">$17,845.50 ↘</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>TSLA (25 shares)</span>
+                  <span className="text-positive">$6,234.75 ↗</span>
+                </div>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>MSFT (50 shares)</span>
-                <span className="text-red-600">$17,845.50 ↘</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>TSLA (25 shares)</span>
-                <span className="text-green-600">$6,234.75 ↗</span>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </section>

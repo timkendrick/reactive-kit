@@ -16,7 +16,7 @@ import { WhyChooseSection } from '@/pages/landing/sections/WhyChooseSection';
 
 export function LandingPage(): ReactNode {
   return (
-    <div className="bg-white">
+    <div className="bg-white **:data-[slot=card]:shadow-none">
       <HeroSection />
       <LiveDataSection />
       <ObservabilitySection />
