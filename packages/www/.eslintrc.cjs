@@ -1,4 +1,4 @@
-const base = require('@reactive-kit/build-config/templates/eslint/lib.eslintrc.cjs');
+const base = require('@reactive-kit/build-config/templates/eslint/react.eslintrc.cjs');
 
 module.exports = {
   ...base,

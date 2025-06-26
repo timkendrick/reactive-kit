@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+THEME="theme/OneDark.json"
+
+docker run --rm -it highlighter css --theme="$THEME" |
+  sed 's/font-family:[^;]*;/font-family: monospace;/g'

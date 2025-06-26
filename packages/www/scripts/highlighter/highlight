@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+get_grammar_path() {
+  local extension="$1"
+  case "$extension" in
+    js)
+      echo "grammar/JavaScript.tmLanguage.json"
+      ;;
+    jsx)
+      echo "grammar/JavaScriptReact.tmLanguage.json"
+      ;;
+    ts)
+      echo "grammar/TypeScript.tmLanguage.json"
+      ;;
+    tsx)
+      echo "grammar/TypeScriptReact.tmLanguage.json"
+      ;;
+    py)
+      echo "grammar/MagicPython.tmLanguage.json"
+      ;;
+  esac
+}
+
+THEME="theme/OneDark.json"
+
+for filename in "$@"
+do
+  extension="${filename##*.}"
+  grammar="$(get_grammar_path "$extension")"
+  if [[ -z "$grammar" ]]; then
+    echo "Error: Unknown file extension '$extension' for file '$filename'" >&2
+    exit 1
+  fi
+  echo "$(\
+    echo '<div class="highlighted">' && \
+    docker run --rm \
+      -v "./$filename:/home/src/$filename" \
+      "$(docker build -q "$(dirname "$0")")" \
+        highlight \
+          --input="file" \
+          --file="/home/src/$filename" \
+          --theme="$THEME" \
+          --grammar="$grammar" |
+      sed '1 d; $ d; s/^\r*$/<br \/>/; s/^/  <div>/; s/\r*$/<\/div>/' && \
+    echo '</div>' \
+  )" > "$(basename "$filename").highlighted.html"
+done

@@ -1,2 +1,5 @@
 /dist/
+/examples/
+/src/components/magicui/
 /vitest.config.ts.timestamp-*.mjs
+/src/components/ui/
