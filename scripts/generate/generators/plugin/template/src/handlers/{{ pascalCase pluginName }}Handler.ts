@@ -5,7 +5,7 @@ import {
   EffectHandlerOutput,
   EffectHandlerOutputMessage,
 } from '@reactive-kit/handler-utils';
-import type { Message } from '@reactive-kit/runtime-messages';
+import type { Message } from '@reactive-kit/plugin-evaluate';
 import type { Expression } from '@reactive-kit/types';
 import { EFFECT_TYPE_{{ constantCase pluginName }}, type {{ pascalCase pluginName }}Effect } from '../effects';
 

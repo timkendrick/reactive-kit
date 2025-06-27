@@ -3,7 +3,7 @@ import {
   type AsyncTaskMessage,
   type AsyncTaskMessagePayload,
 } from '@reactive-kit/handler-utils';
-import type { Message } from '@reactive-kit/runtime-messages';
+import type { Message } from '@reactive-kit/plugin-evaluate';
 
 import type { FetchResponseState } from '../types';
 

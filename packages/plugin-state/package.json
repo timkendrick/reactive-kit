@@ -49,7 +49,7 @@
     "@reactive-kit/build-config": "workspace:*",
     "@reactive-kit/hash": "workspace:*",
     "@reactive-kit/reactive-utils": "workspace:*",
-    "@reactive-kit/runtime-messages": "workspace:*",
+    "@reactive-kit/plugin-evaluate": "workspace:*",
     "@reactive-kit/types": "workspace:*",
     "@reactive-kit/utils": "workspace:*"
   },

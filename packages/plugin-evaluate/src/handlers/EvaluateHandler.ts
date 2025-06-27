@@ -9,23 +9,6 @@ import {
 import { hash, isHashable, type Hash, type Hashable } from '@reactive-kit/hash';
 import { Interpreter, type InterpreterSubscription } from '@reactive-kit/interpreter';
 import {
-  MESSAGE_EMIT_EFFECT_VALUES,
-  MESSAGE_SUBSCRIBE_EFFECTS,
-  MESSAGE_UNSUBSCRIBE_EFFECTS,
-  createEmitEffectValuesMessage,
-  createSubscribeEffectsMessage,
-  createUnsubscribeEffectsMessage,
-  getTypedEffects,
-  groupEffectsByType,
-  isEmitEffectValuesMessage,
-  isSubscribeEffectsMessage,
-  isUnsubscribeEffectsMessage,
-  type EmitEffectValuesMessage,
-  type Message,
-  type SubscribeEffectsMessage,
-  type UnsubscribeEffectsMessage,
-} from '@reactive-kit/runtime-messages';
-import {
   EvaluationResultType,
   type EffectExpression,
   type EffectId,
@@ -37,6 +20,22 @@ import {
 } from '@reactive-kit/types';
 
 import { EFFECT_TYPE_EVALUATE, type EvaluateEffect } from '../effects';
+import {
+  MESSAGE_EMIT_EFFECT_VALUES,
+  MESSAGE_SUBSCRIBE_EFFECTS,
+  MESSAGE_UNSUBSCRIBE_EFFECTS,
+  createEmitEffectValuesMessage,
+  createSubscribeEffectsMessage,
+  createUnsubscribeEffectsMessage,
+  isEmitEffectValuesMessage,
+  isSubscribeEffectsMessage,
+  isUnsubscribeEffectsMessage,
+  type EmitEffectValuesMessage,
+  type SubscribeEffectsMessage,
+  type UnsubscribeEffectsMessage,
+} from '../messages';
+import type { Message } from '../types';
+import { getTypedEffects, groupEffectsByType } from '../utils';
 
 export const ACTOR_TYPE_EVALUATE_HANDLER = '@reactive-kit/actor/evaluate-handler';
 

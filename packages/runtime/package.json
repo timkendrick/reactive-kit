@@ -38,7 +38,6 @@
     "@reactive-kit/hash": "workspace:*",
     "@reactive-kit/interpreter": "workspace:*",
     "@reactive-kit/plugin-evaluate": "workspace:*",
-    "@reactive-kit/runtime-messages": "workspace:*",
     "@reactive-kit/scheduler": "workspace:*",
     "@reactive-kit/types": "workspace:*",
     "@reactive-kit/utils": "workspace:*"

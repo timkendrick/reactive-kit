@@ -1,5 +1,5 @@
 import type { AsyncTaskId, AsyncTaskMessage } from '@reactive-kit/handler-utils';
-import type { Message } from '@reactive-kit/runtime-messages';
+import type { Message } from '@reactive-kit/plugin-evaluate';
 
 export const MESSAGE_TIME_HANDLER_EMIT = '@reactive-kit/plugin-time/emit';
 

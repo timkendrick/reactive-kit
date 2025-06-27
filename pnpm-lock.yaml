@@ -617,9 +617,9 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
-      '@reactive-kit/runtime-messages':
+      '@reactive-kit/plugin-evaluate':
         specifier: workspace:*
-        version: link:../runtime-messages
+        version: link:../plugin-evaluate
       '@reactive-kit/types':
         specifier: workspace:*
         version: link:../types
@@ -827,9 +827,6 @@ importers:
       '@reactive-kit/reactive-utils':
         specifier: workspace:*
         version: link:../reactive-utils
-      '@reactive-kit/runtime-messages':
-        specifier: workspace:*
-        version: link:../runtime-messages
       '@reactive-kit/types':
         specifier: workspace:*
         version: link:../types
@@ -873,12 +870,12 @@ importers:
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../hash
+      '@reactive-kit/plugin-evaluate':
+        specifier: workspace:*
+        version: link:../plugin-evaluate
       '@reactive-kit/reactive-utils':
         specifier: workspace:*
         version: link:../reactive-utils
-      '@reactive-kit/runtime-messages':
-        specifier: workspace:*
-        version: link:../runtime-messages
       '@reactive-kit/types':
         specifier: workspace:*
         version: link:../types
@@ -919,12 +916,12 @@ importers:
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../hash
+      '@reactive-kit/plugin-evaluate':
+        specifier: workspace:*
+        version: link:../plugin-evaluate
       '@reactive-kit/reactive-utils':
         specifier: workspace:*
         version: link:../reactive-utils
-      '@reactive-kit/runtime-messages':
-        specifier: workspace:*
-        version: link:../runtime-messages
       '@reactive-kit/types':
         specifier: workspace:*
         version: link:../types
@@ -965,12 +962,12 @@ importers:
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../hash
+      '@reactive-kit/plugin-evaluate':
+        specifier: workspace:*
+        version: link:../plugin-evaluate
       '@reactive-kit/reactive-utils':
         specifier: workspace:*
         version: link:../reactive-utils
-      '@reactive-kit/runtime-messages':
-        specifier: workspace:*
-        version: link:../runtime-messages
       '@reactive-kit/types':
         specifier: workspace:*
         version: link:../types
@@ -1014,12 +1011,12 @@ importers:
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../hash
+      '@reactive-kit/plugin-evaluate':
+        specifier: workspace:*
+        version: link:../plugin-evaluate
       '@reactive-kit/reactive-utils':
         specifier: workspace:*
         version: link:../reactive-utils
-      '@reactive-kit/runtime-messages':
-        specifier: workspace:*
-        version: link:../runtime-messages
       '@reactive-kit/types':
         specifier: workspace:*
         version: link:../types
@@ -1094,43 +1091,9 @@ importers:
       '@reactive-kit/plugin-evaluate':
         specifier: workspace:*
         version: link:../plugin-evaluate
-      '@reactive-kit/runtime-messages':
-        specifier: workspace:*
-        version: link:../runtime-messages
       '@reactive-kit/scheduler':
         specifier: workspace:*
         version: link:../scheduler
-      '@reactive-kit/types':
-        specifier: workspace:*
-        version: link:../types
-      '@reactive-kit/utils':
-        specifier: workspace:*
-        version: link:../utils
-
-  packages/runtime-messages:
-    dependencies:
-      eslint:
-        specifier: ^8
-        version: 8.57.1
-      typedoc:
-        specifier: ^0.28
-        version: 0.28.2(typescript@5.7.2)
-      typescript:
-        specifier: ^5
-        version: 5.7.2
-      vite:
-        specifier: ^6
-        version: 6.0.5(@types/node@22.14.0)(yaml@2.7.1)
-      vitest:
-        specifier: ^3
-        version: 3.1.1(@types/node@22.14.0)(yaml@2.7.1)
-    devDependencies:
-      '@reactive-kit/build-config':
-        specifier: workspace:*
-        version: link:../build-config
-      '@reactive-kit/interpreter':
-        specifier: workspace:*
-        version: link:../interpreter
       '@reactive-kit/types':
         specifier: workspace:*
         version: link:../types

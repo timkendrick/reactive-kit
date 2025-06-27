@@ -14,7 +14,7 @@ import {
   type Message,
   type SubscribeEffectsMessage,
   type UnsubscribeEffectsMessage,
-} from '@reactive-kit/runtime-messages';
+} from '@reactive-kit/plugin-evaluate';
 import {
   createPending,
   type EffectExpression,
