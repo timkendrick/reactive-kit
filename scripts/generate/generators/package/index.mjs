@@ -17,7 +17,7 @@ export default function (plop) {
         type: 'input',
         name: 'packageName',
         message: 'Package name',
-        validate: function (value) {
+        validate(value) {
           if (/^[a-z][a-z_-]*$/.test(value)) {
             return true;
           }
@@ -29,7 +29,7 @@ export default function (plop) {
         name: 'description',
         message: 'Package description',
         default: ({ packageName }) => `ReactiveKit ${packageName}`,
-        validate: function (value) {
+        validate(value) {
           if (/^.+$/.test(value)) {
             return true;
           }

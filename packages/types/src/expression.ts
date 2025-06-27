@@ -97,7 +97,7 @@ export function createEffect<T extends EffectType, P extends Hashable, V>(
     [TYPE]: TYPE_EXPRESSION,
     [EXPRESSION_TYPE]: EXPRESSION_TYPE_EFFECT,
     id,
-    type: type,
+    type,
     payload,
   });
 }

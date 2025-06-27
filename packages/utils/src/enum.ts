@@ -10,7 +10,7 @@ export type Enum<V extends { [K in keyof V]: object | void }> = {
 
 export const Enum = {
   create: enumConstructor,
-  match: match,
+  match,
 };
 
 export type EnumDiscriminant<E extends Enum<any>> = Extract<

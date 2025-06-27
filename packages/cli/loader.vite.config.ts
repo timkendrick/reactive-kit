@@ -1,9 +1,9 @@
 import { resolve } from 'path';
+
 import { defineConfig, mergeConfig } from 'vite';
 
-import base from '../loader/vite.config.ts';
-
 import pkg from '../loader/package.json' assert { type: 'json' };
+import base from '../loader/vite.config.ts';
 
 export default mergeConfig(
   base,

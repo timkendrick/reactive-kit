@@ -1,4 +1,5 @@
 import { resolve } from 'path';
+
 import { defineConfig, mergeConfig } from 'vite';
 
 import base from '../build-config/templates/vite/lib.vite.config';

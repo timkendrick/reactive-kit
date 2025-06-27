@@ -18,7 +18,7 @@ export default function (plop) {
         type: 'input',
         name: 'pluginName',
         message: 'Plugin name',
-        validate: function (value) {
+        validate(value) {
           if (/^[a-z][a-z_-]*$/.test(value)) {
             return true;
           }
@@ -30,7 +30,7 @@ export default function (plop) {
         name: 'description',
         message: 'Plugin description',
         default: ({ pluginName }) => `ReactiveKit ${pluginName} plugin`,
-        validate: function (value) {
+        validate(value) {
           if (/^.+$/.test(value)) {
             return true;
           }
@@ -42,7 +42,7 @@ export default function (plop) {
         name: 'packageName',
         message: 'Package name',
         default: ({ pluginName }) => `plugin-${pluginName}`,
-        validate: function (value) {
+        validate(value) {
           if (/^plugin-[a-z][a-z_-]*$/.test(value)) {
             return true;
           }
