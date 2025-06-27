@@ -20,6 +20,6 @@ export class ScanActor<T, S> implements Actor<T, S> {
   public handle(message: T, _context: HandlerContext<T>): HandlerResult<S> {
     const result = this.reducer(this.state, message);
     this.state = result;
-    return [HandlerAction.Send(this.next, result)];
+    return [HandlerAction.Send({ target: this.next, message: result })];
   }
 }

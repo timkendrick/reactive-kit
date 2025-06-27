@@ -16,6 +16,8 @@ export class FlatMapActor<T, T2> implements Actor<T, T2> {
   }
 
   public handle(message: T, _context: HandlerContext<T>): HandlerResult<T2> {
-    return this.iteratee(message).map((message) => HandlerAction.Send(this.next, message));
+    return this.iteratee(message).map((message) =>
+      HandlerAction.Send({ target: this.next, message }),
+    );
   }
 }

@@ -19,6 +19,6 @@ export class FilterActor<T, T2 extends T = T> implements Actor<T, T2> {
 
   public handle(message: T, _context: HandlerContext<T>): HandlerResult<T2> {
     if (!this.predicate(message)) return null;
-    return [HandlerAction.Send(this.next, message)];
+    return [HandlerAction.Send({ target: this.next, message })];
   }
 }

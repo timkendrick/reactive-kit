@@ -16,6 +16,6 @@ export class MapActor<T, T2> implements Actor<T, T2> {
   }
 
   public handle(message: T, _context: HandlerContext<T>): HandlerResult<T2> {
-    return [HandlerAction.Send(this.next, this.iteratee(message))];
+    return [HandlerAction.Send({ target: this.next, message: this.iteratee(message) })];
   }
 }

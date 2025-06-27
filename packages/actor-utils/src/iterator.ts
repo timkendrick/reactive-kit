@@ -70,9 +70,9 @@ export function fromAsyncIteratorFactory<C, T>(
                 // Combine actions, adding an action to terminate the current task if the iterator is done
                 const combinedActions =
                   actions !== null && iteratorDone
-                    ? [...actions, HandlerAction.Kill(self)]
+                    ? [...actions, HandlerAction.Kill({ target: self })]
                     : iteratorDone
-                      ? [HandlerAction.Kill(self)]
+                      ? [HandlerAction.Kill({ target: self })]
                       : actions;
                 if (combinedActions !== null) outbox(combinedActions);
                 // If the iterator is now done, we have finished processing the last value it received.

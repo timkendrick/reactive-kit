@@ -19,7 +19,11 @@ export function fromPromiseFactory<C, T>(
         // Await the promise
         const result = await factory(config);
         // Emit the result of the promise to the outbox and terminate the task
-        outbox(result ? [...result, HandlerAction.Kill(self)] : [HandlerAction.Kill(self)]);
+        outbox(
+          result
+            ? [...result, HandlerAction.Kill({ target: self })]
+            : [HandlerAction.Kill({ target: self })],
+        );
       };
     },
   };

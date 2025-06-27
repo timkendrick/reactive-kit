@@ -59,7 +59,7 @@ export abstract class AsyncTaskHandler<
     const { task, config } = this.createTask(taskId, effect, context);
     const handle = context.spawn({ actor: task, config });
     this.requests.set(taskId, { effect, handle, config });
-    return [HandlerAction.Spawn(handle)];
+    return [HandlerAction.Spawn({ target: handle })];
   }
 
   protected override onUnsubscribe(
@@ -74,7 +74,7 @@ export abstract class AsyncTaskHandler<
     if (request === undefined) return null;
     this.requests.delete(taskId);
     const { handle } = request;
-    return [HandlerAction.Kill(handle)];
+    return [HandlerAction.Kill({ target: handle })];
   }
 
   protected override handleInternal(
