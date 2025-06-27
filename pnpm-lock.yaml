@@ -11,6 +11,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.48.0
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -36,6 +39,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -61,6 +67,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -89,6 +98,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       regenerator-transform:
         specifier: 0.15.2
         version: 0.15.2
@@ -123,6 +135,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -163,6 +178,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -212,6 +230,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -264,6 +285,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -349,6 +373,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.48.0
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -377,6 +404,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -420,6 +450,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -454,6 +487,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -479,6 +515,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -556,6 +595,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.48.0
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -590,6 +632,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -621,6 +666,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -643,6 +691,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -680,6 +731,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -714,6 +768,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -739,6 +796,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.48.0
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -782,6 +842,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.48.0
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -828,6 +891,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.48.0
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -871,6 +937,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.48.0
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -914,6 +983,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.48.0
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -960,6 +1032,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -985,6 +1060,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -1065,6 +1143,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -1093,6 +1174,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
@@ -1121,6 +1205,9 @@ importers:
       eslint:
         specifier: ^8
         version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
       typedoc:
         specifier: ^0.28
         version: 0.28.2(typescript@5.7.2)
