@@ -510,6 +510,49 @@ importers:
         specifier: 10.20.2
         version: 10.20.2
 
+  packages/scripted-workers:
+    dependencies:
+      eslint:
+        specifier: ^8
+        version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
+      typedoc:
+        specifier: ^0.28
+        version: 0.28.2(typescript@5.7.2)
+      typescript:
+        specifier: ^5
+        version: 5.7.2
+      vite:
+        specifier: ^6
+        version: 6.0.5(@types/node@22.14.0)(yaml@2.7.1)
+      vitest:
+        specifier: ^3
+        version: 3.1.1(@types/node@22.14.0)(yaml@2.7.1)
+    devDependencies:
+      '@reactive-kit/actor':
+        specifier: workspace:*
+        version: link:../actor
+      '@reactive-kit/actor-utils':
+        specifier: workspace:*
+        version: link:../actor-utils
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+      '@reactive-kit/handler-utils':
+        specifier: workspace:*
+        version: link:../handler-utils
+      '@reactive-kit/plugin-evaluate':
+        specifier: workspace:*
+        version: link:../plugin-evaluate
+      '@reactive-kit/scheduler':
+        specifier: workspace:*
+        version: link:../scheduler
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
+
   packages/dom:
     dependencies:
       eslint:
