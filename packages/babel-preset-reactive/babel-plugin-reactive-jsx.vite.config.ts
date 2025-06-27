@@ -2,7 +2,7 @@ import { resolve } from 'path';
 
 import { defineConfig, mergeConfig } from 'vite';
 
-import pkg from '../babel-plugin-reactive-jsx/package.json' assert { type: 'json' };
+import pkg from '../babel-plugin-reactive-jsx/package.json' with { type: 'json' };
 import base from '../babel-plugin-reactive-jsx/vite.config.ts';
 
 export default mergeConfig(
