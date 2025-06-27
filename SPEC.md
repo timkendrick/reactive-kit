@@ -13,7 +13,7 @@
 - [Babel Integration](./spec/babel-integration.spec.md) - Babel preset and plugins for reactive function compilation
 
 ## Testing Infrastructure
-- [Test Utilities](./spec/test-utils.spec.md) [TBD] - Toolkit for writing declarative sync, async and e2e tests (see `test-utils` feature branch)
+- [Test Utilities](./packages/test-utils/SPEC.md) - Toolkit for writing declarative sync, async and e2e tests
 
 ## Plugin Suite
 - [State Management](./spec/state-management.spec.md) [TBD] - State management plugin with hooks and reducers
