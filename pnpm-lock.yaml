@@ -1199,9 +1199,6 @@ importers:
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../hash
-      '@reactive-kit/types':
-        specifier: workspace:*
-        version: 'link:'
       '@reactive-kit/utils':
         specifier: workspace:*
         version: link:../utils
