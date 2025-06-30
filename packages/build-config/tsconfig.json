@@ -1,5 +1,6 @@
 {
-  "extends": "./templates/tsc/tsconfig.json",
+  "$schema": "http://json.schemastore.org/tsconfig",
+  "extends": "./templates/tsc/base.tsconfig.json",
   "include": ["templates"],
   "compilerOptions": {
     "composite": true
