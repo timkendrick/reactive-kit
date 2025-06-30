@@ -1,6 +1,6 @@
-# Reactive Kit Actor System: Detailed Design Document
+# ReactiveKit Architecture: Detailed Design Document
 
-This document provides a comprehensive overview of the Reactive Kit reactivity framework. It explains the core architecture, key primitives, and message flow patterns used in the framework to enable reactive, deterministic, and testable applications.
+This document provides a comprehensive overview of ReactiveKit, a full-stack framework for building deterministic, debuggable, testable, replayable, and observable real-time distributed systems.
 
 ---
 
@@ -8,26 +8,30 @@ This document provides a comprehensive overview of the Reactive Kit reactivity f
 
 ### Background and Context
 
-Reactive Kit provides a framework for building reliable real-time JavaScript/TypeScript applications, providing a robust reactive framework that leverages an actor-based concurrency model.
+ReactiveKit provides a unified approach to building reliable real-time JavaScript/TypeScript applications. It extends the reactive paradigm beyond UI to the entire application stack using three core building blocks that work together to eliminate the complexity typically associated with real-time systems.
 
-It enforces message-driven communication, structured hierarchical spawning of actors, and deterministic scheduling—all essential for simplifying complex concurrency scenarios and ensuring predictable behavior.
+The framework enforces deterministic behavior, complete observability, and perfect reproducibility—all essential for building robust production systems that can be thoroughly tested and debugged.
 
 ---
 
 ## Table of Contents
 
 1. [ReactiveKit Architecture Overview](#1-reactivekit-architecture-overview)
-   - [Dual-Realm Design](#11-dual-realm-design)
-     - [Synchronous Realm ('Micro')](#synchronous-realm-micro)
-     - [Asynchronous Realm ('Macro')](#asynchronous-realm-macro)
-     - [Interaction Between Realms](#interaction-between-realms)
+   - [Three-Layer Architecture](#11-three-layer-architecture)
+     - [Reactive Functions](#reactive-functions)
+     - [Scripted Workers](#scripted-workers)
+     - [Intelligent Transport Layer](#intelligent-transport-layer)
+     - [Integration Between Layers](#integration-between-layers)
 2. [Reactive Functions](#2-reactive-functions)
    - [Key Characteristics](#key-characteristics)
    - [Execution Model](#execution-model)
    - [Integration and Parallel Execution](#integration-and-parallel-execution)
    - [Caveats](#caveats)
-3. [Actor System Overview](#3-actor-system-overview)
-4. [Key Primitives](#4-key-primitives)
+3. [Scripted Workers](#3-scripted-workers)
+   - [Actor System Foundation](#actor-system-foundation)
+   - [VM-Based Execution](#vm-based-execution)
+   - [Control Flow Primitives](#control-flow-primitives)
+4. [Actor System Primitives](#4-actor-system-primitives)
    - [Messages](#41-messages)
    - [Scheduler](#42-scheduler)
    - [Actors](#43-actors)
@@ -45,54 +49,73 @@ It enforces message-driven communication, structured hierarchical spawning of ac
 
 ## 1. ReactiveKit Architecture Overview
 
-### 1.1 Dual-Realm Design
+### 1.1 Three-Layer Architecture
 
-- Synchronous Realm ('Micro'):
-   - Role and Functionality:
-      - Implemented via 'reactive functions', this realm focuses on pure computations and deterministic outputs.
-      - Reactive functions within this realm compute values based on the current state, triggering recomputations as necessary when dependencies change.
-      - It operates independently of the actor realm, similar to React's render phase.
-   - Characteristics:
-      - Ensures that computations are performed in a deterministic manner, providing consistent results for given inputs.
-      - Abstracts side effects through effect hooks, maintaining a clean separation between computation and effect handling.
-   - Integration:
-      - Works closely with the asynchronous realm to trigger recomputations when necessary, ensuring that state changes are reflected accurately.
+ReactiveKit's architecture consists of three distinct but integrated layers that work together to provide a unified programming model across the entire application stack.
 
-- Asynchronous Realm ('Macro'):
-   - Role and Functionality:
-      - Implemted via the actor system, this realm handles all asynchronous operations.
-      - It coordinates complex workflows, manages message-driven interactions, and schedules the evaluation of reactive functions.
-   - Characteristics:
-      - Operates on a message-passing model, ensuring that all communications are routed through the scheduler.
-      - Supports scalability by allowing actors to be spawned dynamically to handle various tasks.
-   - Integration:
-      - Acts as the primary interface for external systems, handling I/O operations and other asynchronous tasks.
+#### Reactive Functions
+**Live computations that automatically stay up-to-date**
 
-- Interaction Between Realms:
-   - Effect-Driven Interaction:
-      - The `EvaluateHandler` serves as a bridge between the asynchronous and synchronous realms, managing dependencies and scheduling recomputations.
-      - The `EvaluateHandler` actor initiates evaluation of reactive functions, which perform pure computations based on the current state of the system
-      - In order to determine external state not currently known to the synchronous realm, reactive functions can yield 'effects', which the `EvaluateHandler` translates into asynchronous messages.
-   - Runtime Coordination:
-      - The `EvaluateHandler` tracks active effect subscriptions and updates the dependency graph to ensure that changes in one realm are propagated to the other.
-   - Causal Chain Tracking:
-      - All side-effects can be tracked by analyzing the messages that flow through the `EvaluateHandler`. This maintains a clear causal chain across both realms and allows developers to trace the flow of data and understand the impact of changes across the system.
+- **Purpose**: Handle synchronous, live computations that automatically recompute when dependencies change
+- **Implementation**: Use familiar `async`/`await` syntax compiled to resumable state machines via Babel transformation
+- **Characteristics**: 
+  - Fine-grained dependency tracking through effects
+  - Automatic recomputation when dependencies change
+  - No manual subscriptions or caching required
+  - Deterministic output for given inputs
+- **Integration**: Bridge to external systems through effects managed by the intelligent transport layer
+- **Use Cases**: UI components, streaming API endpoints, real-time dashboards, data transformations
+
+#### Scripted Workers
+**Stateful, repeatable procedural workflows in the actor world**
+
+- **Purpose**: Orchestrate deterministic multi-step operations using the actor system
+- **Implementation**: VM-based execution of composable control flow primitives built on the actor foundation
+- **Characteristics**:
+  - Message-driven communication through the scheduler
+  - Stateful workflows with complete auditability
+  - Deterministic execution with perfect replay
+  - Suitable for both ephemeral tasks and daemon processes
+- **Integration**: Communicate through the intelligent transport layer with full causal tracking
+- **Use Cases**: Business workflows, data pipelines, alerting mechanisms, batch processing
+
+#### Intelligent Transport Layer
+**Deterministic, observable system backbone**
+
+- **Purpose**: Coordinate all interactions between Reactive Functions and Scripted Workers
+- **Implementation**: Ordered event bus built on the actor system's scheduler with complete causal traceability
+- **Characteristics**:
+  - All system interactions logged as serialized messages
+  - Deterministic message ordering through the scheduler
+  - Cross-service correlation and distributed tracing
+  - Perfect reproducibility through event replay
+- **Integration**: Serves as the foundation for both reactive functions and scripted workers
+- **Benefits**: Time-travel debugging, session recording, audit trails, performance monitoring
+
+#### Integration Between Layers
+
+- **Effect-Driven Integration**: 
+  - Reactive functions interact with external systems through effects resolved by the transport layer
+  - The `EvaluateHandler` serves as a bridge, managing dependencies and scheduling recomputations
+  - Effects are translated into asynchronous messages in the actor system
+- **Message-Based Coordination**: Scripted workers communicate via messages routed through the scheduler
+- **Causal Chain Preservation**: Complete dependency tracking across all three layers through the actor system
+- **Deterministic Behavior**: Guaranteed reproducible behavior through the scheduler's deterministic message ordering
+
 ---
 
 ## 2. Reactive Functions
 
-Reactive functions form the cornerstone of applications built with Reactive Kit, and allow complex real-time computations to be expressed in a synchronous style.
-
-Reactive functions operate within the synchronous realm, and represent incremental computations that depend on external 'effects' to provide up-to-date values. They are similar to React components but are designed for general-purpose programming beyond DOM-related tasks.
+Reactive Functions form the cornerstone of applications built with ReactiveKit, allowing complex real-time computations to be expressed in a synchronous style. They represent incremental computations that depend on external 'effects' to provide up-to-date values, similar to React components but designed for general-purpose programming beyond DOM-related tasks.
 
 ### Key Characteristics
 
 - **Async Declaration**: All reactive functions must be declared as `async` functions, simplifying the distinction between pure values and stateful expressions.
-  
+
 - **Hooks and Effects**: 
-  - Hooks in Reactive Kit provide stateful behavior and effects, similar to React. However, their results must be `await`ed to retrieve values.
+  - Hooks in ReactiveKit provide stateful behavior and effects, similar to React. However, their results must be `await`ed to retrieve values.
   - Hooks are wrappers for 'effects', which are descriptive payload objects representing stateful side-effects.
-  - Unlike React, hooks in Reactive Kit can be used within conditions and try-catch blocks, eliminating the restrictions imposed by React's 'rules of hooks'.
+  - Unlike React, hooks in ReactiveKit can be used within conditions and try-catch blocks, eliminating the restrictions imposed by React's 'rules of hooks'.
 
 ### Execution Model
 
@@ -117,17 +140,23 @@ Reactive functions operate within the synchronous realm, and represent increment
 ### Caveats
 
 - **Hashable Values**: Only hashable values can be retained across `await` boundaries
-   - A good rule of thumb is that if a value can be safely serialized into JSON, it can be carried across an `await` point
-   - This typically excludes class instances etc, unless they implement a custom hash function
-   - This restriction exists because reactive computations are incrementally re-evaluated:
-      - When state changes, the system identifies which code chunks need recomputation
-      - These chunks are identified by hashing their inputs
-      - If input hashes match previous evaluations, the existing result is reused
-   > This will be a familiar restriction to Rust developers, who know that only thread-safe `Send` values can carried across an `await` boundary - for similar reasons
+  - A good rule of thumb is that if a value can be safely serialized into JSON, it can be carried across an `await` point
+  - This typically excludes class instances etc, unless they implement a custom hash function
+  - This restriction exists because reactive computations are incrementally re-evaluated:
+    - When state changes, the system identifies which code chunks need recomputation
+    - These chunks are identified by hashing their inputs
+    - If input hashes match previous evaluations, the existing result is reused
+  > This will be a familiar restriction to Rust developers, who know that only thread-safe `Send` values can carried across an `await` boundary - for similar reasons
 
-## 3. Actor System Overview
+---
 
-The actor system in Reactive Kit provides the backbone for managing concurrency and reactive data flows. Its design revolves around three primary concerns:
+## 3. Scripted Workers
+
+Scripted Workers provide stateful, repeatable procedural workflows that operate in the actor world. They are built on top of ReactiveKit's actor system foundation and enable complex business logic orchestration with full determinism and auditability.
+
+### Actor System Foundation
+
+The actor system in ReactiveKit provides the backbone for managing concurrency and reactive data flows. Its design revolves around three primary concerns:
 
 1. **Message-Driven Communication**  
    Actors interact solely through messages, which carry commands or state notifications. No actor ever directly calls methods on another actor; the system's Scheduler manages message delivery in a strictly ordered manner.
@@ -136,16 +165,52 @@ The actor system in Reactive Kit provides the backbone for managing concurrency 
    Actors can be synchronous or asynchronous, allowing them to process incoming messages immediately or queue them for later execution. This structure helps to split work cleanly between quick operations (e.g., state updates) and potentially long-running tasks (e.g., external I/O).
 
 3. **Scheduler as a Message Bus**  
-   The Scheduler sits at the center, spawning actors, routing messages, and enforcing deterministic behavior. By funneling all communication through one channel, Reactive Kit creates an easily traceable flow of events.
+   The Scheduler sits at the center, spawning actors, routing messages, and enforcing deterministic behavior. By funneling all communication through one channel, ReactiveKit creates an easily traceable flow of events.
 
 A key principle is that the system remains predictable under load. Each segment of computation—no matter how concurrent or distributed—passes through the Scheduler in a defined sequence, aiding in debugging, reproducibility, and testing.
 
+### VM-Based Execution
+
+- **Virtual Machine**: Custom VM compiles workflow definitions into executable operations
+- **Resumable Execution**: Workers can be paused and resumed at any operation
+- **Deterministic Replay**: Perfect reproduction of execution through event log replay
+- **State Machines**: All execution represented as deterministic state transitions
+
+### Control Flow Primitives
+
+Scripted Workers use composable control flow primitives built on the actor system:
+
+**Sequential Operations:**
+```javascript
+sequence(() => [
+  send(ServiceA, { type: 'START_PROCESS' }),
+  waitFor(msg => msg.type === 'PROCESS_READY'),
+  send(ServiceB, { type: 'CONTINUE_PROCESS' }),
+  complete()
+])
+```
+
+**Conditional Logic:**
+```javascript
+whenState(
+  readState(handle, state => state.amount > 1000),
+  send(HighValueService, { type: 'PROCESS_HIGH_VALUE' }),
+  send(StandardService, { type: 'PROCESS_STANDARD' })
+)
+```
+
+**State Management:**
+```javascript
+withState(() => ({ counter: 0 }), stateHandle =>
+  modifyState(stateHandle, state => ({ counter: state.counter + 1 }))
+)
+```
+
 ---
 
-## 4. Key Primitives
+## 4. Actor System Primitives
 
-Reactive Kit's actor system is built on four main primitives: Messages, the Scheduler, Actors, and Message Handlers. Each of these plays a distinct role in orchestrating concurrency, enabling clear communication, and providing deterministic execution semantics. This section dives into how these building blocks work, the responsibilities they hold, and the ways they interconnect.
-
+ReactiveKit's actor system is built on four main primitives: Messages, the Scheduler, Actors, and Message Handlers. Each of these plays a distinct role in orchestrating concurrency, enabling clear communication, and providing deterministic execution semantics.
 
 ### 4.1 Messages
 
@@ -163,8 +228,6 @@ Messages are the core communication packets delivered between actors. They carry
    - Dispatched messages may be processed immediately by synchronous actors or queued for asynchronous actors.  
    - Messages can be transformed by intermediate message handlers before new actions or further notifications are triggered.
 
----
-
 ### 4.2 Scheduler
 
 The Scheduler orchestrates the creation of actors and the delivery of messages, acting as a centralized message bus for the system:
@@ -181,15 +244,9 @@ The Scheduler orchestrates the creation of actors and the delivery of messages, 
    - Spawns new actors when requested by existing ones, assigning each a unique handle.  
    - Oversees actor termination, ensuring resources are freed properly to avoid leaks.
 
----
-
 ### 4.3 Actors
 
-Actors are the principal computational units in Reactive Kit, each isolating its own state and behavior.
-
-In response to incoming messages, actors can update their internal state if needed, and send out new messages.
-
-They can run synchronously (performing work immediately) or asynchronously (allowing queued operations), but all interaction happens via message passing.
+Actors are the principal computational units in ReactiveKit, each isolating its own state and behavior. In response to incoming messages, actors can update their internal state if needed, and send out new messages. They can run synchronously (performing work immediately) or asynchronously (allowing queued operations), but all interaction happens via message passing.
 
 1. **Work Model**  
    - Actors receive messages, perform operations, and optionally dispatch new messages in response.  
@@ -203,8 +260,6 @@ They can run synchronously (performing work immediately) or asynchronously (allo
    - An actor can spawn child actors to offload tasks or modularize functionality.  
    - The parent typically delegates computations to the child, and the child reports back via messages.  
    - This model remains purely message-driven; the parent or child must route all communication through the Scheduler.
-
----
 
 ### 4.4 Message Handlers
 
@@ -225,7 +280,7 @@ Message handlers are specialized functions within an actor that define how the a
 
 ## 5. Message Flow Patterns
 
-Below are some illustrative patterns that show how Reactive Kit's actor system coordinates tasks, side-effects, and communication using the Scheduler as a central message bus.
+Below are some illustrative patterns that show how ReactiveKit's actor system coordinates tasks, side-effects, and communication using the Scheduler as a central message bus.
 
 ### 5.1 Async Task with External System
 
@@ -306,39 +361,62 @@ Key Characteristics:
 - Child computations do not interfere with the parent's synchronous updates.
 - Scheduler mediates every message, ensuring a deterministic sequence of events.
 
+---
+
 ## 6. Effect System
 
 ### Overview
 
-The effect system in ReactiveKit serves as a bridge between the asynchronous ('macro') and synchronous ('micro') realms, enabling reactive functions to interact with external systems and manage dependencies dynamically. This system is crucial for maintaining the reactivity and responsiveness of the application.
+The effect system in ReactiveKit serves as a bridge between Reactive Functions and the Intelligent Transport Layer (implemented via the actor system), enabling reactive functions to interact with external systems and manage dependencies dynamically. This system is crucial for maintaining the reactivity and responsiveness of the application.
 
 ### Key Concepts
 
 - **Reactive Functions and Effects:**
-   - Reactive functions are effectively pure generator functions that ultimately compute a value based on intermediate stateful dependencies
-   - Reactive functions work by yielding a series of `Effect` payloads that indicate which values must be provided by the runtime in order to compute the up-to-date result of the function.
-   - These effects express the side-effects required by the function, allowing the asynchronous 'macro' system to manage them efficiently.
-   - Once all the effects have been resolved to their latest values, the reactive function returns the current result
+  - Reactive functions are effectively pure generator functions that ultimately compute a value based on intermediate stateful dependencies
+  - Reactive functions work by yielding a series of `Effect` payloads that indicate which values must be provided by the runtime in order to compute the up-to-date result of the function.
+  - These effects express the side-effects required by the function, allowing the intelligent transport layer (via the actor system) to manage them efficiently.
+  - Once all the effects have been resolved to their latest values, the reactive function returns the current result
 
 - **Effect Subscription:**
-   - When a reactive function returns effects, an `EFFECT_SUBSCRIBE` message is sent in the asynchronous realm.
-   - This message contains a typed 'effect' payload, fully describing the effect and its requirements.
-   - The `EFFECT_SUBSCRIBE` message triggers effect handler actions to determine the values corresponding to the effects, potentially involving asynchronous side-effects.
+  - When a reactive function returns effects, an `EFFECT_SUBSCRIBE` message is sent through the intelligent transport layer.
+  - This message contains a typed 'effect' payload, fully describing the effect and its requirements.
+  - The `EFFECT_SUBSCRIBE` message triggers effect handler actions to determine the values corresponding to the effects, potentially involving asynchronous side-effects.
 
 - **Effect Handling and Updates**:
-   - Effect handlers are responsible for resolving the values of subscribed effects. They may perform asynchronous operations to obtain these values.
-   - Once resolved, the effect handler dispatches an `EFFECT_EMIT` message, which updates the EvaluateHandler actor with the new effect values.
-   - The `EvaluateHandler` then re-runs the reactive function with the updated values, ensuring that the function's output reflects the current state of its dependencies.
+  - Effect handlers are responsible for resolving the values of subscribed effects. They may perform asynchronous operations to obtain these values.
+  - Once resolved, the effect handler dispatches an `EFFECT_EMIT` message, which updates the EvaluateHandler actor with the new effect values.
+  - The `EvaluateHandler` then re-runs the reactive function with the updated values, ensuring that the function's output reflects the current state of its dependencies.
 
 - **Effect Unsubscription**:
-   - The intermediate yielded return values of reactive functions determine the set of effects they depend on. If certain effects are no longer needed, an `EFFECT_UNSUBSCRIBE` message is dispatched.
-   - This message instructs the effect handler to stop monitoring the effect, freeing up resources and preventing unnecessary updates.
+  - The intermediate yielded return values of reactive functions determine the set of effects they depend on. If certain effects are no longer needed, an `EFFECT_UNSUBSCRIBE` message is dispatched.
+  - This message instructs the effect handler to stop monitoring the effect, freeing up resources and preventing unnecessary updates.
 
 ### Key Message Types
 
 - **`EFFECT_SUBSCRIBE`**:
-   - Initiates the subscription process for a new effect, providing the necessary information for the effect handler to resolve its value.
+  - Initiates the subscription process for a new effect, providing the necessary information for the effect handler to resolve its value.
 - **`EFFECT_EMIT`**:
-   - Communicates the resolved value of an effect back to the EvaluateHandler, triggering a re-evaluation of the reactive function.
+  - Communicates the resolved value of an effect back to the EvaluateHandler, triggering a re-evaluation of the reactive function.
 - **`EFFECT_UNSUBSCRIBE`**:
-   - Signals that an effect is no longer required by the reactive function, prompting the effect handler to cease monitoring it.
+  - Signals that an effect is no longer required by the reactive function, prompting the effect handler to cease monitoring it.
+
+---
+
+## Key Design Principles
+
+### Determinism First
+Every aspect of the system designed for reproducible behavior, from the scheduler's message ordering to side effect recording in the intelligent transport layer.
+
+### Observable by Default  
+Complete system transparency through automatic logging and causal chain tracking via the actor system's message flow.
+
+### Unified Programming Model
+Same reactive paradigm works across frontend, backend, and any point in the distributed system, all coordinated through the intelligent transport layer.
+
+### Actor-Based Foundation
+Both Reactive Functions (via the EvaluateHandler) and Scripted Workers are built on the solid foundation of the actor system with its deterministic scheduler.
+
+### Effect-Driven Integration
+The effect system provides a clean abstraction layer between Reactive Functions and the actor-based transport layer, maintaining separation of concerns while enabling seamless integration.
+
+This architecture enables ReactiveKit to deliver on its promise of making real-time distributed systems as easy to build, test, and debug as traditional CRUD applications, all while maintaining the benefits of deterministic behavior and complete observability.
