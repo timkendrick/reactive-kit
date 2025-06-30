@@ -32,7 +32,6 @@
   "devDependencies": {
     "@reactive-kit/build-config": "workspace:*",
     "@reactive-kit/hash": "workspace:*",
-    "@reactive-kit/types": "workspace:*",
     "@reactive-kit/utils": "workspace:*"
   },
   "peerDependencies": {
