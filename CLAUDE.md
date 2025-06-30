@@ -9,6 +9,11 @@ ReactiveKit is an experimental, lightweight reactive runtime framework for build
 ## Essential Commands
 
 ### Development Workflow
+Task management is performed by Task Master AI. All development must be tracked via tasks.
+
+See @/AGENTS.md for usage instructions.
+
+### Workspace scripts
 - `pnpm run ci` - Full CI pipeline (verify + build)
 - `pnpm run verify` - Run linting and tests (recommended before committing)
 - `pnpm run lint` - Run all linting (ESLint + TypeScript)
