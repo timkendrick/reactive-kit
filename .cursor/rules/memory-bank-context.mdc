@@ -1,0 +1,49 @@
+---
+description: ALWAYS enforce memory bank context requirements for all AI interactions
+globs: 
+alwaysApply: true
+---
+# Memory Bank Context Requirements
+
+This rule enforces the memory bank context requirements defined in @file .clinerules.
+
+## Core Requirements
+
+1. At the start of EVERY task:
+   - ALL memory bank files MUST be read
+   - This is not optional
+   - Files must be read in the hierarchical order defined in the memory bank structure
+
+2. Memory Bank Core Files (all required):
+   - @file memory-bank/projectbrief.md
+   - @file memory-bank/productContext.md
+   - @file memory-bank/activeContext.md
+   - @file memory-bank/systemPatterns.md
+   - @file memory-bank/techContext.md
+   - @file memory-bank/progress.md
+
+## Documentation Updates
+
+Updates to memory bank files are required when:
+1. New project patterns are discovered
+2. Significant changes are implemented
+3. User explicitly requests with "update memory bank"
+4. Context needs clarification
+
+## Workflow Enforcement
+
+The AI must:
+1. Verify all memory bank files are read before proceeding with any task
+2. Follow the Plan Mode or Act Mode workflow as defined in @file .clinerules
+3. Maintain @file memory-bank/journal.md to capture project intelligence
+4. Document all significant decisions and changes
+
+## Validation
+
+Before proceeding with any task, verify:
+1. All required memory bank files have been read
+2. Current context is fully understood
+3. Any necessary updates to memory bank files are completed
+4. Changes are documented appropriately
+
+For detailed requirements and workflows, refer to @file .clinerules
