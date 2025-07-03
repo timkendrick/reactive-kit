@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Get top-level spec document from command argument
+SPEC_FILE="$1"
+
+# Read spec document
+echo "Reading top-level spec: $SPEC_FILE" >&2
+cat "$SPEC_FILE"
+
+# Extract paths to all linked spec documents
+SPEC_FILES="$((grep -oE '\[.*\]\((\.\/[^)]+)\)' < "$SPEC_FILE" || true) | sed -E 's/\[.*\]\((.*)\)/\1/')"
+if [ -z "$SPEC_FILES" ]; then
+  echo "No linked specs" >&2
+  exit 0
+fi
+
+echo "Linked specs:" >&2
+echo "$SPEC_FILES" >&2
+
+if [ -n "$SPEC_FILES" ]; then
+  echo -e "---\n# Linked files\n"
+  # Embed all linked spec documents
+  for linked_spec in $SPEC_FILES; do
+    echo "Reading linked spec: $linked_spec" >&2
+    echo -e "### [\`$linked_spec\`]($linked_spec)\n"
+    # Indent all markdown headers to match wrapper section
+    sed -E 's/^#/###/' < "$linked_spec"
+  done
+fi

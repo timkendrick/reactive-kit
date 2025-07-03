@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Output bundled markdown document that combines all the files provided as arguments.
+# Each document is wrapped in an auto-generated markdown section whose title is the filename.
+# The combined output is printed to stdout.
+#
+# Example output:
+# ```markdown
+# ## `./foo.md`
+# ... foo.md contents ...
+#
+# ## `./bar.md`
+# ... bar.md contents ...
+#
+# ...
+# ```
+
+# Combine all the provided spec files into a single file
+for file in "$@"; do
+    # Output module declaration wrapper
+    echo -e "# \`$file\`\n"
+    # Indent all markdown headers to match wrapper section
+    sed -E 's/^#/##/' < "$file"
+done

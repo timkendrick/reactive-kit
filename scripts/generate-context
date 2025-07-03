@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+bundle-xml \
+  --context:memories=<(pnpm run --workspace-root --silent generate:memories) \
+  --context:spec=<(pnpm run --workspace-root --silent generate:spec) \
+  --context:types=<(pnpm run --workspace-root --silent generate:types)
