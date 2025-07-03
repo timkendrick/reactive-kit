@@ -1,4 +1,5 @@
 import { compile } from '@reactive-kit/compiler';
+import '@types/node/index.d.ts';
 
 import type {
   LoaderContext,
