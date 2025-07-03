@@ -307,6 +307,9 @@ importers:
 
   packages/build-config:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: 7.52.8
+        version: 7.52.8(@types/node@22.14.0)
       '@types/node':
         specifier: 22.14.0
         version: 22.14.0
