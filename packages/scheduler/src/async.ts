@@ -93,13 +93,13 @@ export type AsyncSchedulerCommand<T> = Enum<{
     error: unknown;
   };
 }>;
-const enum AsyncSchedulerCommandType {
+export enum AsyncSchedulerCommandType {
   Send = 'Send',
   Spawn = 'Spawn',
   Kill = 'Kill',
   Fail = 'Fail',
 }
-interface GenericAsyncSchedulerCommand extends GenericEnum<1> {
+export interface GenericAsyncSchedulerCommand extends GenericEnum<1> {
   instance: AsyncSchedulerCommand<this['T1']>;
 }
 export const AsyncSchedulerCommand = Enum.create<GenericAsyncSchedulerCommand>({
@@ -491,7 +491,7 @@ export class AsyncScheduler<T> implements AsyncIterator<T, undefined> {
   }
 }
 
-class AsyncSchedulerActorHandle<T> implements ActorHandle<T> {
+export class AsyncSchedulerActorHandle<T> implements ActorHandle<T> {
   private uid: number;
 
   public constructor(uid: number) {

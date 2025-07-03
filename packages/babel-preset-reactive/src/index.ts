@@ -3,7 +3,7 @@ import '@types/node/index.d.ts';
 
 const require = createRequire(import.meta.url);
 
-export default function (_api: object, _opts: object) {
+export default function preset(_api: object, _opts: object) {
   return {
     parserOpts: {
       plugins: ['jsx'],

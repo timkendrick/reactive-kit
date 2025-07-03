@@ -1,4 +1,4 @@
-type GenerationId = number;
+export type GenerationId = number;
 
 export interface DependencyGraphNode<V> {
   value: V;

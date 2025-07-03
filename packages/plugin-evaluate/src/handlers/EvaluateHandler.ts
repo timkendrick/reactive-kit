@@ -39,17 +39,17 @@ import { getTypedEffects, groupEffectsByType } from '../utils';
 
 export const ACTOR_TYPE_EVALUATE_HANDLER = '@reactive-kit/actor/evaluate-handler';
 
-type EvaluateHandlerInputMessage =
+export type EvaluateHandlerInputMessage =
   | SubscribeEffectsMessage
   | UnsubscribeEffectsMessage
   | EmitEffectValuesMessage;
-type EvaluateHandlerOutputMessage =
+export type EvaluateHandlerOutputMessage =
   | SubscribeEffectsMessage
   | UnsubscribeEffectsMessage
   | EmitEffectValuesMessage;
 
-type EvaluateHandlerInput = EvaluateHandlerInputMessage;
-type EvaluateHandlerOutput = HandlerResult<EvaluateHandlerOutputMessage>;
+export type EvaluateHandlerInput = EvaluateHandlerInputMessage;
+export type EvaluateHandlerOutput = HandlerResult<EvaluateHandlerOutputMessage>;
 
 export type ReadyEvaluationResult<T> = ResultExpression<T>;
 export type StateValues = Map<EffectId, Expression<unknown>>;

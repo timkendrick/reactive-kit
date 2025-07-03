@@ -5,17 +5,17 @@ import type { Uid } from '@reactive-kit/utils';
 import { createFetchEffect, type FetchEffectValue } from '../effects';
 import type { FetchRequest, FetchResponse } from '../types';
 
-type FetchRequestInit = Pick<FetchRequest, RequiredKeys> &
+export type FetchRequestInit = Pick<FetchRequest, RequiredKeys> &
   Partial<Omit<FetchRequest, RequiredKeys | keyof CoercedInitValues>> &
   Partial<CoercedInitValues>;
 
-type RequiredKeys = Extract<keyof FetchRequest, 'url'>;
+export type RequiredKeys = Extract<keyof FetchRequest, 'url'>;
 
-interface CoercedInitValues {
+export interface CoercedInitValues {
   body: string | Uint8Array | null;
 }
 
-interface FetchResultPayload extends FetchResponse {
+export interface FetchResultPayload extends FetchResponse {
   text(): string;
   json(): unknown;
 }

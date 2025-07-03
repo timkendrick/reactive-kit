@@ -15,12 +15,12 @@ export type Enum<T extends { [K in keyof T]: object | void } & AssertValidEnumFi
   >;
 }[keyof T];
 
-type AssertValidEnumFields<T> =
+export type AssertValidEnumFields<T> =
   true extends HasExistingDiscriminantField<T>
     ? 'Invalid enum definition: one or more variants declares an invalid property'
     : unknown;
 
-type HasExistingDiscriminantField<T> = keyof T extends infer K
+export type HasExistingDiscriminantField<T> = keyof T extends infer K
   ? K extends keyof T
     ? VARIANT extends keyof T[K]
       ? true
@@ -67,11 +67,11 @@ export type TypedEnum<
   readonly T3: T3;
 })['instance'];
 
-interface EnumBase {
+export interface EnumBase {
   readonly [VARIANT]: string;
 }
 
-type EnumDiscriminant<E extends EnumBase> = E[VARIANT];
+export type EnumDiscriminant<E extends EnumBase> = E[VARIANT];
 
 export type EnumVariant<E extends EnumBase, K extends EnumDiscriminant<E>> = Extract<
   E,
@@ -82,7 +82,7 @@ export type EnumConstructor<E extends EnumBase> = {
   readonly [K in EnumDiscriminant<E>]: EnumVariantConstructor<E, K>;
 };
 
-interface EnumVariantConstructor<E extends EnumBase, K extends EnumDiscriminant<E>> {
+export interface EnumVariantConstructor<E extends EnumBase, K extends EnumDiscriminant<E>> {
   (
     args: IsEqual<Omit<EnumVariant<E, K>, VARIANT>, {}> extends true
       ? void
@@ -94,7 +94,10 @@ interface EnumVariantConstructor<E extends EnumBase, K extends EnumDiscriminant<
   readonly Type: K;
 }
 
-type GenericEnumVariantConstructor1<E extends GenericEnum<1>, K extends E['instance'][VARIANT]> = {
+export type GenericEnumVariantConstructor1<
+  E extends GenericEnum<1>,
+  K extends E['instance'][VARIANT],
+> = {
   <T1>(
     args: EnumVariantConstructorArgs<
       TypedEnum<E, T1>,
@@ -111,7 +114,10 @@ type GenericEnumVariantConstructor1<E extends GenericEnum<1>, K extends E['insta
   readonly Type: K;
 };
 
-type GenericEnumVariantConstructor2<E extends GenericEnum<2>, K extends E['instance'][VARIANT]> = {
+export type GenericEnumVariantConstructor2<
+  E extends GenericEnum<2>,
+  K extends E['instance'][VARIANT],
+> = {
   <T1, T2>(
     args: EnumVariantConstructorArgs<
       TypedEnum<E, T1, T2>,
@@ -128,7 +134,10 @@ type GenericEnumVariantConstructor2<E extends GenericEnum<2>, K extends E['insta
   readonly Type: K;
 };
 
-type GenericEnumVariantConstructor3<E extends GenericEnum<3>, K extends E['instance'][VARIANT]> = {
+export type GenericEnumVariantConstructor3<
+  E extends GenericEnum<3>,
+  K extends E['instance'][VARIANT],
+> = {
   <T1, T2, T3>(
     args: EnumVariantConstructorArgs<
       TypedEnum<E, T1, T2, T3>,
@@ -157,27 +166,29 @@ export type EnumVariantConstructorArgs<
     : T
   : never;
 
-type EnumVariantMap<E extends EnumBase> = {
+export type EnumVariantMap<E extends EnumBase> = {
   [K in EnumDiscriminant<E>]: true;
 };
 
-function enumConstructor<E extends GenericEnum<1>>(
+export function enumConstructor<E extends GenericEnum<1>>(
   variants: EnumVariantMap<E['instance']>,
 ): Simplify<{
   readonly [K in E['instance'][VARIANT]]: GenericEnumVariantConstructor1<E, K>;
 }>;
-function enumConstructor<E extends GenericEnum<2>>(
+export function enumConstructor<E extends GenericEnum<2>>(
   variants: EnumVariantMap<E['instance']>,
 ): Simplify<{
   readonly [K in E['instance'][VARIANT]]: GenericEnumVariantConstructor2<E, K>;
 }>;
-function enumConstructor<E extends GenericEnum<3>>(
+export function enumConstructor<E extends GenericEnum<3>>(
   variants: EnumVariantMap<E['instance']>,
 ): Simplify<{
   readonly [K in E['instance'][VARIANT]]: GenericEnumVariantConstructor3<E, K>;
 }>;
-function enumConstructor<E extends EnumBase>(variants: EnumVariantMap<E>): EnumConstructor<E>;
-function enumConstructor(variants: Record<PropertyKey, true>): EnumConstructor<EnumBase> {
+export function enumConstructor<E extends EnumBase>(
+  variants: EnumVariantMap<E>,
+): EnumConstructor<E>;
+export function enumConstructor(variants: Record<PropertyKey, true>): EnumConstructor<EnumBase> {
   return Object.fromEntries(
     Object.keys(variants).map((key) => [key, enumVariantConstructor<EnumBase, typeof key>(key)]),
   ) as EnumConstructor<EnumBase>;
@@ -204,7 +215,7 @@ export type EnumMatchCase<E extends EnumBase, T extends EnumDiscriminant<E>> = (
   value: EnumVariant<E, T>,
 ) => any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-function match<E extends EnumBase, T extends EnumMatchCases<E>>(
+export function match<E extends EnumBase, T extends EnumMatchCases<E>>(
   value: EnumVariant<E, EnumDiscriminant<E>>,
   cases: T,
 ): ReturnType<T[keyof T]> {

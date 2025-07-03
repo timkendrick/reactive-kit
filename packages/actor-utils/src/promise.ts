@@ -29,7 +29,7 @@ export function fromPromiseFactory<C, T>(
   };
 }
 
-interface CancelablePromise<T> {
+export interface CancelablePromise<T> {
   result: Promise<T>;
   abort: AbortController;
 }

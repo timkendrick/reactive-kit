@@ -76,7 +76,7 @@ export enum HandlerActionType {
   Send = 'Send',
   Fail = 'Fail',
 }
-interface GenericHandlerActionType extends GenericEnum<1> {
+export interface GenericHandlerActionType extends GenericEnum<1> {
   instance: HandlerAction<this['T1']>;
 }
 export const HandlerAction = Enum.create<GenericHandlerActionType>({

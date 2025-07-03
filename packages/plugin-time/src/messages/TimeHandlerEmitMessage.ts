@@ -3,7 +3,7 @@ import type { Message } from '@reactive-kit/plugin-evaluate';
 
 export const MESSAGE_TIME_HANDLER_EMIT = '@reactive-kit/plugin-time/emit';
 
-interface AsyncTaskMessagePayload {
+export interface AsyncTaskMessagePayload {
   taskId: AsyncTaskId;
   time: Date;
 }
