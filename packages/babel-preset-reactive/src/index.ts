@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import '@types/node/index.d.ts';
 
 const require = createRequire(import.meta.url);
 

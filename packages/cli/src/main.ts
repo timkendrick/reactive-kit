@@ -1,5 +1,6 @@
 import { register } from 'node:module';
 import { join } from 'node:path';
+import process from 'node:process';
 
 import { handlers } from '@reactive-kit/handlers';
 import type { Hashable } from '@reactive-kit/hash';
