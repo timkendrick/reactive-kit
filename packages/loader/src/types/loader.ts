@@ -39,7 +39,7 @@ export interface LoaderResult {
   source: string | ArrayBuffer | TypedArray;
 }
 
-type TypedArray =
+export type TypedArray =
   | Uint8Array
   | Uint8ClampedArray
   | Uint16Array

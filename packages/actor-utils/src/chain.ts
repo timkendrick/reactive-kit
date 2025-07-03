@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ActorHandle, HandlerContext } from '@reactive-kit/actor';
 
-type PipedActorFactory<I extends T, O extends T, T = I | O> = (
+export type PipedActorFactory<I extends T, O extends T, T = I | O> = (
   next: ActorHandle<O>,
   context: HandlerContext<T>,
 ) => ActorHandle<I>;
@@ -24,19 +24,19 @@ export function flow<T extends [AnyPipedActorFactory, ...Array<AnyPipedActorFact
 }
 
 /* eslint-disable prettier/prettier */
-type AnyPipedActorFactory = PipedActorFactory<any, any, any>;
+export type AnyPipedActorFactory = PipedActorFactory<any, any, any>;
 
-type PipedActorFactoryInput<T extends AnyPipedActorFactory> =
+export type PipedActorFactoryInput<T extends AnyPipedActorFactory> =
   T extends PipedActorFactory<infer I, any, any> ? I : never;
 
-type FlowReturn<T extends Array<AnyPipedActorFactory>, TInput> =
+export type FlowReturn<T extends Array<AnyPipedActorFactory>, TInput> =
   T extends [PipedActorFactory<TInput, infer TOutput, any>, ...infer TRest]
   ? TRest extends Array<AnyPipedActorFactory>
   ? FlowReturn<TRest, TOutput>
   : never
   : TInput;
 
-type FlowMessageTypes<T extends Array<AnyPipedActorFactory>, TMessage> =
+export type FlowMessageTypes<T extends Array<AnyPipedActorFactory>, TMessage> =
   T extends [PipedActorFactory<any, any, infer M>, ...infer TRest]
   ? TRest extends Array<AnyPipedActorFactory>
   ? FlowMessageTypes<TRest, TMessage | M>

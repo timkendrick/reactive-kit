@@ -13,7 +13,7 @@ import { EFFECT_TYPE_FETCH, type FetchEffect } from '../effects';
 import { isFetchHandlerResponseMessage, type FetchHandlerResponseMessage } from '../messages';
 import { FETCH_TASK, type FetchTaskConfig, type FetchTaskFactory } from '../tasks';
 
-type FetchHandlerInternalMessage = FetchHandlerResponseMessage;
+export type FetchHandlerInternalMessage = FetchHandlerResponseMessage;
 
 export const ACTOR_TYPE_FETCH_HANDLER = '@reactive-kit/actor/fetch-handler';
 

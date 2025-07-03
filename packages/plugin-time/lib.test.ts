@@ -11,7 +11,9 @@ test('module exports', () => {
     isTimeEffect: lib.isTimeEffect,
     isTimeHandlerEmitMessage: lib.isTimeHandlerEmitMessage,
     MESSAGE_TIME_HANDLER_EMIT: lib.MESSAGE_TIME_HANDLER_EMIT,
+    TASK_TYPE_TIME: lib.TASK_TYPE_TIME,
     TimeHandler: lib.TimeHandler,
+    TIME_TASK: lib.TIME_TASK,
     useTime: lib.useTime,
   });
 });

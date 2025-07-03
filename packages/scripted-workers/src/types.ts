@@ -65,7 +65,7 @@ export type ActorCommand<T> = ActorAction<T>;
  */
 export type ValueRef<V> = V | RuntimeValueResolver<V>;
 
-interface ValueResolver<T, V> {
+export interface ValueResolver<T, V> {
   readonly [VALUE_RESOLVER_TYPE]: T;
   readonly [VALUE_RESOLVER_VALUE_TYPE]?: V;
 }

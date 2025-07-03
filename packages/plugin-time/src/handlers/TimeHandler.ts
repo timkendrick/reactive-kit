@@ -19,7 +19,7 @@ export interface TimeHandlerConfig {
   next: ActorHandle<EffectHandlerOutputMessage>;
 }
 
-type TimeHandlerInternalMessage = TimeHandlerEmitMessage;
+export type TimeHandlerInternalMessage = TimeHandlerEmitMessage;
 
 export class TimeHandler extends AsyncTaskHandler<
   TimeEffect,

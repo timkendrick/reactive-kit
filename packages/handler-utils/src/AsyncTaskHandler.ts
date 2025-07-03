@@ -16,7 +16,7 @@ export interface AsyncTaskMessagePayload {
   taskId: AsyncTaskId;
 }
 
-interface AsyncTaskRequest<T extends EffectExpression<unknown>, C> {
+export interface AsyncTaskRequest<T extends EffectExpression<unknown>, C> {
   effect: T;
   config: C;
   handle: AsyncTaskHandle;

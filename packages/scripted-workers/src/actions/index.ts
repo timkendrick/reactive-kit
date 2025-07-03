@@ -1,3 +1,5 @@
+export type * from './internal';
+
 export * from './delay';
 export * from './kill';
 export * from './modifyState';

@@ -8,10 +8,12 @@ test('module exports', () => {
     createFetchEffect: lib.createFetchEffect,
     createFetchHandlerResponseMessage: lib.createFetchHandlerResponseMessage,
     EFFECT_TYPE_FETCH: lib.EFFECT_TYPE_FETCH,
+    FETCH_TASK: lib.FETCH_TASK,
     FetchHandler: lib.FetchHandler,
     isFetchEffect: lib.isFetchEffect,
     isFetchHandlerResponseMessage: lib.isFetchHandlerResponseMessage,
     MESSAGE_FETCH_HANDLER_RESPONSE: lib.MESSAGE_FETCH_HANDLER_RESPONSE,
+    TASK_TYPE_FETCH: lib.TASK_TYPE_FETCH,
     useFetch: lib.useFetch,
   });
 });
