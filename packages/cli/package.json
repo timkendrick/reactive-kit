@@ -8,8 +8,8 @@
   "type": "module",
   "main": "./index.ts",
   "scripts": {
-    "build": "pnpm run build:lib && pnpm run build:loader && pnpm run build:pkg",
-    "build:lib": "vite build",
+    "build": "pnpm run build:app && pnpm run build:loader && pnpm run build:pkg",
+    "build:app": "vite build",
     "build:docs": "typedoc",
     "build:pkg": "pkg . ./dist/package.json",
     "build:loader": "pnpm run build:loader:lib && pnpm run build:loader:pkg",

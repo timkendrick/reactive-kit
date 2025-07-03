@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Usage: bundle-types [<project-root> [<tsconfig-file>]]
+
+SCRIPT_DIR=$(dirname "$0")
+TEMPLATE_CONFIG="$SCRIPT_DIR/../templates/api-extractor/lib.api-extractor.json"
+
+PROJECT_ROOT="${1:-.}"
+TSCONFIG_FILE="${2:-<projectFolder>/tsconfig.json}"
+
+echo "Generating types for project: $PROJECT_ROOT" >&2
+echo "Using tsconfig: $TSCONFIG_FILE" >&2
+
+PACKAGE_JSON_FILE="$PROJECT_ROOT/package.json"
+TYPES_PATH="$(cat "$PACKAGE_JSON_FILE" | jq -r '(.types // .typings) // ""')"
+
+if [ -z "$TYPES_PATH" ]; then
+  echo "No typings declared in $PACKAGE_JSON_FILE" >&2
+  exit 1
+fi
+
+CONFIG_FILE="$PROJECT_ROOT/api-extractor-$$.json"
+
+# Create an ephemeral API Extractor config file that writes its output to stdout
+TEMPLATE_CONFIG_FILE="$(realpath "$TEMPLATE_CONFIG")"
+PROJECT_FOLDER="$(realpath "$PROJECT_ROOT")"
+TSCONFIG_FILE_PATH="$(realpath "$TSCONFIG_FILE")"
+ENTRY_POINT_FILE="<projectFolder>/${TYPES_PATH}"
+OUTPUT_FILENAME="$(basename "$TYPES_PATH" ".d.ts")"
+OUTPUT_FILE="/tmp/${OUTPUT_FILENAME}-${$}.d.ts"
+echo "Creating API Extractor configuration: $CONFIG_FILE" >&2
+cat << EOF > "$CONFIG_FILE"
+{
+  "extends": "$TEMPLATE_CONFIG_FILE",
+  "projectFolder": "$PROJECT_FOLDER",
+  "compiler": {
+    "tsconfigFilePath": "$TSCONFIG_FILE_PATH"
+  },
+  "mainEntryPointFilePath": "$ENTRY_POINT_FILE",
+  "dtsRollup": {
+    "enabled": true,
+    "untrimmedFilePath": "$OUTPUT_FILE"
+  }
+}
+EOF
+
+# Generate the type bundle
+echo "Generating type bundle..." >&2
+api-extractor run --local --config "$CONFIG_FILE" 1>&2
+
+# Clean up the temporary config file
+rm "$CONFIG_FILE"
+
+# Output the type bundle
+cat "$OUTPUT_FILE"
+rm "$OUTPUT_FILE"

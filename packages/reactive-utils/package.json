@@ -9,8 +9,10 @@
   "main": "./lib.ts",
   "module": "./lib.ts",
   "scripts": {
-    "build": "pnpm run build:lib && pnpm run build:docs && pnpm run build:pkg",
+    "build": "pnpm run build:lib && pnpm run build:pkg",
     "build:lib": "vite build",
+    "build:types": "mkdir -p .context && bundle-types dist ./tsconfig.json > .context/lib.d.ts",
+    "build:spec": "mkdir -p .context && bundle-docs SPEC.md > .context/SPEC.md",
     "build:docs": "typedoc",
     "build:pkg": "pkg . ./dist/package.json",
     "lint": "pnpm run '/^lint:.*/'",
@@ -35,6 +37,7 @@
     "@reactive-kit/types": "workspace:*"
   },
   "peerDependencies": {
+    "@microsoft/api-extractor": "^7",
     "eslint": "^8",
     "prettier": "^3",
     "typedoc": "^0.28",

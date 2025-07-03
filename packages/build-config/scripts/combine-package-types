@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Output a bundled type definition source code file contents that combines all the files provided as arguments.
+# Each module is wrapped in an auto-generated module declaration that matches the package name of its closest ancestor package.json.
+# The combined output is printed to stdout.
+#
+# Example usage:
+# ```bash
+# combine-package-types packages/*/lib.d.ts > .context/lib.d.ts
+# ```
+#
+# Example output:
+# ```typescript
+# declare module '@reactive-kit/plugin-time' {
+#   // packages/plugin-time/lib.d.ts contents
+# }
+# declare module '@reactive-kit/plugin-fetch' {
+#   // packages/plugin-fetch/lib.d.ts contents
+# }
+# ...
+# ```
+
+# Helper function to find the closest parent directory containing a package.json file
+find_package_json() {
+    local file="$1"
+    local dir=$(dirname "$file")
+    while [ "$dir" != "/" ] && [ "$dir" != "." ]; do
+        if [ -f "$dir/package.json" ]; then
+            echo "$dir/package.json"
+            return 0
+        fi
+        dir=$(dirname "$dir")
+    done
+    return 1
+}
+
+# Combine all the provided module type definition files into a single file
+for file in "$@"; do
+    # Find the closest parent directory that contains a package.json file
+    if ! package_json="$(find_package_json "$file")"; then
+        echo "Warning: No package.json found for $file" >&2
+        continue
+    fi
+    
+    # Extract package name from package.json file
+    package_name=$(jq -r '.name' "$package_json")
+    
+    # Output module declaration wrapper
+    echo "declare module '$package_name' {"
+    # Output file contents with 2-space indentation, stripping all `declare` statements
+    sed -E 's/declare //; s/^/  /' "$file"
+    echo "}"
+    echo ""
+done

@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Output a combined markdown document that combines all the files provided as arguments.
+# Each package is wrapped in an auto-generated markdown section whose title is the package name of its closest ancestor package.json.
+# The combined output is printed to stdout.
+#
+# Example usage:
+# ```bash
+# combine-package-docs packages/*/SPEC.md > .context/SPEC.md
+# ```
+#
+# Example output:
+# ```markdown
+# # `@reactive-kit/plugin-time`
+# ... packages/plugin-time/SPEC.md contents ...
+#
+# # `@reactive-kit/plugin-fetch`
+# ... packages/plugin-fetch/SPEC.md contents ...
+#
+# ...
+# ```
+
+# Helper function to find the closest parent directory containing a package.json file
+find_package_json() {
+    local file="$1"
+    local dir=$(dirname "$file")
+    while [ "$dir" != "/" ] && [ "$dir" != "." ]; do
+        if [ -f "$dir/package.json" ]; then
+            echo "$dir/package.json"
+            return 0
+        fi
+        dir=$(dirname "$dir")
+    done
+    return 1
+}
+
+# Combine all the provided markdown documents into a single file
+for file in "$@"; do
+    # Find the closest parent directory that contains a package.json file
+    if ! package_json="$(find_package_json "$file")"; then
+        echo "Warning: No package.json found for $file" >&2
+        continue
+    fi
+    
+    # Extract package name from package.json file
+    package_name=$(jq -r '.name' "$package_json")
+    
+    # Output package section header
+    echo -e "# [\`$package_name\`]($file)\n"
+    # Indent all markdown headers to match wrapper section
+    sed -E 's/^#/##/' < "$file"
+done

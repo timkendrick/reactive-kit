@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Output a combined markdown document that embeds all documents linked from the top-level document.
+# The combined output is printed to stdout.
+#
+# The linked documents are wrapped in an auto-generated markdown section whose title is the file name of the linked document.
+#
+# Example usage:
+# ```bash
+# bundle-docs ARCHITECTURE.md > .context/ARCHITECTURE.md
+# ```
+#
+# Example output:
+# ```markdown
+# ... ARCHITECTURE.md contents ...
+#
+# # Linked documents
+#
+# ## [./docs/system.md](./docs/system.md)
+# ... ./docs/system.md contents ...
+# ```
+
+# Get top-level document from command argument
+INPUT_FILE="$1"
+
+echo "Reading top-level document: $INPUT_FILE" >&2
+# Output top-level document contents
+cat "$INPUT_FILE"
+
+# Extract paths to all linked documents
+LINKED_FILES="$((grep -oE '\[.*\]\((\.\/[^)]+)\)' < "$INPUT_FILE" || true) | sed -E 's/\[.*\]\((.*)\)/\1/')"
+if [ -z "$LINKED_FILES" ]; then
+  echo "No linked documents" >&2
+  exit 0
+fi
+
+echo "Linked documents:" >&2
+echo "$LINKED_FILES" >&2
+
+if [ -n "$LINKED_FILES" ]; then
+  # Output a section header for the linked documents
+  echo -e "---\n# Linked documents\n"
+  # Embed all linked documents
+  for linked_file in $LINKED_FILES; do
+    # If the file does not exist, print a warning and move onto the next file
+    if [ ! -f "$linked_file" ]; then
+      echo "Warning: Linked document does not exist: $linked_file" >&2
+      continue
+    fi
+    echo "Reading linked document: $linked_file" >&2
+    # Output a section header for the linked document
+    echo -e "## [\`$linked_file\`]($linked_file)\n"
+    # Output the linked document contents, indenting all markdown headers to match wrapper section
+    sed -E 's/^#/###/' < "$linked_file"
+  done
+fi

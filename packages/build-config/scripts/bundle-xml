@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<EOF
+Usage:
+  bundle-context --section1 file1 [--section2 file2 ...]
+  bundle-context --section1=file1 [--section2=file2 ...]
+
+Each --section argument must be followed by a file path, or provided as --section=file. The script outputs XML nodes for each section, with the file content inlined verbatim between the opening and closing tags. The order of sections is preserved.
+
+Example:
+  bundle-context --foo=foo.txt --ns:bar=bar.txt
+
+Output:
+  <foo><![CDATA[
+  ...contents of foo.txt...
+  ]]></foo>
+  <ns:bar><![CDATA[
+  ...contents of bar.txt...
+  ]]></ns:bar>
+
+Notes:
+  - All arguments must be in pairs: --section file, or as --section=file
+  - If a file cannot be read, the script exits with an error.
+  - No XML escaping is performed.
+  - Use --help to print this message.
+EOF
+}
+
+if (( $# == 0 )); then
+  echo "Error: No arguments provided." >&2
+  usage >&2
+  exit 1
+fi
+
+if [[ ${1:-} == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+# Parse arguments into section/file pairs
+sections=()
+files=()
+i=0
+while (( i < $# )); do
+  arg="${@:$((i+1)):1}"
+  if [[ "$arg" =~ ^--([a-zA-Z0-9_:-]+)=(.+)$ ]]; then
+    # --section=file form
+    section="${BASH_REMATCH[1]}"
+    file="${BASH_REMATCH[2]}"
+    sections+=("$section")
+    files+=("$file")
+    ((i++))
+  elif [[ "$arg" =~ ^--[a-zA-Z0-9_:-]+$ ]]; then
+    # --section file form
+    section="${arg#--}"
+    if (( i+1 >= $# )); then
+      echo "Error: Missing file path for section '$section'" >&2
+      usage >&2
+      exit 1
+    fi
+    file="${@:$((i+2)):1}"
+    sections+=("$section")
+    files+=("$file")
+    ((i+=2))
+  else
+    echo "Error: Invalid argument: $arg" >&2
+    usage >&2
+    exit 1
+  fi
+done
+
+num_sections=${#sections[@]}
+
+# Validate all input argument pairs
+echo "Validating sections" >&2
+for (( i=0; i<num_sections; ++i )); do
+  section="${sections[i]}"
+  file="${files[i]}"
+  echo "- $section: $file" >&2
+  if [[ ! -e "$file" ]]; then
+    echo "Error: Section content not found: $file" >&2
+    usage >&2
+    exit 1
+  fi
+  if [[ ! -r "$file" ]]; then
+    echo "Error: Section content not readable: $file" >&2
+    usage >&2
+    exit 1
+  fi
+  # No need to check for empty section name, regex enforces at least one char after --
+done
+
+# All validation passed, now generate output
+for (( i=0; i<num_sections; ++i )); do
+  section="${sections[i]}"
+  file="${files[i]}"
+  echo -e "<$section><![CDATA[\n"
+  cat "$file"
+  echo -e "\n]]></$section>"
+done

@@ -6,12 +6,19 @@
   "description": "ReactiveKit build configuration",
   "author": "Tim Kendrick <timkendrick@gmail.com>",
   "bin": {
-    "pkg": "./scripts/pkg.cjs"
+    "pkg": "./scripts/pkg.cjs",
+    "bundle-docs": "./scripts/bundle-docs",
+    "bundle-types": "./scripts/bundle-types",
+    "bundle-xml": "./scripts/bundle-xml",
+    "combine-docs": "./scripts/combine-docs",
+    "combine-package-docs": "./scripts/combine-package-docs",
+    "combine-package-types": "./scripts/combine-package-types"
   },
   "scripts": {
     "lint": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts ."
   },
   "dependencies": {
+    "@microsoft/api-extractor": "7.52.8",
     "@types/node": "22.14.0",
     "@types/react": "19.1.0",
     "@typescript-eslint/eslint-plugin": "8.29.1",

@@ -36,6 +36,9 @@ importers:
 
   packages/actor:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -64,6 +67,9 @@ importers:
 
   packages/actor-utils:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -95,6 +101,9 @@ importers:
       '@babel/plugin-transform-destructuring':
         specifier: 7.25.9
         version: 7.25.9(@babel/core@7.26.10)
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -132,6 +141,9 @@ importers:
 
   packages/babel-plugin-reactive-jsx:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -166,6 +178,9 @@ importers:
 
   packages/babel-preset-reactive:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       '@reactive-kit/babel-plugin-reactive-functions':
         specifier: workspace:*
         version: link:../babel-plugin-reactive-functions
@@ -215,6 +230,9 @@ importers:
       '@babel/types':
         specifier: ^7
         version: 7.26.10
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       '@types/babel__core':
         specifier: ^7
         version: 7.20.5
@@ -270,6 +288,9 @@ importers:
       '@babel/types':
         specifier: 7.26.10
         version: 7.26.10
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       '@types/babel__core':
         specifier: 7.20.5
         version: 7.20.5
@@ -307,6 +328,9 @@ importers:
 
   packages/build-config:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: 7.52.8
+        version: 7.52.8(@types/node@22.14.0)
       '@types/node':
         specifier: 22.14.0
         version: 22.14.0
@@ -373,6 +397,9 @@ importers:
 
   packages/cache:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.48.0
@@ -447,6 +474,9 @@ importers:
       '@babel/core':
         specifier: ^7
         version: 7.26.10
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       '@types/babel__core':
         specifier: ^7
         version: 7.20.5
@@ -487,6 +517,9 @@ importers:
 
   packages/component:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -515,6 +548,9 @@ importers:
 
   packages/dom:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -558,6 +594,9 @@ importers:
 
   packages/examples:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -595,6 +634,9 @@ importers:
 
   packages/handler-utils:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.48.0
@@ -632,6 +674,9 @@ importers:
 
   packages/handlers:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -666,6 +711,9 @@ importers:
 
   packages/hash:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -691,6 +739,9 @@ importers:
 
   packages/hooks:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -731,6 +782,9 @@ importers:
 
   packages/interpreter:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -768,6 +822,9 @@ importers:
 
   packages/loader:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       '@types/node':
         specifier: ^22
         version: 22.14.0
@@ -799,6 +856,9 @@ importers:
 
   packages/plugin-evaluate:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.48.0
@@ -842,6 +902,9 @@ importers:
 
   packages/plugin-fetch:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.48.0
@@ -891,6 +954,9 @@ importers:
 
   packages/plugin-pending:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.48.0
@@ -937,6 +1003,9 @@ importers:
 
   packages/plugin-state:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.48.0
@@ -983,6 +1052,9 @@ importers:
 
   packages/plugin-time:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.48.0
@@ -1032,6 +1104,9 @@ importers:
 
   packages/reactive-utils:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -1060,6 +1135,9 @@ importers:
 
   packages/runtime:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -1109,6 +1187,9 @@ importers:
 
   packages/scheduler:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -1140,6 +1221,9 @@ importers:
 
   packages/scripted-workers:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -1183,6 +1267,9 @@ importers:
 
   packages/types:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -1211,6 +1298,9 @@ importers:
 
   packages/utils:
     dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
       eslint:
         specifier: ^8
         version: 8.57.1
