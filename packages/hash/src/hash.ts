@@ -21,7 +21,7 @@ export interface CustomHashable {
   [HASH]: Hash | CustomHashFactory;
 }
 
-type CustomHashFactory = (hash: (...values: Array<Hashable>) => Hash) => Hash;
+export type CustomHashFactory = (hash: (...values: Array<Hashable>) => Hash) => Hash;
 
 export function assignCustomHash<T extends object>(
   hash: Hash | CustomHashFactory,
