@@ -1,0 +1,42 @@
+---
+alwaysApply: false
+---
+# Project Context Gathering
+
+## Overview
+When planning and implementing non-trivial changes, use these conventions to gather sufficient information about the project and the current state of the codebase.
+
+## Information sources
+You will need to consult the following sources of information:
+
+- **Serena memories** are used to store general project context and development patterns
+- **ARCHITECTURE.md** is a developer-focused overview of the codebase
+- **Spec documents** outline aspects of the codebase in detail
+- **Type definitions** can be used to introspect the API surface area
+- **Serena symbol references** can be used as needed to explore API usage
+
+## Information-gathering workflow
+*IMPORTANT*: Follow this workflow precisely (each step lists relevant tool calls):
+
+1. Create a checklist of all remaining workflow steps (keep this updated throughout workflow progress)
+   - `todo_write`
+2. Ensure Serena is initialized
+   - `check_onboarding_performed`
+   - `initial_instructions`
+3. Index Serena project: `uvx --from git+https://github.com/oraios/serena index-project`
+   - `run_terminal_cmd`
+4. Read aggregated Serena memories: `pnpm run --silent --workspace-root generate:memories`
+   - `run_terminal_cmd`
+5. Read top-level `ARCHITECTURE.md` document
+   - `read_file`
+6. List the `packages/*` directory to see which packages are available in the workspace
+   - `list_dir` 
+7. Read aggregated project spec documents: `pnpm run --silent --workspace-root generate:spec`
+   - `run_terminal_cmd`
+8. Introspect aggregated project type definitions: `pnpm run --silent --workspace-root generate:types`
+   - `run_terminal_cmd`
+
+## Rules of thumb
+- The more context, the better. The goal is to build up a fine-grained and comprehensive understanding of the entire project in minute detail. By the end of the context gathering process, you should be able to answer any question on any aspect of the codebase.
+- Be methodical and rigorous. Do not give up until you can demonstrably show that you have exhausted every potential source of contextual information. Use as many file reads and tool calls as it takes.
+- If needed, use Serena symbol reference tools to find usages of API types
