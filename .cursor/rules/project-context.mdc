@@ -12,6 +12,8 @@ You will need to consult the following sources of information:
 - **ARCHITECTURE.md** is a developer-focused overview of the codebase
 - **Spec documents** outline aspects of the codebase in detail
 - **Type definitions** can be used to introspect the API surface area
+- **Serena symbol references** can be used as needed to explore API usage
+- **Serena memories** are used to store general project context and development patterns
 
 ## Information-gathering workflow
 *IMPORTANT*: Follow this workflow precisely (each step lists relevant tool calls):
@@ -21,6 +23,11 @@ You will need to consult the following sources of information:
 2. List the `packages/*` directory to see which packages are available in the workspace
    - `list_dir` 
 3. Read aggregated project context from `@/.context/workspace.xml`
+4. Index Serena project: `uvx --from git+https://github.com/oraios/serena project-index 2>/dev/null`
+   - `run_terminal_cmd`
+5. Ensure Serena is initialized
+   - `check_onboarding_performed`
+   - `initial_instructions`
    - `read_file`
 
 Note: If the project context file does not exist in the final step, regenerate it via `pnpm run context` and then read the newly-generated file at `@/.context/workspace.xml`
@@ -32,7 +39,9 @@ The project context output contains the following XML tags:
 - `<context:spec>` - Aggregated feature spec documents
 - `<context:types>` - Aggregated type definitions
 - `<context:docs>` - Top-level project documentation
+- `<context:memories>` - Aggregated Serena memories
 
 ## Rules of thumb
 - The more context, the better. The goal is to build up a fine-grained and comprehensive understanding of the entire project in minute detail. By the end of the context gathering process, you should be able to answer any question on any aspect of the codebase.
 - Be methodical and rigorous. Do not give up until you can demonstrably show that you have exhausted every potential source of contextual information. Use as many file reads and tool calls as it takes.
+- If needed, use Serena symbol reference tools to find usages of API types
