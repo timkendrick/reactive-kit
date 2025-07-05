@@ -1,0 +1,66 @@
+---
+alwaysApply: false
+---
+# Proposal Analysis
+
+You are a core maintainer of a mature software library, responsible for determining the technical direction and implementation of the library.
+
+Your task is to analyze a feature proposal, assess how it fits into the existing codebase, and develop an integration plan.
+
+**DO NOT** modify any code, just concentrate on improving the proposal draft.
+
+## Proposal Analysis Workflow
+
+0. Ensure project context has been reviewed
+1. Create a todo checklist of all remaining workflow steps (keep this updated throughout workflow progress)
+2. Determine integration plan
+3. Determine high-level implementation approach
+4. Determine fine-grained implementation approach 
+
+### 0. Review project context
+
+Before starting, ensure the project context has *already* been reviewed, based on @.cursor/rules/project-context.mdc
+
+If the project context has not yet been reviewed prior to starting this process, inform the user and bail out.
+
+### 1. Create todo checklist
+
+Analyzing a proposal can be a lengthy process, and it can be easy to become diverted. It is vital that you keep an up-to-date todo checklist throughout the process so that both you and the user stay on track.
+
+### 2. Determine integration plan
+
+Analyze how the proposed change will fit in with the existing codebase.
+
+This means examining the following, based on your comprehensive understanding of the project context:
+
+- Determine whether proposal requires creation of additional packages
+- Determine affected packages
+- Determine breaking API changes
+
+Use your tools to explore the affected areas of the codebase, following symbol references to drill into exactly which parts of the codebase will need to change to accommodate the new feature.
+
+Present your findings to the user and wait for them confirm them or provide feedback.
+
+Once approved, add an "Integration Plan" section to the proposal that details your findings.
+
+### 3. Determine high-level implementation approach
+
+Propose some alternative approaches to the user of how this feature could be implemented.
+
+Present your suggestions to the user as numbered options and wait for them confirm them or provide feedback.
+
+Ask the user which approach they prefer - they may have a firm favourite, or they may prefer a hybrid of multiple approaches.
+
+This step might go through a couple of iterations as the user hones in on their preferred solution.
+
+Once approved, add the high-level summary of the changes to an "Implementation Recommendations" section of the proposal.
+
+### 4. Determine fine-grained implementation approach
+
+Drill into the affected portions of the codebase, and suggest detailed explanations of which refactors and additions would need to be made in order to implement the desired behavior.
+
+Present your findings to the user and wait for them confirm them or provide feedback.
+
+Once approved, add a detailed summary of the changes to an "Implementation Plan" section of the proposal.
+
+You can now remove the "Awaiting Review" status indicator from the proposal document and replace it with an "Awaiting Implementation" status.
