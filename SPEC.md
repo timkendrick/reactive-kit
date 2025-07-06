@@ -7,7 +7,7 @@
 - [Plugin Architecture](./spec/plugin-architecture.spec.md) - Extensible plugin system for framework features and integrations
 
 ## Runtime Features
-- [Runtime Scheduler](./spec/runtime-scheduler.spec.md) - Core runtime coordination and scheduling system
+- [Scheduler](./packages/scheduler/SPEC.md) - Core runtime coordination and scheduling system
 - [Interpreter](./spec/interpreter.spec.md) - Runtime interpreter for reactive functions
 - [Compiler](./spec/compiler.spec.md) - Standalone reactive function compiler
 - [Babel Integration](./spec/babel-integration.spec.md) - Babel preset and plugins for reactive function compilation
