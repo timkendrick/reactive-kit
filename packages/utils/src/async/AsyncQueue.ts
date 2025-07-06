@@ -33,7 +33,7 @@ const AsyncQueueState = Enum.create<GenericAsyncQueueState>({
   [AsyncQueueStateType.Completed]: true,
 });
 
-export class AsyncQueue<T> implements AsyncIterator<T, null, undefined> {
+export class AsyncQueue<T> implements AsyncIterableIterator<T, null, undefined> {
   private state: AsyncQueueState<T> = AsyncQueueState.AwaitingValues({
     subscribers: [],
   });
@@ -119,5 +119,9 @@ export class AsyncQueue<T> implements AsyncIterator<T, null, undefined> {
       }
     }
     return Promise.resolve(AsyncQueue.DONE);
+  }
+
+  public [Symbol.asyncIterator](): AsyncIterableIterator<T, null, undefined> {
+    return this;
   }
 }
