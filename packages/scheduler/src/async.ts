@@ -115,7 +115,7 @@ export class AsyncScheduler<T> implements AsyncIterator<T, undefined> {
   private PHASE_IDLE: EnumVariant<AsyncSchedulerPhase<T>, AsyncSchedulerPhaseType.Idle> =
     AsyncSchedulerPhase.Idle();
 
-  private handlers: Map<unknown, ActorState<T>>;
+  private handlers: Map<AsyncSchedulerActorHandle<T>, ActorState<T>>;
   private phase: AsyncSchedulerPhase<T>;
   private inputHandle: AsyncSchedulerActorHandle<T>;
   private outputHandle: AsyncSchedulerActorHandle<T>;
@@ -405,13 +405,13 @@ export class AsyncScheduler<T> implements AsyncIterator<T, undefined> {
         case AsyncSchedulerCommandType.Kill:
         case AsyncSchedulerCommandType.Fail: {
           const { target } = command;
-          const handlerState = this.handlers.get(target);
+          const handlerState = this.handlers.get(target as AsyncSchedulerActorHandle<T>);
           if (!handlerState) continue;
           if (ActorState.Async.is(handlerState)) {
             handlerState.inbox.return();
             handlerState.outbox.return();
           }
-          this.handlers.delete(target);
+          this.handlers.delete(target as AsyncSchedulerActorHandle<T>);
           if (this.handlers.size === 0) {
             this.outputQueue.return();
             break loop;
