@@ -105,7 +105,7 @@ export type AsyncTask<I, O> = (
   outbox: AsyncTaskOutbox<O>,
 ) => Promise<void>;
 
-export type AsyncTaskInbox<T> = AsyncIterator<T, null, undefined>;
+export type AsyncTaskInbox<T> = AsyncIterableIterator<T, null, undefined>;
 export type AsyncTaskOutbox<T> = (value: AsyncTaskResult<T>) => void;
 
 export type AsyncTaskHandlerAction<T> = Exclude<HandlerAction<T>, SpawnHandlerAction<T>>;
