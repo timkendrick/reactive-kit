@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { ActorHandle } from '@reactive-kit/actor';
-import { AsyncScheduler, AsyncSchedulerCommand } from '@reactive-kit/scheduler';
+import { HandlerAction, type ActorHandle } from '@reactive-kit/actor';
+import {
+  AsyncScheduler,
+  SchedulerCommand,
+  type SchedulerCommandMessage,
+  type SchedulerMiddlewareFactory,
+} from '@reactive-kit/scheduler';
 
 import { act } from '../../act';
 import { readState } from '../../state/readState';
@@ -16,6 +21,25 @@ import { whileLoop } from '../whileLoop';
 import { withState } from '../withState';
 
 import { fail } from './fail';
+
+// Test helper to create logging middleware that captures commands
+function createLoggingMiddleware<T>(): {
+  middleware: SchedulerMiddlewareFactory<T>;
+  capturedCommands: Array<SchedulerCommand<T>>;
+} {
+  const capturedCommands: Array<SchedulerCommand<T>> = [];
+  const middleware: SchedulerMiddlewareFactory<T> = {
+    type: 'LoggingMiddleware',
+    async: false,
+    factory: (next: ActorHandle<SchedulerCommandMessage<T>>) => ({
+      handle(message: SchedulerCommandMessage<T>) {
+        capturedCommands.push(message.payload);
+        return [HandlerAction.Send({ target: next, message })];
+      },
+    }),
+  };
+  return { middleware, capturedCommands };
+}
 
 describe(fail, () => {
   describe(compile, () => {
@@ -35,15 +59,15 @@ describe(fail, () => {
       const actorDef = act<never>(
         (_self, { fail: taskFailHelper }) => taskFailHelper(new Error('uh-oh')), // This uses the helper from act, which should internally call our fail(self) action
       );
-      const mockMiddleware = vi.fn((_command: AsyncSchedulerCommand<never>) => {});
-      const scheduler = new AsyncScheduler<never>((_ctx) => actorDef, mockMiddleware);
+      const { middleware, capturedCommands } = createLoggingMiddleware<never>();
+      const scheduler = new AsyncScheduler<never>((_ctx) => actorDef, middleware);
       const result = await scheduler.next();
       expect(result.done).toBe(true);
       expect(result.value).toBeUndefined(); // Standard completion value
-      expect(mockMiddleware).toHaveBeenCalledWith(
-        AsyncSchedulerCommand.Fail({
-          source: expect.objectContaining({ uid: 1 }),
-          target: expect.objectContaining({ uid: 1 }),
+      expect(capturedCommands).toContainEqual(
+        SchedulerCommand.Fail({
+          source: scheduler.inputHandle,
+          target: scheduler.inputHandle,
           error: new Error('uh-oh'),
         }),
       );
@@ -58,18 +82,18 @@ describe(fail, () => {
           send(outbox, 'AFTER_FAIL'), // Should not execute
         ]),
       );
-      const mockMiddleware = vi.fn((_command: AsyncSchedulerCommand<TestMsg>) => {});
-      const scheduler = new AsyncScheduler<TestMsg>((_ctx) => actorDef, mockMiddleware);
+      const { middleware, capturedCommands } = createLoggingMiddleware<TestMsg>();
+      const scheduler = new AsyncScheduler<TestMsg>((_ctx) => actorDef, middleware);
       const r1 = await scheduler.next();
       expect(r1.value).toBe('BEFORE_FAIL');
       expect(r1.done).toBe(false);
       const r2 = await scheduler.next();
       expect(r2.done).toBe(true);
       expect(r2.value).toBeUndefined();
-      expect(mockMiddleware).toHaveBeenCalledWith(
-        AsyncSchedulerCommand.Fail({
-          source: expect.objectContaining({ uid: 1 }),
-          target: expect.objectContaining({ uid: 1 }),
+      expect(capturedCommands).toContainEqual(
+        SchedulerCommand.Fail({
+          source: scheduler.inputHandle,
+          target: scheduler.inputHandle,
           error: new Error('uh-oh'),
         }),
       );
@@ -88,8 +112,8 @@ describe(fail, () => {
           send(outbox, 'OUTER_AFTER'), // Should not run
         ]),
       );
-      const mockMiddleware = vi.fn((_command: AsyncSchedulerCommand<TestMsg>) => {});
-      const scheduler = new AsyncScheduler<TestMsg>((_ctx) => actorDef, mockMiddleware);
+      const { middleware, capturedCommands } = createLoggingMiddleware<TestMsg>();
+      const scheduler = new AsyncScheduler<TestMsg>((_ctx) => actorDef, middleware);
 
       const r1 = await scheduler.next();
       expect(r1.value).toBe('OUTER_BEFORE');
@@ -103,10 +127,10 @@ describe(fail, () => {
       const r3 = await scheduler.next();
       expect(r3.done).toBe(true);
       expect(r3.value).toBeUndefined();
-      expect(mockMiddleware).toHaveBeenCalledWith(
-        AsyncSchedulerCommand.Fail({
-          source: expect.objectContaining({ uid: 1 }),
-          target: expect.objectContaining({ uid: 1 }),
+      expect(capturedCommands).toContainEqual(
+        SchedulerCommand.Fail({
+          source: scheduler.inputHandle,
+          target: scheduler.inputHandle,
           error: new Error('uh-oh'),
         }),
       );
@@ -131,18 +155,18 @@ describe(fail, () => {
             ),
         ),
       );
-      const mockMiddleware = vi.fn((_command: AsyncSchedulerCommand<TestMsg>) => {});
-      const scheduler = new AsyncScheduler<TestMsg>((_ctx) => actorDef, mockMiddleware);
+      const { middleware, capturedCommands } = createLoggingMiddleware<TestMsg>();
+      const scheduler = new AsyncScheduler<TestMsg>((_ctx) => actorDef, middleware);
       const r1 = await scheduler.next();
       expect(r1.value).toBe('LOOP_TICK');
       expect(r1.done).toBe(false);
       const r2 = await scheduler.next();
       expect(r2.done).toBe(true);
       expect(r2.value).toBeUndefined();
-      expect(mockMiddleware).toHaveBeenCalledWith(
-        AsyncSchedulerCommand.Fail({
-          source: expect.objectContaining({ uid: 1 }),
-          target: expect.objectContaining({ uid: 1 }),
+      expect(capturedCommands).toContainEqual(
+        SchedulerCommand.Fail({
+          source: scheduler.inputHandle,
+          target: scheduler.inputHandle,
           error: new Error('uh-oh'),
         }),
       );
@@ -162,16 +186,16 @@ describe(fail, () => {
             ),
         ),
       );
-      const mockMiddleware = vi.fn((_command: AsyncSchedulerCommand<TestMsg>) => {});
-      const scheduler = new AsyncScheduler<TestMsg>((_ctx) => actorDef, mockMiddleware);
+      const { middleware, capturedCommands } = createLoggingMiddleware<TestMsg>();
+      const scheduler = new AsyncScheduler<TestMsg>((_ctx) => actorDef, middleware);
       // Should fail immediately, no message sent
       const result = await scheduler.next();
       expect(result.done).toBe(true);
       expect(result.value).toBeUndefined();
-      expect(mockMiddleware).toHaveBeenCalledWith(
-        AsyncSchedulerCommand.Fail({
-          source: expect.objectContaining({ uid: 1 }),
-          target: expect.objectContaining({ uid: 1 }),
+      expect(capturedCommands).toContainEqual(
+        SchedulerCommand.Fail({
+          source: scheduler.inputHandle,
+          target: scheduler.inputHandle,
           error: new Error('uh-oh'),
         }),
       );
@@ -194,8 +218,8 @@ describe(fail, () => {
             ]),
         ),
       );
-      const mockMiddleware = vi.fn((_command: AsyncSchedulerCommand<TestMsg>) => {});
-      const scheduler = new AsyncScheduler<TestMsg>((_ctx) => actorDef, mockMiddleware);
+      const { middleware, capturedCommands } = createLoggingMiddleware<TestMsg>();
+      const scheduler = new AsyncScheduler<TestMsg>((_ctx) => actorDef, middleware);
 
       // Should send NOT_FAILED from the false branch
       const r1 = await scheduler.next();
@@ -211,8 +235,8 @@ describe(fail, () => {
       const r3 = await scheduler.next();
       expect(r3.done).toBe(true);
       expect(r3.value).toBeUndefined();
-      expect(mockMiddleware).not.toHaveBeenCalledWith(
-        AsyncSchedulerCommand.Fail({
+      expect(capturedCommands).not.toContainEqual(
+        SchedulerCommand.Fail({
           source: expect.any(Object),
           target: expect.any(Object),
           error: new Error('uh-oh'),
@@ -240,8 +264,8 @@ describe(fail, () => {
             send(outbox, 'AFTER_FAIL'), // Should not execute
           ]),
         );
-        const mockMiddleware = vi.fn((_command: AsyncSchedulerCommand<TestMsg>) => {});
-        const scheduler = new AsyncScheduler<TestMsg>((_ctx) => actorDef, mockMiddleware);
+        const { middleware, capturedCommands } = createLoggingMiddleware<TestMsg>();
+        const scheduler = new AsyncScheduler<TestMsg>((_ctx) => actorDef, middleware);
         const r1 = await scheduler.next();
         expect(r1.value).toBe('BEFORE_FAIL');
         expect(r1.done).toBe(false);
@@ -268,10 +292,10 @@ describe(fail, () => {
         expect(r2.done).toBe(true);
         expect(r2.value).toBeUndefined();
 
-        expect(mockMiddleware).toHaveBeenCalledWith(
-          AsyncSchedulerCommand.Fail({
-            source: expect.objectContaining({ uid: 1 }),
-            target: expect.objectContaining({ uid: 1 }),
+        expect(capturedCommands).toContainEqual(
+          SchedulerCommand.Fail({
+            source: scheduler.inputHandle,
+            target: scheduler.inputHandle,
             error: new Error('uh-oh'),
           }),
         );
