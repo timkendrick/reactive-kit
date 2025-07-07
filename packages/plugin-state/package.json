@@ -32,16 +32,40 @@
         "require": "./lib/lib.cjs"
       },
       "./effects": {
-        "import": "./lib/effects.lib.js",
-        "require": "./lib/effects.lib.cjs"
+        "import": "./lib/effects.js",
+        "require": "./lib/effects.cjs"
+      },
+      "./handlers": {
+        "import": "./lib/handlers.js",
+        "require": "./lib/handlers.cjs"
       },
       "./hooks": {
-        "import": "./lib/hooks.lib.js",
-        "require": "./lib/hooks.lib.cjs"
+        "import": "./lib/hooks.js",
+        "require": "./lib/hooks.cjs"
+      },
+      "./messages": {
+        "import": "./lib/messages.js",
+        "require": "./lib/messages.cjs"
+      },
+      "./middleware": {
+        "import": "./lib/middleware.js",
+        "require": "./lib/middleware.cjs"
+      },
+      "./mocks": {
+        "import": "./lib/mocks.js",
+        "require": "./lib/mocks.cjs"
+      },
+      "./tasks": {
+        "import": "./lib/tasks.js",
+        "require": "./lib/tasks.cjs"
       },
       "./types": {
-        "import": "./lib/types.lib.js",
-        "require": "./lib/types.lib.cjs"
+        "import": "./lib/types.js",
+        "require": "./lib/types.cjs"
+      },
+      "./utils": {
+        "import": "./lib/utils.js",
+        "require": "./lib/utils.cjs"
       }
     }
   },
