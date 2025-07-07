@@ -1,0 +1,3 @@
+# @reactive-kit/{{packageName}}
+
+{{description}}
