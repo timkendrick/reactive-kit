@@ -15,7 +15,6 @@ test('module exports', () => {
     groupEffectsByType: lib.groupEffectsByType,
     isEmitEffectValuesMessage: lib.isEmitEffectValuesMessage,
     isEvaluateEffect: lib.isEvaluateEffect,
-    isMessage: lib.isMessage,
     isSubscribeEffectsMessage: lib.isSubscribeEffectsMessage,
     isUnsubscribeEffectsMessage: lib.isUnsubscribeEffectsMessage,
     MESSAGE_EMIT_EFFECT_VALUES: lib.MESSAGE_EMIT_EFFECT_VALUES,

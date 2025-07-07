@@ -6,7 +6,7 @@ import {
   type EffectHandlerOutput,
   type EffectHandlerOutputMessage,
 } from '@reactive-kit/handler-utils';
-import type { Message } from '@reactive-kit/plugin-evaluate';
+import type { Message } from '@reactive-kit/message';
 import { createResult, type Expression } from '@reactive-kit/types';
 
 import { EFFECT_TYPE_FETCH, type FetchEffect } from '../effects';

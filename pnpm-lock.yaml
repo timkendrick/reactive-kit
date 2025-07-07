@@ -662,6 +662,9 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
+      '@reactive-kit/message':
+        specifier: workspace:*
+        version: link:../message
       '@reactive-kit/plugin-evaluate':
         specifier: workspace:*
         version: link:../plugin-evaluate
@@ -854,6 +857,34 @@ importers:
         specifier: workspace:*
         version: link:../compiler
 
+  packages/message:
+    dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@22.14.0)
+      eslint:
+        specifier: ^8
+        version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.5.3
+      typedoc:
+        specifier: ^0.28
+        version: 0.28.2(typescript@5.8.2)
+      typescript:
+        specifier: ^5
+        version: 5.8.2
+      vite:
+        specifier: ^6
+        version: 6.0.5(@types/node@22.14.0)(yaml@2.7.1)
+      vitest:
+        specifier: ^3
+        version: 3.1.1(@types/node@22.14.0)(yaml@2.7.1)
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+
   packages/plugin-evaluate:
     dependencies:
       '@microsoft/api-extractor':
@@ -890,6 +921,9 @@ importers:
       '@reactive-kit/interpreter':
         specifier: workspace:*
         version: link:../interpreter
+      '@reactive-kit/message':
+        specifier: workspace:*
+        version: link:../message
       '@reactive-kit/reactive-utils':
         specifier: workspace:*
         version: link:../reactive-utils
@@ -939,9 +973,9 @@ importers:
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../hash
-      '@reactive-kit/plugin-evaluate':
+      '@reactive-kit/message':
         specifier: workspace:*
-        version: link:../plugin-evaluate
+        version: link:../message
       '@reactive-kit/reactive-utils':
         specifier: workspace:*
         version: link:../reactive-utils
@@ -1089,9 +1123,9 @@ importers:
       '@reactive-kit/hash':
         specifier: workspace:*
         version: link:../hash
-      '@reactive-kit/plugin-evaluate':
+      '@reactive-kit/message':
         specifier: workspace:*
-        version: link:../plugin-evaluate
+        version: link:../message
       '@reactive-kit/reactive-utils':
         specifier: workspace:*
         version: link:../reactive-utils
@@ -1172,6 +1206,9 @@ importers:
       '@reactive-kit/interpreter':
         specifier: workspace:*
         version: link:../interpreter
+      '@reactive-kit/message':
+        specifier: workspace:*
+        version: link:../message
       '@reactive-kit/plugin-evaluate':
         specifier: workspace:*
         version: link:../plugin-evaluate
@@ -1255,9 +1292,9 @@ importers:
       '@reactive-kit/handler-utils':
         specifier: workspace:*
         version: link:../handler-utils
-      '@reactive-kit/plugin-evaluate':
+      '@reactive-kit/message':
         specifier: workspace:*
-        version: link:../plugin-evaluate
+        version: link:../message
       '@reactive-kit/scheduler':
         specifier: workspace:*
         version: link:../scheduler

@@ -47,10 +47,6 @@
         "import": "./lib/messages.lib.js",
         "require": "./lib/messages.lib.cjs"
       },
-      "./types": {
-        "import": "./lib/types.lib.js",
-        "require": "./lib/types.lib.cjs"
-      },
       "./utils": {
         "import": "./lib/utils.lib.js",
         "require": "./lib/utils.lib.cjs"
@@ -62,6 +58,7 @@
     "@reactive-kit/build-config": "workspace:*",
     "@reactive-kit/hash": "workspace:*",
     "@reactive-kit/interpreter": "workspace:*",
+    "@reactive-kit/message": "workspace:*",
     "@reactive-kit/reactive-utils": "workspace:*",
     "@reactive-kit/types": "workspace:*",
     "@reactive-kit/utils": "workspace:*"

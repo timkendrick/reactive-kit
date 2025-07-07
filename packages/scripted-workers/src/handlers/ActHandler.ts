@@ -5,7 +5,7 @@ import {
   type HandlerResult,
 } from '@reactive-kit/actor';
 import type { AsyncTaskId } from '@reactive-kit/handler-utils';
-import { isMessage } from '@reactive-kit/plugin-evaluate';
+import { isMessage } from '@reactive-kit/message';
 import { nonNull, unreachable } from '@reactive-kit/utils';
 
 import { isActHandlerDelayCompleteMessage, type ActHandlerDelayCompleteMessage } from '../messages';

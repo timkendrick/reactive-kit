@@ -188,7 +188,7 @@ export default function (plop) {
           '@reactive-kit/actor-utils',
           '@reactive-kit/handler-utils',
           '@reactive-kit/hash',
-          '@reactive-kit/runtime-messages',
+          '@reactive-kit/message',
           '@reactive-kit/reactive-utils',
           '@reactive-kit/types',
           '@reactive-kit/utils',

@@ -38,8 +38,8 @@
     "@reactive-kit/actor": "workspace:*",
     "@reactive-kit/actor-utils": "workspace:*",
     "@reactive-kit/handler-utils": "workspace:*",
+    "@reactive-kit/message": "workspace:*",
     "@reactive-kit/scheduler": "workspace:*",
-    "@reactive-kit/plugin-evaluate": "workspace:*",
     "@reactive-kit/utils": "workspace:*"
   },
   "peerDependencies": {

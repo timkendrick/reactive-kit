@@ -1,18 +1,18 @@
 {
   "private": true,
-  "name": "@reactive-kit/runtime",
+  "name": "@reactive-kit/message",
   "version": "0.0.1",
   "license": "MIT",
-  "description": "ReactiveKit runtime",
+  "description": "ReactiveKit Message",
   "author": "Tim Kendrick <timkendrick@gmail.com>",
   "type": "module",
   "main": "./lib.ts",
   "module": "./lib.ts",
   "scripts": {
-    "build": "pnpm run build:lib && pnpm run build:pkg",
+    "build": "pnpm run build:lib && pnpm run build:pkg && pnpm run build:types",
     "build:lib": "vite build",
     "build:types": "mkdir -p .context && bundle-types dist ./tsconfig.json > .context/lib.d.ts",
-    "build:spec": "mkdir -p .context && bundle-docs SPEC.md > .context/SPEC.md",
+    "build:spec": "mkdir -p .context && bundle-spec SPEC.md > .context/SPEC.md",
     "build:docs": "typedoc",
     "build:pkg": "pkg . ./dist/package.json",
     "lint": "pnpm run '/^lint:.*/'",
@@ -34,16 +34,7 @@
     }
   },
   "devDependencies": {
-    "@reactive-kit/build-config": "workspace:*",
-    "@reactive-kit/actor": "workspace:*",
-    "@reactive-kit/actor-utils": "workspace:*",
-    "@reactive-kit/hash": "workspace:*",
-    "@reactive-kit/interpreter": "workspace:*",
-    "@reactive-kit/message": "workspace:*",
-    "@reactive-kit/plugin-evaluate": "workspace:*",
-    "@reactive-kit/scheduler": "workspace:*",
-    "@reactive-kit/types": "workspace:*",
-    "@reactive-kit/utils": "workspace:*"
+    "@reactive-kit/build-config": "workspace:*"
   },
   "peerDependencies": {
     "@microsoft/api-extractor": "^7",

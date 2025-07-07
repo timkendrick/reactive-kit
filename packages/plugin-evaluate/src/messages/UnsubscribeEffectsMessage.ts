@@ -1,6 +1,5 @@
+import type { Message } from '@reactive-kit/message';
 import type { EffectExpression, EffectType } from '@reactive-kit/types';
-
-import type { Message } from '../types/Message';
 
 export const MESSAGE_UNSUBSCRIBE_EFFECTS = 'core::unsubscribeEffects';
 

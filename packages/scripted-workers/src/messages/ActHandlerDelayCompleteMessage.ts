@@ -1,5 +1,5 @@
 import type { AsyncTaskId, AsyncTaskMessage } from '@reactive-kit/handler-utils';
-import type { Message } from '@reactive-kit/plugin-evaluate';
+import type { Message } from '@reactive-kit/message';
 
 export const MESSAGE_ACT_HANDLER_DELAY_COMPLETE = '@reactive-kit/handler-act/delay-complete';
 

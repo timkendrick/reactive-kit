@@ -8,6 +8,7 @@ import {
 } from '@reactive-kit/actor';
 import { hash, isHashable, type Hash, type Hashable } from '@reactive-kit/hash';
 import { Interpreter, type InterpreterSubscription } from '@reactive-kit/interpreter';
+import type { Message } from '@reactive-kit/message';
 import {
   EvaluationResultType,
   type EffectExpression,
@@ -34,7 +35,6 @@ import {
   type SubscribeEffectsMessage,
   type UnsubscribeEffectsMessage,
 } from '../messages';
-import type { Message } from '../types';
 import { getTypedEffects, groupEffectsByType } from '../utils';
 
 export const ACTOR_TYPE_EVALUATE_HANDLER = '@reactive-kit/actor/evaluate-handler';
