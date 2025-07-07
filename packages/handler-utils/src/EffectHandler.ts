@@ -5,13 +5,13 @@ import {
   type HandlerContext,
   type HandlerResult,
 } from '@reactive-kit/actor';
+import type { Message } from '@reactive-kit/message';
 import {
   createEmitEffectValuesMessage,
   getTypedEffects,
   isSubscribeEffectsMessage,
   isUnsubscribeEffectsMessage,
   type EmitEffectValuesMessage,
-  type Message,
   type SubscribeEffectsMessage,
   type UnsubscribeEffectsMessage,
 } from '@reactive-kit/plugin-evaluate';

@@ -55,8 +55,8 @@
     "@reactive-kit/build-config": "workspace:*",
     "@reactive-kit/handler-utils": "workspace:*",
     "@reactive-kit/hash": "workspace:*",
+    "@reactive-kit/message": "workspace:*",
     "@reactive-kit/reactive-utils": "workspace:*",
-    "@reactive-kit/plugin-evaluate": "workspace:*",
     "@reactive-kit/types": "workspace:*",
     "@reactive-kit/utils": "workspace:*"
   },

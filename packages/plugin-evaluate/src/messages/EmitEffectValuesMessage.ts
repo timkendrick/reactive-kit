@@ -1,6 +1,5 @@
+import type { Message } from '@reactive-kit/message';
 import type { EffectId, EffectType, Expression } from '@reactive-kit/types';
-
-import type { Message } from '../types/Message';
 
 export const MESSAGE_EMIT_EFFECT_VALUES = 'core::emitEffectValues';
 
