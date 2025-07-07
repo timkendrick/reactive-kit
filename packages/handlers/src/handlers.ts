@@ -1,5 +1,5 @@
-import { FetchHandler } from '@reactive-kit/plugin-fetch';
-import { TimeHandler } from '@reactive-kit/plugin-time';
+import { FetchHandler } from '@reactive-kit/plugin-fetch/handlers';
+import { TimeHandler } from '@reactive-kit/plugin-time/handlers';
 import type { RuntimeEffectHandlers } from '@reactive-kit/runtime';
 
 /* eslint-disable-next-line prettier/prettier */

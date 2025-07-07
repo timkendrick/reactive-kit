@@ -1,5 +1,5 @@
-import pkg from './package/index.mjs';
-import plugin from './plugin/index.mjs';
+import pkg from './package.mjs';
+import plugin from './plugin.mjs';
 
 /**
  * @param {import('plop').NodePlopAPI} plop

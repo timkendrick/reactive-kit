@@ -1,5 +1,5 @@
 {
   "$schema": "http://json.schemastore.org/tsconfig",
   "extends": "@reactive-kit/build-config/templates/tsc/base.tsconfig.json",
-  "include": ["src", "lib.ts", "lib.test.ts", "*.config.ts", "package.json"]
+  "include": ["src", "lib.ts", "lib.test.ts", "*.ts", "*.test.ts", "*.config.ts", "package.json"]
 }

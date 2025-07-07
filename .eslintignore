@@ -1,6 +1,6 @@
-/scripts/generate/generators/*/template/
 /coverage/
 /docs/
 /packages/*/dist/
+/templates/
 /vitest.config.ts.timestamp-*.mjs
 /packages/*/vitest.config.ts.timestamp-*.mjs

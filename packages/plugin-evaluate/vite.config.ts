@@ -17,9 +17,14 @@ export default mergeConfig(
       lib: {
         entry: {
           lib: resolve(__dirname, pkg.module),
-          effects: resolve(__dirname, './effects.lib.ts'),
-          handlers: resolve(__dirname, './handlers.lib.ts'),
-          hooks: resolve(__dirname, './hooks.lib.ts'),
+          effects: resolve(__dirname, './effects.ts'),
+          handlers: resolve(__dirname, './handlers.ts'),
+          hooks: resolve(__dirname, './hooks.ts'),
+          messages: resolve(__dirname, './messages.ts'),
+          middleware: resolve(__dirname, './middleware.ts'),
+          mocks: resolve(__dirname, './mocks.ts'),
+          tasks: resolve(__dirname, './tasks.ts'),
+          types: resolve(__dirname, './types.ts'),
         },
         name: pkg.name,
         formats: ['es', 'cjs'],
