@@ -39,6 +39,7 @@
     "@reactive-kit/actor-utils": "workspace:*",
     "@reactive-kit/hash": "workspace:*",
     "@reactive-kit/interpreter": "workspace:*",
+    "@reactive-kit/message": "workspace:*",
     "@reactive-kit/plugin-evaluate": "workspace:*",
     "@reactive-kit/scheduler": "workspace:*",
     "@reactive-kit/types": "workspace:*",

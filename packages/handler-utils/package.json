@@ -36,6 +36,7 @@
   "devDependencies": {
     "@reactive-kit/actor": "workspace:*",
     "@reactive-kit/build-config": "workspace:*",
+    "@reactive-kit/message": "workspace:*",
     "@reactive-kit/plugin-evaluate": "workspace:*",
     "@reactive-kit/types": "workspace:*",
     "@reactive-kit/utils": "workspace:*"

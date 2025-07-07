@@ -1,6 +1,7 @@
 import type { ActorFactory, ActorHandle } from '@reactive-kit/actor';
 import { BroadcastActor } from '@reactive-kit/actor-utils';
 import type { Hashable } from '@reactive-kit/hash';
+import type { Message } from '@reactive-kit/message';
 import {
   EFFECT_TYPE_EVALUATE,
   EvaluateHandler,
@@ -8,7 +9,6 @@ import {
   createEvaluateEffect,
   createSubscribeEffectsMessage,
   createUnsubscribeEffectsMessage,
-  type Message,
   type ReadyEvaluationResult,
   type RuntimeMessage,
   type StateValues,

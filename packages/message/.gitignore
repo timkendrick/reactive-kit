@@ -1,0 +1,4 @@
+/.context/
+/dist/
+/node_modules/
+/vitest.config.ts.timestamp-*.mjs
