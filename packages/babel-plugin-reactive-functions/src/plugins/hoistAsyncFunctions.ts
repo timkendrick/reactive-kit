@@ -115,7 +115,7 @@ export const hoistAsyncFunctions: BabelPlugin = (babel): PluginObj<PluginPass> =
       case 'Identifier':
         return param;
       case 'RestElement': {
-        let argument = param.argument;
+        let argument: Exclude<t.LVal, t.TSParameterProperty> = param.argument;
         while (true) {
           switch (argument.type) {
             case 'Identifier':
@@ -126,9 +126,6 @@ export const hoistAsyncFunctions: BabelPlugin = (babel): PluginObj<PluginPass> =
             case 'ObjectPattern':
             case 'RestElement':
               return null;
-            case 'TSParameterProperty':
-              argument = argument.parameter;
-              continue;
             case 'TSAsExpression':
             case 'TSNonNullExpression':
             case 'TSSatisfiesExpression':
