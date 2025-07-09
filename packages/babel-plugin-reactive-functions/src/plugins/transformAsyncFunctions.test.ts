@@ -8,7 +8,7 @@ import { transformAsyncFunctions } from './transformAsyncFunctions';
 
 describe(transformAsyncFunctions, () => {
   test('transforms async function declarations', () => {
-    const input = template.program.ast/* javascript */ `
+    const input = template.program.ast /* javascript */ `
     async function foo(bar, baz) {
       let result;
       const x = 3;
@@ -37,7 +37,7 @@ describe(transformAsyncFunctions, () => {
     }
     `;
     const functionHash = t.bigIntLiteral(String(hashAstNode(input.body[0])));
-    const expected = template.program.ast/* javascript */ `
+    const expected = template.program.ast /* javascript */ `
       function foo$(_context) {
         while (1) switch (_context.state.prev = _context.state.next) {
           case 0:
@@ -135,14 +135,14 @@ describe(transformAsyncFunctions, () => {
   });
 
   test('allows destructuring awaited values', () => {
-    const input = template.program.ast/* javascript */ `
+    const input = template.program.ast /* javascript */ `
       async function foo() {
         const { bar } = await "bar";
         return bar;
       }
     `;
     const functionHash = t.bigIntLiteral(String(hashAstNode(input.body[0])));
-    const expected = template.program.ast/* javascript */ `
+    const expected = template.program.ast /* javascript */ `
       function foo$(_context) {
         while (1) switch (_context.state.prev = _context.state.next) {
           case 0:
@@ -185,13 +185,13 @@ describe(transformAsyncFunctions, () => {
   });
 
   test('allows non-serializable static values', () => {
-    const input = template.program.ast/* javascript */ `
+    const input = template.program.ast /* javascript */ `
       async function foo() {
         return Number(await 3);
       }
     `;
     const functionHash = t.bigIntLiteral(String(hashAstNode(input.body[0])));
-    const expected = template.program.ast/* javascript */ `
+    const expected = template.program.ast /* javascript */ `
       function foo$(_context) {
         while (1) switch (_context.state.prev = _context.state.next) {
           case 0:

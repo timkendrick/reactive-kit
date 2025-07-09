@@ -9,14 +9,14 @@ describe(reactiveJsx, () => {
     test('basic JSX elements', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return <main id="foo">Hello, world!</main>;
           }
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return {
               "type": "main",
@@ -38,7 +38,7 @@ describe(reactiveJsx, () => {
     test('custom elements', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return (
               <main id="foo">
@@ -54,7 +54,7 @@ describe(reactiveJsx, () => {
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return {
               "type": "main",
@@ -89,7 +89,7 @@ describe(reactiveJsx, () => {
     test('namespaced custom elements', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           import * as foo from './foo';
 
           async function Main(props) {
@@ -102,7 +102,7 @@ describe(reactiveJsx, () => {
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           import * as foo from './foo';
 
           async function Main(props) {
@@ -129,7 +129,7 @@ describe(reactiveJsx, () => {
     test('element keys', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return (
               <main key="foo" id="bar">
@@ -140,7 +140,7 @@ describe(reactiveJsx, () => {
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return {
               "type": "main",
@@ -169,7 +169,7 @@ describe(reactiveJsx, () => {
     test('element refs', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             const foo = { current: null };
             const baz = { current: null };
@@ -182,7 +182,7 @@ describe(reactiveJsx, () => {
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             const foo = { current: null };
             const baz = { current: null };
@@ -213,14 +213,14 @@ describe(reactiveJsx, () => {
     test('self-closing elements', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return <main id="foo" />;
           }
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return {
               "type": "main",
@@ -241,14 +241,14 @@ describe(reactiveJsx, () => {
     test('empty element children', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return <main id="foo"></main>;
           }
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return {
               "type": "main",
@@ -270,7 +270,7 @@ describe(reactiveJsx, () => {
     test('whitespace element children', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return (
               <main id="foo">
@@ -281,7 +281,7 @@ describe(reactiveJsx, () => {
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return {
               "type": "main",
@@ -303,7 +303,7 @@ describe(reactiveJsx, () => {
     test('multiple element children', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return (
               <ul id="foo">
@@ -316,7 +316,7 @@ describe(reactiveJsx, () => {
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return {
               "type": "ul",
@@ -361,14 +361,14 @@ describe(reactiveJsx, () => {
     test('spread JSX attributes', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return <main id="foo" {...props}>Hello, world!</main>;
           }
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             return {
               "type": "main",
@@ -391,7 +391,7 @@ describe(reactiveJsx, () => {
     test('spread JSX children', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             const { children } = props;
             return <main id="foo">{...children}</main>;
@@ -399,7 +399,7 @@ describe(reactiveJsx, () => {
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             const { children } = props;
             return {
@@ -422,7 +422,7 @@ describe(reactiveJsx, () => {
     test('interpolated spread JSX children', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             const { children } = props;
             return <main id="foo">Hello, {...children} World!</main>;
@@ -430,7 +430,7 @@ describe(reactiveJsx, () => {
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           async function Main(props) {
             const { children } = props;
             return {
@@ -457,12 +457,12 @@ describe(reactiveJsx, () => {
     test('top-level JSX intrinsic elements', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           <main id="foo" />
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           ({
             "type": "main",
             "props": {
@@ -481,12 +481,12 @@ describe(reactiveJsx, () => {
     test('top-level JSX custom elements', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           <Main id="foo" />
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           Main({ "id": "foo" })
         `;
       const actual = transform(printAst(input), {
@@ -500,7 +500,7 @@ describe(reactiveJsx, () => {
     test('JSX custom elements in non-async functions', () => {
       const input = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           function foo() {
             return <Main id="foo" />;
           }
@@ -510,7 +510,7 @@ describe(reactiveJsx, () => {
         `;
       const expected = template.program({
         plugins: ['jsx'],
-      }).ast/* javascript */ `
+      }).ast /* javascript */ `
           function foo() {
             return Main({ "id": "foo" });
           }
