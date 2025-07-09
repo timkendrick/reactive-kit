@@ -6,12 +6,12 @@ import { hoistAsyncFunctions } from './hoistAsyncFunctions';
 
 describe(hoistAsyncFunctions, () => {
   test('leaves top-level async functions in place', () => {
-    const input = template.program.ast/* javascript */ `
+    const input = template.program.ast /* javascript */ `
       async function foo(bar, baz) {
         return 'Hello, world!';
       }
     `;
-    const expected = template.program.ast/* javascript */ `
+    const expected = template.program.ast /* javascript */ `
       async function foo(bar, baz) {
         return 'Hello, world!';
       }
@@ -24,7 +24,7 @@ describe(hoistAsyncFunctions, () => {
   });
 
   test('hoists nested async functions to renamed top-level functions', () => {
-    const input = template.program.ast/* javascript */ `
+    const input = template.program.ast /* javascript */ `
       function outer() {
         function inner() {
           async function foo(bar, baz) {
@@ -33,7 +33,7 @@ describe(hoistAsyncFunctions, () => {
         }
       }
     `;
-    const expected = template.program.ast/* javascript */ `
+    const expected = template.program.ast /* javascript */ `
       async function _foo(bar, baz) {
         return 'Hello, world!';
       }
@@ -54,7 +54,7 @@ describe(hoistAsyncFunctions, () => {
   });
 
   test('prevents naming collisions between renamed top-level functions', () => {
-    const input = template.program.ast/* javascript */ `
+    const input = template.program.ast /* javascript */ `
       function outer() {
         function innerA() {
           async function foo(bar, baz) {
@@ -68,7 +68,7 @@ describe(hoistAsyncFunctions, () => {
         }
       }
     `;
-    const expected = template.program.ast/* javascript */ ` 
+    const expected = template.program.ast /* javascript */ ` 
       async function _foo2(bar, baz) {
         return 'Goodbye, world!';
       }
@@ -98,7 +98,7 @@ describe(hoistAsyncFunctions, () => {
   });
 
   test('extracts free variables as function arguments', () => {
-    const input = template.program.ast/* javascript */ `
+    const input = template.program.ast /* javascript */ `
       function outer() {
         function inner() {
           const greeting = 'Hello';
@@ -110,7 +110,7 @@ describe(hoistAsyncFunctions, () => {
         }
       }
     `;
-    const expected = template.program.ast/* javascript */ `
+    const expected = template.program.ast /* javascript */ `
       async function _foo(greeting, user, bar, baz) {
         const qux = 'local';
         return greeting + ', ' + user + '!';
@@ -134,7 +134,7 @@ describe(hoistAsyncFunctions, () => {
   });
 
   test('renames pattern arguments', () => {
-    const input = template.program.ast/* javascript */ `
+    const input = template.program.ast /* javascript */ `
       function outer() {
         function inner() {
           const greeting = 'Hello';
@@ -145,7 +145,7 @@ describe(hoistAsyncFunctions, () => {
         }
       }
     `;
-    const expected = template.program.ast/* javascript */ `
+    const expected = template.program.ast /* javascript */ `
       async function _foo(greeting, user, { bar }, [baz], qux = 3, ...rest) {
         return greeting + ', ' + user + '!';
       }

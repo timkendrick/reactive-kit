@@ -8,7 +8,7 @@ import type { CompilerOptions } from './types';
 
 describe(compile, () => {
   test('transforms top-level async functions', () => {
-    const input = template.program.ast/* javascript */ `
+    const input = template.program.ast /* javascript */ `
       async function map(expression, transform) {
         const value = await expression;
         return transform(value);
@@ -16,7 +16,7 @@ describe(compile, () => {
     `;
     const functionDeclaration = input.body[0] as t.FunctionDeclaration;
     const functionHash = t.bigIntLiteral(String(hashAstNode(functionDeclaration)));
-    const expected = template.program.ast/* javascript */ `
+    const expected = template.program.ast /* javascript */ `
       function map$(_context) {
         while (1) switch (_context.state.prev = _context.state.next) {
           case 0:
@@ -59,7 +59,7 @@ describe(compile, () => {
   });
 
   test('transforms nested async functions', () => {
-    const input = template.program.ast/* javascript */ `
+    const input = template.program.ast /* javascript */ `
       function foo(transform, expression) {
         async function map(expression, transform) {
           const value = await expression;
@@ -77,7 +77,7 @@ describe(compile, () => {
       id: t.identifier('_' + (asyncFunctionDeclaration.id?.name ?? '')),
     };
     const functionHash = t.bigIntLiteral(String(hashAstNode(renamedAsyncFunctionDeclaration)));
-    const expected = template.program.ast/* javascript */ `
+    const expected = template.program.ast /* javascript */ `
       function _map$(_context) {
         while (1) switch (_context.state.prev = _context.state.next) {
           case 0:
