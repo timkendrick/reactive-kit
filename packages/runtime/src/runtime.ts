@@ -13,7 +13,7 @@ import {
   type RuntimeMessage,
   type StateValues,
 } from '@reactive-kit/plugin-evaluate';
-import { AsyncScheduler } from '@reactive-kit/scheduler';
+import { AsyncScheduler, type SchedulerMiddlewareFactory } from '@reactive-kit/scheduler';
 import { isResultExpression, type EffectId, type Expression } from '@reactive-kit/types';
 import { createAsyncTrigger, type AsyncTrigger } from '@reactive-kit/utils';
 
@@ -51,9 +51,10 @@ export class Runtime {
     handlers: RuntimeEffectHandlers,
     options?: {
       state?: StateValues;
+      middleware?: SchedulerMiddlewareFactory<RuntimeMessage>;
     },
   ) {
-    const { state = null } = options ?? {};
+    const { state = null, middleware } = options ?? {};
     this.scheduler = new AsyncScheduler((context) => {
       const input = context.self();
       // FIXME: compose effect handlers into single combined effect handler
@@ -74,7 +75,7 @@ export class Runtime {
         factory: (output) =>
           new BroadcastActor<RuntimeMessage>([evaluateHandler, ...effectHandlers, output]),
       };
-    });
+    }, middleware);
   }
 
   public subscribe<T extends Hashable>(expression: Expression<T>): AsyncIterator<T, null> {
