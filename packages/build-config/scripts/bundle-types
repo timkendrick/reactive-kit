@@ -52,6 +52,8 @@ api-extractor run --local --config "$CONFIG_FILE" 1>&2
 # Clean up the temporary config file
 rm "$CONFIG_FILE"
 
-# Output the type bundle
-cat "$OUTPUT_FILE"
+# Output the type bundle, removing all (potentially-mutiline) /** ... */ TSDoc comments
+perl -0777 -pe 's{/\*\*.*?\*/}{}gs' "$OUTPUT_FILE"
+
+# Clean up the temporary output file
 rm "$OUTPUT_FILE"
