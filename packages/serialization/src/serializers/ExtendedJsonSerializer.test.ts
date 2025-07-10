@@ -20,6 +20,7 @@ describe('ExtendedJsonSerializer', () => {
         const key = Symbol.keyFor(sym);
         return key ? BigInt(key.length) : -1n;
       },
+      fallback: (value: object) => (value as { toJSON?: () => unknown }).toJSON?.() ?? null,
     });
   };
 
@@ -48,9 +49,7 @@ describe('ExtendedJsonSerializer', () => {
       ]);
 
       const result = serializer.serialize(map);
-      expect(result).toBe(
-        '{"__type":"Map","value":[["key1","value1"],["key2","value2"]]}',
-      );
+      expect(result).toBe('{"__type":"Map","value":[["key1","value1"],["key2","value2"]]}');
     });
 
     it('should serialize Set objects correctly', () => {
@@ -249,9 +248,7 @@ describe('ExtendedJsonSerializer', () => {
       map.set('key2', map); // Create cycle
 
       const result = serializer.serialize(map);
-      expect(result).toBe(
-        '{"__type":"Map","value":[["key1","value1"],["key2","<circular>"]]}',
-      );
+      expect(result).toBe('{"__type":"Map","value":[["key1","value1"],["key2","<circular>"]]}');
     });
   });
 

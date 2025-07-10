@@ -29,6 +29,13 @@ export class ExtendedJsonSerializer implements Serializer<unknown, string> {
      */
     getSymbolId: (value: symbol) => bigint;
     /**
+     * A callback function to serialize custom values that are not covered by
+     * the extended types.
+     * @param value The unsupported value encountered during serialization
+     * @returns JSON-serialized representation of the value
+     */
+    fallback: (value: object) => RawJSON | unknown;
+    /**
      * An optional callback to handle cyclical references, which is passed to the
      * underlying `JsonSerializer`. If not provided, a `TypeError` will be
      * thrown when a cycle is detected.
@@ -38,9 +45,9 @@ export class ExtendedJsonSerializer implements Serializer<unknown, string> {
      */
     onCycle?: (value: object) => RawJSON | null;
   }) {
-    const { getFunctionId, getSymbolId, onCycle } = options;
+    const { getFunctionId, getSymbolId, fallback, onCycle } = options;
     this.jsonSerializer = new JsonSerializer({
-      fallback: createExtendedFallback(getFunctionId, getSymbolId),
+      fallback: createExtendedFallback(getFunctionId, getSymbolId, fallback),
       onCycle,
     });
   }
@@ -62,8 +69,10 @@ function createExtendedFallback(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   getFunctionId: FunctionIdentifier,
   getSymbolId: SymbolIdentifier,
-): (value: unknown) => RawJSON | object | null {
-  return (value: unknown): RawJSON | object | null => {
+  fallback: (value: object) => RawJSON | unknown,
+): (value: unknown) => RawJSON | unknown {
+  return (value: unknown): RawJSON | unknown => {
+    if (value == null) return value;
     if (typeof value === 'bigint') return serializeBigInt(value);
     if (value instanceof Date) return serializeDate(value);
     if (value instanceof Map) return serializeMap(value);
@@ -71,8 +80,8 @@ function createExtendedFallback(
     if (value instanceof ArrayBuffer) return serializeArrayBuffer(value);
     if (typeof value === 'function') return serializeFunction(value, getFunctionId);
     if (typeof value === 'symbol') return serializeSymbol(getSymbolId, value);
-    // For any other unsupported types, return null
-    return null;
+    // For any other unsupported types, invoke the fallback handler
+    return fallback(value);
   };
 }
 
