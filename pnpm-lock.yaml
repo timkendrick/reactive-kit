@@ -462,6 +462,9 @@ importers:
       '@reactive-kit/runtime':
         specifier: workspace:*
         version: link:../runtime
+      '@reactive-kit/serialization':
+        specifier: workspace:*
+        version: link:../serialization
       '@reactive-kit/types':
         specifier: workspace:*
         version: link:../types
