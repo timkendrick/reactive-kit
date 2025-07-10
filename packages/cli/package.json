@@ -36,6 +36,7 @@
     "@reactive-kit/handlers": "workspace:*",
     "@reactive-kit/hash": "workspace:*",
     "@reactive-kit/runtime": "workspace:*",
+    "@reactive-kit/serialization": "workspace:*",
     "@reactive-kit/types": "workspace:*",
     "@reactive-kit/utils": "workspace:*"
   },
