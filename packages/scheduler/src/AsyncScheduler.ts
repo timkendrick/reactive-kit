@@ -635,6 +635,13 @@ export class AsyncSchedulerActorHandle<T> implements ActorHandle<T> {
   public get [ACTOR_HANDLE_TYPE](): never {
     return undefined as never;
   }
+
+  public toJSON(): object {
+    return {
+      __type: 'AsyncSchedulerActorHandle',
+      uid: this.uid,
+    };
+  }
 }
 
 class AsyncSchedulerHandlerContext<T> implements HandlerContext<T> {
