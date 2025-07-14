@@ -1,0 +1,54 @@
+{
+  "private": true,
+  "name": "@reactive-kit/plugin-websocket",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "ReactiveKit WebSocket plugin",
+  "author": "Tim Kendrick <timkendrick@gmail.com>",
+  "type": "module",
+  "main": "./lib.ts",
+  "module": "./lib.ts",
+  "scripts": {
+    "build": "pnpm run build:lib && pnpm run build:docs && pnpm run build:pkg",
+    "build:lib": "vite build",
+    "build:docs": "typedoc",
+    "build:pkg": "pkg . ./dist/package.json",
+    "lint": "pnpm run '/^lint:.*/'",
+    "lint:eslint": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts .",
+    "lint:typescript": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
+  },
+  "pkg": {
+    "type": "module",
+    "main": "./lib/lib.cjs",
+    "module": "/lib/lib.js",
+    "types": "./lib.d.ts",
+    "exports": {
+      ".": {
+        "import": "./lib/lib.js",
+        "require": "./lib/lib.cjs"
+      }
+    }
+  },
+  "devDependencies": {
+    "@reactive-kit/actor": "workspace:*",
+    "@reactive-kit/build-config": "workspace:*",
+    "@reactive-kit/actor-utils": "workspace:*",
+    "@reactive-kit/handler-utils": "workspace:*",
+    "@reactive-kit/hash": "workspace:*",
+    "@reactive-kit/message": "workspace:*",
+    "@reactive-kit/reactive-utils": "workspace:*",
+    "@reactive-kit/plugin-evaluate": "workspace:*",
+    "@reactive-kit/types": "workspace:*",
+    "@reactive-kit/utils": "workspace:*"
+  },
+  "peerDependencies": {
+    "eslint": "^8",
+    "prettier": "^3",
+    "typedoc": "^0.28",
+    "typescript": "^5",
+    "vite": "^6",
+    "vitest": "^3"
+  }
+}

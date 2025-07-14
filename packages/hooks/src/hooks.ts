@@ -1,5 +1,6 @@
-export { useEvaluate } from '@reactive-kit/plugin-evaluate/hooks';
-export { useFetch } from '@reactive-kit/plugin-fetch/hooks';
-export { useFallback, usePending } from '@reactive-kit/plugin-pending/hooks';
-export { useGetState, useSetState, useState } from '@reactive-kit/plugin-state/hooks';
-export { useTime } from '@reactive-kit/plugin-time/hooks';
+export { useEvaluate } from '@reactive-kit/plugin-evaluate';
+export { useFetch } from '@reactive-kit/plugin-fetch';
+export { useFallback, usePending } from '@reactive-kit/plugin-pending';
+export { useGetState, useSetState, useState } from '@reactive-kit/plugin-state';
+export { useTime } from '@reactive-kit/plugin-time';
+export { useWebSocket } from '@reactive-kit/plugin-websocket';

@@ -667,6 +667,9 @@ importers:
       '@reactive-kit/hooks':
         specifier: link:../hooks/dist
         version: link:../hooks/dist
+      '@reactive-kit/websocket-server':
+        specifier: link:../websocket-server/dist
+        version: link:../websocket-server/dist
       '@rollup/plugin-babel':
         specifier: 6.0.4
         version: 6.0.4(@babel/core@7.28.0)(@types/babel__core@7.20.5)(rollup@4.44.2)
@@ -756,6 +759,9 @@ importers:
       '@reactive-kit/plugin-time':
         specifier: workspace:*
         version: link:../plugin-time
+      '@reactive-kit/plugin-websocket':
+        specifier: workspace:*
+        version: link:../plugin-websocket
       '@reactive-kit/runtime':
         specifier: workspace:*
         version: link:../runtime
@@ -836,6 +842,9 @@ importers:
       '@reactive-kit/plugin-time':
         specifier: workspace:*
         version: link:../plugin-time
+      '@reactive-kit/plugin-websocket':
+        specifier: workspace:*
+        version: link:../plugin-websocket
 
   packages/interpreter:
     dependencies:
@@ -1214,6 +1223,58 @@ importers:
         specifier: workspace:*
         version: link:../utils
 
+  packages/plugin-websocket:
+    dependencies:
+      eslint:
+        specifier: ^8
+        version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.6.2
+      typedoc:
+        specifier: ^0.28
+        version: 0.28.7(typescript@5.8.3)
+      typescript:
+        specifier: ^5
+        version: 5.8.3
+      vite:
+        specifier: ^6
+        version: 6.3.5(@types/node@24.0.12)(yaml@2.8.0)
+      vitest:
+        specifier: ^3
+        version: 3.2.4(@types/node@24.0.12)(yaml@2.8.0)
+    devDependencies:
+      '@reactive-kit/actor':
+        specifier: workspace:*
+        version: link:../actor
+      '@reactive-kit/actor-utils':
+        specifier: workspace:*
+        version: link:../actor-utils
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+      '@reactive-kit/handler-utils':
+        specifier: workspace:*
+        version: link:../handler-utils
+      '@reactive-kit/hash':
+        specifier: workspace:*
+        version: link:../hash
+      '@reactive-kit/message':
+        specifier: workspace:*
+        version: link:../message
+      '@reactive-kit/plugin-evaluate':
+        specifier: workspace:*
+        version: link:../plugin-evaluate
+      '@reactive-kit/reactive-utils':
+        specifier: workspace:*
+        version: link:../reactive-utils
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../types
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
+
   packages/reactive-utils:
     dependencies:
       '@microsoft/api-extractor':
@@ -1487,6 +1548,55 @@ importers:
       '@reactive-kit/build-config':
         specifier: workspace:*
         version: link:../build-config
+
+  packages/websocket-server:
+    dependencies:
+      '@reactive-kit/loader':
+        specifier: workspace:*
+        version: link:../loader
+      eslint:
+        specifier: ^8
+        version: 8.57.1
+      prettier:
+        specifier: ^3
+        version: 3.6.2
+      typedoc:
+        specifier: ^0.28
+        version: 0.28.7(typescript@5.8.3)
+      typescript:
+        specifier: ^5
+        version: 5.8.3
+      vite:
+        specifier: ^6
+        version: 6.3.5(@types/node@24.0.12)(yaml@2.8.0)
+      vitest:
+        specifier: ^3
+        version: 3.2.4(@types/node@24.0.12)(yaml@2.8.0)
+      ws:
+        specifier: 8.18.0
+        version: 8.18.0
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+      '@reactive-kit/handlers':
+        specifier: workspace:*
+        version: link:../handlers
+      '@reactive-kit/hash':
+        specifier: workspace:*
+        version: link:../hash
+      '@reactive-kit/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@reactive-kit/types':
+        specifier: workspace:*
+        version: link:../types
+      '@reactive-kit/utils':
+        specifier: workspace:*
+        version: link:../utils
+      '@types/ws':
+        specifier: 8.5.13
+        version: 8.5.13
 
 packages:
 
@@ -2207,6 +2317,9 @@ packages:
 
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
+
+  '@types/ws@8.5.13':
+    resolution: {integrity: sha512-osM/gWBTPKgHV8XkTunnegTRIsvF6owmf5w+JtAfOw472dptdm0dlGv4xCt6GwQRcC2XVOvvRE/0bAoQcL2QkA==}
 
   '@typescript-eslint/eslint-plugin@8.36.0':
     resolution: {integrity: sha512-lZNihHUVB6ZZiPBNgOQGSxUASI7UJWhT8nHyUGCnaQ28XFCw98IfrMCG3rUl1uwUWoAvodJQby2KTs79UTcrAg==}
@@ -4721,6 +4834,18 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
+  ws@8.18.0:
+    resolution: {integrity: sha512-8VbfWfHLbbwu3+N6OKsOMpBdT4kXPDDB9cJk2bJ6mh9ucxdlnNvH1e+roYkKmN9Nxw2yjz7VzeO9oOz2zJ04Pw==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   y18n@5.0.8:
     resolution: {integrity: sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==}
     engines: {node: '>=10'}
@@ -5509,6 +5634,10 @@ snapshots:
       '@types/node': 24.0.12
 
   '@types/unist@3.0.3': {}
+
+  '@types/ws@8.5.13':
+    dependencies:
+      '@types/node': 22.14.0
 
   '@typescript-eslint/eslint-plugin@8.36.0(@typescript-eslint/parser@8.36.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@5.8.3)':
     dependencies:
@@ -8603,6 +8732,8 @@ snapshots:
       strip-ansi: 7.1.0
 
   wrappy@1.0.2: {}
+
+  ws@8.18.0: {}
 
   y18n@5.0.8: {}
 

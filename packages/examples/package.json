@@ -17,6 +17,7 @@
     "@reactive-kit/dom": "link:../dom/dist",
     "@reactive-kit/hash": "link:../hash/dist",
     "@reactive-kit/hooks": "link:../hooks/dist",
+    "@reactive-kit/websocket-server": "link:../websocket-server/dist",
     "@rollup/plugin-babel": "6.0.4",
     "@rollup/plugin-html": "1.0.3"
   },

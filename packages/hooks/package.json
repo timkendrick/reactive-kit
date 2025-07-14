@@ -33,7 +33,8 @@
     "@reactive-kit/plugin-fetch": "workspace:*",
     "@reactive-kit/plugin-pending": "workspace:*",
     "@reactive-kit/plugin-state": "workspace:*",
-    "@reactive-kit/plugin-time": "workspace:*"
+    "@reactive-kit/plugin-time": "workspace:*",
+    "@reactive-kit/plugin-websocket": "workspace:*"
   },
   "peerDependencies": {
     "@microsoft/api-extractor": "^7",
