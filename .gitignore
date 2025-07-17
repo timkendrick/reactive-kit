@@ -1,3 +1,6 @@
+/.context/
+/.nx/cache
+/.nx/workspace-data
 /coverage/
 /docs/
 /node_modules/

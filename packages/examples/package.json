@@ -7,11 +7,8 @@
   "author": "Tim Kendrick <timkendrick@gmail.com>",
   "type": "module",
   "scripts": {
-    "build": "pnpm run build:dependencies",
-    "build:dependencies": "pnpm run --filter @reactive-kit/babel-preset-reactive --filter @reactive-kit/cli --filter @reactive-kit/dom --filter @reactive-kit/hash --filter @reactive-kit/hooks build",
-    "lint": "pnpm run '/^lint:.*/'",
-    "lint:eslint": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts .",
-    "lint:typescript": "tsc --noEmit"
+    "lint": "nx run lint",
+    "context": "nx run context"
   },
   "devDependencies": {
     "@reactive-kit/babel-preset-reactive": "link:../babel-preset-reactive/dist",
@@ -28,5 +25,8 @@
     "eslint": "^8",
     "typescript": "^5",
     "vite": "^6"
+  },
+  "nx": {
+    "includedScripts": []
   }
 }

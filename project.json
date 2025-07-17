@@ -1,0 +1,144 @@
+{
+  "$schema": "https://cdn.jsdelivr.net/gh/nrwl/nx/packages/nx/schemas/project-schema.json",
+  "targets": {
+    "build": {
+      "dependsOn": [
+        "@reactive-kit/cli:build",
+        "@reactive-kit/dom:build",
+        "@reactive-kit/examples:build"
+      ],
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    },
+    "ci": {
+      "dependsOn": ["build", "coverage", "docs", "lint", "test"],
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    },
+    "context": {
+      "dependsOn": [
+        "context-docs",
+        "context-spec",
+        "context-package-specs",
+        "context-package-types"
+      ],
+      "command": "bundle-xml --context:docs=.context/docs.md --context:spec=.context/SPEC.md --context:package-specs=.context/package-specs.md --context:types=.context/types.d.ts > .context/workspace.xml",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependsOn", "{projectRoot}/ARCHITECTURE.md"],
+      "outputs": ["{projectRoot}/.context/workspace.xml"]
+    },
+    "context-docs": {
+      "command": "mkdir -p .context && cat ARCHITECTURE.md > .context/docs.md",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["{projectRoot}/ARCHITECTURE.md"],
+      "outputs": ["{projectRoot}/.context/docs.md"]
+    },
+    "context-spec": {
+      "command": "mkdir -p .context && bundle-docs SPEC.md > .context/SPEC.md",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["{projectRoot}/SPEC.md", "{projectRoot}/spec/**/*"],
+      "outputs": ["{projectRoot}/.context/SPEC.md"]
+    },
+    "context-package-specs": {
+      "dependsOn": [{ "target": "context", "projects": ["*", "!@reactive-kit/workspace"] }],
+      "command": "mkdir -p .context && combine-package-docs packages/*/.context/SPEC.md > .context/package-specs.md",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependsOn", "{projectRoot}/packages/*/.context/SPEC.md"],
+      "outputs": ["{projectRoot}/.context/package-specs.md"]
+    },
+    "context-package-types": {
+      "dependsOn": [{ "target": "context", "projects": ["*", "!@reactive-kit/workspace"] }],
+      "command": "mkdir -p .context && combine-package-types packages/*/.context/*.d.ts > .context/types.d.ts",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependsOn", "{projectRoot}/packages/*/.context/*.d.ts"],
+      "outputs": ["{projectRoot}/.context/types.d.ts"]
+    },
+    "coverage": {
+      "command": "vitest run --coverage",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependencies", "^dependencies", "config", "src"],
+      "outputs": ["{projectRoot}/coverage"]
+    },
+    "docs": {
+      "dependsOn": ["*:build"],
+      "command": "typedoc",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependsOn", "config"],
+      "outputs": ["{projectRoot}/docs"]
+    },
+    "lint": {
+      "dependsOn": ["lint-eslint", "lint-typescript", "lint-workspace-packages"],
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    },
+    "lint-eslint": {
+      "command": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts .",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependencies", "^dependencies", "config"],
+      "outputs": []
+    },
+    "lint-typescript": {
+      "command": "tsc --noEmit",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependencies", "^dependencies", "config"],
+      "outputs": []
+    },
+    "lint-workspace-packages": {
+      "dependsOn": [{ "target": "lint", "projects": ["*", "!@reactive-kit/workspace"] }],
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["test-workspace-packages"],
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    },
+    "test-workspace-packages": {
+      "dependsOn": [{ "target": "test", "projects": ["*", "!@reactive-kit/workspace"] }],
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    },
+    "verify": {
+      "dependsOn": ["lint", "test"],
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    }
+  }
+}

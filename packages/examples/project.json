@@ -1,0 +1,57 @@
+{
+  "$schema": "https://cdn.jsdelivr.net/gh/nrwl/nx/packages/nx/schemas/project-schema.json",
+  "targets": {
+    "build": {
+      "dependsOn": [
+        "@reactive-kit/babel-preset-reactive:build",
+        "@reactive-kit/cli:build",
+        "@reactive-kit/dom:build",
+        "@reactive-kit/hash:build",
+        "@reactive-kit/hooks:build"
+      ],
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    },
+    "context": {
+      "dependsOn": ["context-spec"],
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    },
+    "context-spec": {
+      "command": "mkdir -p .context && bundle-docs SPEC.md > .context/SPEC.md",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["{projectRoot}/SPEC.md", "{projectRoot}/spec/**/*"],
+      "outputs": ["{projectRoot}/.context/SPEC.md"]
+    },
+    "lint": {
+      "dependsOn": ["lint-eslint", "lint-typescript"],
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    },
+    "lint-eslint": {
+      "command": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts .",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependencies", "^dependencies", "config", "src"]
+    },
+    "lint-typescript": {
+      "command": "tsc --noEmit",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependencies", "^dependencies", "config", "src"]
+    }
+  }
+}

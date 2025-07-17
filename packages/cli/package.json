@@ -8,18 +8,11 @@
   "type": "module",
   "main": "./index.ts",
   "scripts": {
-    "build": "pnpm run build:app && pnpm run build:loader && pnpm run build:pkg",
-    "build:app": "vite build",
-    "build:docs": "typedoc",
-    "build:pkg": "pkg . ./dist/package.json",
-    "build:loader": "pnpm run build:loader:lib && pnpm run build:loader:pkg",
-    "build:loader:lib": "vite build --config loader.vite.config.ts",
-    "build:loader:pkg": "pkg ../loader ./dist/node_modules/@reactive-kit/loader/package.json",
-    "lint": "pnpm run '/^lint:.*/'",
-    "lint:eslint": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts .",
-    "lint:typescript": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest watch"
+    "build": "nx run build",
+    "context": "nx run context",
+    "docs": "nx run docs",
+    "lint": "nx run lint",
+    "test": "nx run test"
   },
   "pkg": {
     "main": "./index.cjs",
@@ -43,10 +36,14 @@
   "peerDependencies": {
     "@types/node": "^22",
     "eslint": "^8",
+    "nx": "^21",
     "prettier": "^3",
     "typedoc": "^0.28",
     "typescript": "^5",
     "vite": "^6",
     "vitest": "^3"
+  },
+  "nx": {
+    "includedScripts": []
   }
 }

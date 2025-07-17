@@ -1,29 +1,23 @@
 {
+  "name": "@reactive-kit/workspace",
   "private": true,
   "license": "MIT",
   "description": "ReactiveKit",
   "author": "Tim Kendrick <timkendrick@gmail.com>",
   "scripts": {
-    "ci": "pnpm run verify && pnpm run build",
-    "build": "pnpm run build:lib && pnpm run build:docs && pnpm run coverage",
-    "build:lib": "pnpm run --recursive --parallel --no-bail build",
-    "build:docs": "pnpm run --recursive --parallel --no-bail build:docs && typedoc",
-    "generate:context": "./scripts/generate-context",
-    "generate:types": "pnpm run --recursive --parallel --no-bail build:types && combine-package-types packages/*/.context/*.d.ts",
-    "generate:spec": "pnpm run --recursive --parallel --no-bail build:spec && combine-package-docs packages/*/.context/SPEC.md",
-    "generate:memories": "combine-docs .serena/memories/*.md",
-    "verify": "pnpm run /^\\(lint\\|test\\)$/",
-    "lint": "pnpm run /^lint:.*/ && pnpm run --recursive --parallel --no-bail lint",
-    "lint:eslint": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts .",
-    "lint:typescript": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest watch",
-    "coverage": "vitest run --coverage",
-    "coverage:report": "vitest run --coverage --config ./report.vitest.config.ts",
-    "generate": "plop"
+    "build": "nx run build",
+    "ci": "nx run ci",
+    "context": "nx run context",
+    "coverage": "nx run coverage",
+    "docs": "nx run docs",
+    "generate": "plop",
+    "lint": "nx run lint",
+    "test": "nx run test",
+    "verify": "nx run verify"
   },
   "devDependencies": {
     "@reactive-kit/build-config": "workspace:*",
+    "nx": "21.2.3",
     "plop": "4.0.1"
   },
   "peerDependencies": {
@@ -34,5 +28,8 @@
     "vite": "^6",
     "vitest": "^3"
   },
-  "packageManager": "pnpm@10.0.0+sha512.b8fef5494bd3fe4cbd4edabd0745df2ee5be3e4b0b8b08fa643aa3e4c6702ccc0f00d68fa8a8c9858a735a0032485a44990ed2810526c875e416f001b17df12b"
+  "packageManager": "pnpm@10.0.0+sha512.b8fef5494bd3fe4cbd4edabd0745df2ee5be3e4b0b8b08fa643aa3e4c6702ccc0f00d68fa8a8c9858a735a0032485a44990ed2810526c875e416f001b17df12b",
+  "nx": {
+    "includedScripts": []
+  }
 }

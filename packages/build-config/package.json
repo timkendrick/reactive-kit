@@ -15,7 +15,8 @@
     "combine-package-types": "./scripts/combine-package-types"
   },
   "scripts": {
-    "lint": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts ."
+    "context": "nx run context",
+    "lint": "nx run lint"
   },
   "dependencies": {
     "@microsoft/api-extractor": "7.52.8",
@@ -40,5 +41,8 @@
     "vite": "6.3.5",
     "vite-plugin-dts": "4.5.4",
     "vitest": "3.2.4"
+  },
+  "nx": {
+    "includedScripts": []
   }
 }

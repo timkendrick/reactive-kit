@@ -1,0 +1,111 @@
+{
+  "$schema": "https://cdn.jsdelivr.net/gh/nrwl/nx/packages/nx/schemas/project-schema.json",
+  "targets": {
+    "build": {
+      "dependsOn": ["build-lib", "build-pkg"],
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": ["{projectRoot}/.context", "{projectRoot}/dist"]
+    },
+    "build-lib": {
+      "command": "vite build",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependencies", "^dependencies", "config", "^config", "src", "^src"],
+      "outputs": [
+        "{projectRoot}/dist",
+        "!{projectRoot}/dist/package.json",
+        "!{projectRoot}/dist/node_modules"
+      ]
+    },
+    "build-pkg": {
+      "dependsOn": ["build-lib"],
+      "command": "pkg . ./dist/package.json",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": ["{projectRoot}/dist/package.json"]
+    },
+    "context": {
+      "dependsOn": ["context-spec", "context-types"],
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    },
+    "context-spec": {
+      "command": "mkdir -p .context && bundle-docs SPEC.md > .context/SPEC.md",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["{projectRoot}/SPEC.md", "{projectRoot}/spec/**/*"],
+      "outputs": ["{projectRoot}/.context/SPEC.md"]
+    },
+    "context-types": {
+      "dependsOn": ["build-lib", "build-pkg"],
+      "command": "mkdir -p .context && bundle-types dist ./tsconfig.json > .context/lib.d.ts",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": ["{projectRoot}/.context/lib.d.ts"]
+    },
+    "docs": {
+      "dependsOn": ["build-lib"],
+      "command": "typedoc",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": ["{projectRoot}/docs"]
+    },
+    "lint": {
+      "dependsOn": ["lint-eslint", "lint-typescript"],
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    },
+    "lint-eslint": {
+      "command": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts .",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependencies", "^dependencies", "config", "src"],
+      "outputs": []
+    },
+    "lint-typescript": {
+      "command": "tsc --noEmit",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependencies", "^dependencies", "config", "src"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["test-vitest"],
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    },
+    "test-vitest": {
+      "command": "vitest run",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependencies", "^dependencies", "config", "src"],
+      "outputs": []
+    }
+  }
+}

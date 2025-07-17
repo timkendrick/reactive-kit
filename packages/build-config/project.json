@@ -1,0 +1,28 @@
+{
+  "$schema": "https://cdn.jsdelivr.net/gh/nrwl/nx/packages/nx/schemas/project-schema.json",
+  "targets": {
+    "context": {
+      "dependsOn": ["context-spec"],
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    },
+    "context-spec": {
+      "command": "mkdir -p .context && bundle-docs SPEC.md > .context/SPEC.md"
+    },
+    "lint": {
+      "dependsOn": ["lint-eslint", "lint-typescript"],
+      "cache": true,
+      "inputs": ["dependsOn"],
+      "outputs": []
+    },
+    "lint-eslint": {
+      "command": "eslint --ext js,jsx,cjs,mjs,ts,tsx,cts,mts .",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependencies", "^dependencies", "config", "src"]
+    }
+  }
+}
