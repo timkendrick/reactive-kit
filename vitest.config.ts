@@ -6,6 +6,7 @@ export default mergeConfig(
   base,
   defineConfig({
     test: {
+      projects: ['packages/*/vitest.config.ts'],
       coverage: {
         provider: 'v8',
         reporter: ['lcovonly', 'text'],
