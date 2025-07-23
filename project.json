@@ -23,11 +23,12 @@
     "context": {
       "dependsOn": [
         "context-docs",
+        "context-memories",
         "context-spec",
         "context-package-specs",
         "context-package-types"
       ],
-      "command": "bundle-xml --context:docs=.context/docs.md --context:spec=.context/SPEC.md --context:package-specs=.context/package-specs.md --context:types=.context/types.d.ts > .context/workspace.xml",
+      "command": "bundle-xml --context:memories=.context/memories.md --context:docs=.context/docs.md --context:spec=.context/SPEC.md --context:package-specs=.context/package-specs.md --context:types=.context/types.d.ts > .context/workspace.xml",
       "options": {
         "cwd": "{projectRoot}"
       },
@@ -43,6 +44,16 @@
       "cache": true,
       "inputs": ["{projectRoot}/ARCHITECTURE.md"],
       "outputs": ["{projectRoot}/.context/docs.md"]
+    },
+    "context-memories": {
+      "dependsOn": ["context-init"],
+      "command": "combine-docs .serena/memories/*.md > .context/memories.md",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "cache": true,
+      "inputs": ["dependsOn", "{projectRoot}/.serena/memories/*.md"],
+      "outputs": ["{projectRoot}/.context/memories.md"]
     },
     "context-spec": {
       "command": "mkdir -p .context && bundle-docs SPEC.md > .context/SPEC.md",
