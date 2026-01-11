@@ -1488,6 +1488,37 @@ importers:
         specifier: workspace:*
         version: link:../build-config
 
+  packages/www:
+    dependencies:
+      '@microsoft/api-extractor':
+        specifier: ^7
+        version: 7.52.8(@types/node@24.0.12)
+      eslint:
+        specifier: ^8
+        version: 8.57.1
+      nx:
+        specifier: ^21
+        version: 21.2.3(@swc/core@1.12.11)
+      prettier:
+        specifier: ^3
+        version: 3.6.2
+      typedoc:
+        specifier: ^0.28
+        version: 0.28.7(typescript@5.8.3)
+      typescript:
+        specifier: ^5
+        version: 5.8.3
+      vite:
+        specifier: ^6
+        version: 6.3.5(@types/node@24.0.12)(yaml@2.8.0)
+      vitest:
+        specifier: ^3
+        version: 3.2.4(@types/node@24.0.12)(yaml@2.8.0)
+    devDependencies:
+      '@reactive-kit/build-config':
+        specifier: workspace:*
+        version: link:../build-config
+
 packages:
 
   '@ampproject/remapping@2.3.0':

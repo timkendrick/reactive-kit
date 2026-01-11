@@ -1,0 +1,46 @@
+{
+  "private": true,
+  "name": "@reactive-kit/www",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "ReactiveKit website",
+  "author": "Tim Kendrick <timkendrick@gmail.com>",
+  "type": "module",
+  "main": "./lib.ts",
+  "module": "./lib.ts",
+  "scripts": {
+    "build": "nx run build",
+    "context": "nx run context",
+    "docs": "nx run docs",
+    "lint": "nx run lint",
+    "test": "nx run test"
+  },
+  "pkg": {
+    "type": "module",
+    "main": "./lib/lib.cjs",
+    "module": "/lib/lib.js",
+    "types": "./lib.d.ts",
+    "exports": {
+      ".": {
+        "import": "./lib/lib.js",
+        "require": "./lib/lib.cjs"
+      }
+    }
+  },
+  "devDependencies": {
+    "@reactive-kit/build-config": "workspace:*"
+  },
+  "peerDependencies": {
+    "@microsoft/api-extractor": "^7",
+    "eslint": "^8",
+    "nx": "^21",
+    "prettier": "^3",
+    "typedoc": "^0.28",
+    "typescript": "^5",
+    "vite": "^6",
+    "vitest": "^3"
+  },
+  "nx": {
+    "includedScripts": []
+  }
+}
