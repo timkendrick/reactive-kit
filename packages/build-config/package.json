@@ -21,7 +21,7 @@
   "dependencies": {
     "@microsoft/api-extractor": "7.52.8",
     "@types/node": "22.14.0",
-    "@types/react": "19.1.8",
+    "@types/react": "19.2.7",
     "@typescript-eslint/eslint-plugin": "8.36.0",
     "@typescript-eslint/parser": "8.36.0",
     "@vitejs/plugin-react-swc": "3.10.2",
