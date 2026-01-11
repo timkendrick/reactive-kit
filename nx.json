@@ -11,6 +11,7 @@
       "{projectRoot}/**/.eslintrc.cjs",
       "{projectRoot}/**/.gitignore",
       "{projectRoot}/**/.prettierignore",
+      "{projectRoot}/**/astro.config.mjs",
       "{projectRoot}/**/prettier.config.mjs",
       "{projectRoot}/**/typedoc.json",
       "{projectRoot}/**/vite.config.ts",

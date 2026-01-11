@@ -1,3 +1,5 @@
+/.astro/*
+!/.astro/types.d.ts
 /.context/
 /dist/
 /examples/dist/
